@@ -1,0 +1,65 @@
+# --------------------
+# OS / General
+# --------------------
+.DS_Store
+Thumbs.db
+
+# --------------------
+# Environment files
+# --------------------
+.env
+.env.*
+!.env.example
+
+# --------------------
+# Logs
+# --------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --------------------
+# Go (api/)
+# --------------------
+api/bin/
+api/build/
+api/dist/
+api/tmp/
+api/vendor/
+*.exe
+*.test
+*.out
+
+# Go coverage
+coverage.out
+
+# --------------------
+# Node / React (client/)
+# --------------------
+client/node_modules/
+client/dist/
+client/build/
+client/.vite/
+client/.cache/
+
+# Vite specific
+client/.env.local
+client/.env.*.local
+
+# --------------------
+# IDE / Editor
+# --------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --------------------
+# Misc
+# --------------------
+*.zip
+*.tar
+*.gz

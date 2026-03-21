@@ -1,0 +1,65 @@
+import axios, { AxiosRequestConfig } from 'axios';
+import toast from 'react-hot-toast';
+import { LOCAL_STORAGE } from '../constants'; // Assuming we have it
+
+export interface RequestProps extends AxiosRequestConfig {
+    show_error?: boolean;
+    response_array?: boolean;
+    base?: string;
+}
+
+const utils = {
+    request: ({
+        show_error = true,
+        response_array = false,
+        base = import.meta.env.VITE_API_URL || "http://localhost:8081/api",
+        ...config
+    }: RequestProps): Promise<any> => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const requestConfig: AxiosRequestConfig = base ? { ...config, baseURL: base } : config;
+
+                // Auto-attach Bearer token interceptor naturally
+                const token = localStorage.getItem(LOCAL_STORAGE.TOKEN);
+                if (token) {
+                    requestConfig.headers = {
+                        ...requestConfig.headers,
+                        Authorization: `Bearer ${token}`
+                    };
+                }
+
+                const res = await axios(requestConfig);
+
+                // If expecting a raw array format back directly
+                if (response_array) return resolve(res.data);
+
+                // Defaults to returning the payload wrapper
+                return resolve(res.data || {});
+            } catch (error: any) {
+                console.error('API Error:', error);
+
+                // Unified 401 Session Expiration Handling
+                if (error?.response && error?.response?.status === 401) {
+                    setTimeout(() => {
+                        localStorage.removeItem(LOCAL_STORAGE.TOKEN);
+                        localStorage.removeItem(LOCAL_STORAGE.USER);
+                        // Redirect to Login to kill infinite fetch loops
+                        if (window.location.pathname !== "/login") {
+                            window.location.href = "/login";
+                        }
+                    }, 500);
+                }
+
+                // Global Error Toaster mapping
+                if (show_error) {
+                    const message = error?.response?.data?.error || error?.response?.data?.message || 'Something went wrong!';
+                    toast.error(message);
+                }
+
+                return reject(error);
+            }
+        });
+    }
+};
+
+export default utils;
