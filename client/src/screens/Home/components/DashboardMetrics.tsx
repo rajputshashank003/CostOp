@@ -84,7 +84,7 @@ export default function DashboardMetrics({
                             >
                                 <MonthPicker value={customStart} onChange={setCustomStart} placeholder="Start Date" maxDate={customEnd} />
                                 <span className="text-emerald-700 font-extrabold text-[10px] uppercase">➜</span>
-                                <MonthPicker value={customEnd} onChange={setCustomEnd} placeholder="End Date" minDate={customStart} />
+                                <MonthPicker value={customEnd} onChange={setCustomEnd} placeholder="End Date" minDate={customStart} align="right" />
                             </motion.div>
                         )}
                     </AnimatePresence>

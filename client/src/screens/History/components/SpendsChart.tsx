@@ -83,6 +83,7 @@ export default function SpendsChart() {
                             { value: 24, label: "Last 24 Months" },
                             { value: "custom", label: "Custom Range" },
                         ]}
+                        align="right"
                     />
                 </div>
             </div>

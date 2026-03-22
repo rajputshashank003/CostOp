@@ -52,6 +52,7 @@ export default function ActiveSubscriptions({ localSearch, setLocalSearch, avail
                                 { value: "Monthly", label: "Monthly" },
                                 { value: "Yearly", label: "Yearly" }
                             ]}
+                            align="right"
                         />
                     </div>
                 </div>

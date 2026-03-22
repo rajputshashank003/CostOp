@@ -5,6 +5,7 @@ import { useUser } from "../../hooks/useUser";
 import { SUBSCRIPTION_OPTIONS } from "../../utils/constants";
 import map from "lodash/map";
 import CustomSelect from "../CustomSelect/CustomSelect";
+import DatePicker from "../DatePicker/DatePicker";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 import { categoriesApi } from "../../utils/api_request/categories";
 import size from "lodash/size";
@@ -287,12 +288,7 @@ export default function AddSubscriptionModal({ onClose, onSuccess }: AddSubscrip
                         {/* Start Date */}
                         <div>
                             <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Start Date</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <Calendar size={16} />
-                                </div>
-                                <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} required className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-slate-700 cursor-text text-sm" />
-                            </div>
+                            <DatePicker value={formData.start_date} onChange={(v) => setFormData(p => ({ ...p, start_date: v }))} align="top" />
                         </div>
                     </form>
                 </div>

@@ -13,9 +13,10 @@ interface TimeframeDropdownProps {
     value: string | number;
     onChange: (val: string | number) => void;
     options: Option[];
+    align?: "left" | "right";
 }
 
-export default function TimeframeDropdown({ value, onChange, options }: TimeframeDropdownProps) {
+export default function TimeframeDropdown({ value, onChange, options, align = "left" }: TimeframeDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -48,7 +49,7 @@ export default function TimeframeDropdown({ value, onChange, options }: Timefram
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="absolute z-[100] mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl w-[200px] left-0 overflow-hidden"
+                        className={`absolute z-[100] mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl w-[200px] overflow-hidden ${align === "right" ? "right-0" : "left-0"}`}
                     >
                         <div className="flex flex-col py-1">
                             {map(options, (opt) => {
