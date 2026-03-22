@@ -14,6 +14,7 @@ import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/Upcomi
 import Sidebar from "../../components/Sidebar/Sidebar";
 import MobileNav from "../../components/MobileNav/MobileNav";
 import SmallRenewalItem from "./components/SmallRenewalItem";
+import HomeSkeleton from "../../components/Skeleton/HomeSkeleton";
 
 
 const HomeComp = () => {
@@ -34,11 +35,7 @@ const HomeComp = () => {
     };
 
     if (isLoadingSubs || isAuthLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f0f0f5]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-            </div>
-        );
+        return <HomeSkeleton />;
     }
 
     return (
