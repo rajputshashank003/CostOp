@@ -1,7 +1,7 @@
 # CostOp
 **Take control of your SaaS spend.**
 
-![CostOp Banner](https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1200&h=400)
+![CostOp Banner](./client/src/assets/images/landingPage.png)
 
 ## 🌟 About The Product
 
