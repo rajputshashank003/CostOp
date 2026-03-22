@@ -8,11 +8,13 @@ interface MonthPickerProps {
     onChange: (val: string) => void;
     placeholder?: string;
     align?: "left" | "right";
+    minDate?: string;
+    maxDate?: string;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export default function MonthPicker({ value, onChange, placeholder = "Select Month", align = "left" }: MonthPickerProps) {
+export default function MonthPicker({ value, onChange, placeholder = "Select Month", align = "left", minDate, maxDate }: MonthPickerProps) {
     const [isOpen, setIsOpen] = useState(false);
     // Initialize view year to selected value year or current year natively
     const [viewYear, setViewYear] = useState(value ? parseInt(value.split("-")[0]) : new Date().getFullYear());
@@ -35,7 +37,12 @@ export default function MonthPicker({ value, onChange, placeholder = "Select Mon
 
     const handleMonthClick = (monthIndex: number) => {
         const formattedMonth = (monthIndex + 1).toString().padStart(2, "0");
-        onChange(`${viewYear}-${formattedMonth}`);
+        const current = `${viewYear}-${formattedMonth}`;
+
+        if (minDate && current < minDate) return;
+        if (maxDate && current > maxDate) return;
+
+        onChange(current);
         setIsOpen(false);
     };
 
@@ -80,15 +87,22 @@ export default function MonthPicker({ value, onChange, placeholder = "Select Mon
                         {/* Month Grid */}
                         <div className="grid grid-cols-3 gap-1.5">
                             {map(MONTHS, (m, idx) => {
-                                const isSelected = value === `${viewYear}-${(idx + 1).toString().padStart(2, "0")}`;
+                                const formattedMonth = (idx + 1).toString().padStart(2, "0");
+                                const current = `${viewYear}-${formattedMonth}`;
+                                const isSelected = value === current;
+                                const isDisabled = Boolean((minDate && current < minDate) || (maxDate && current > maxDate));
+
                                 return (
                                     <button
                                         key={m}
                                         onClick={() => handleMonthClick(idx)}
+                                        disabled={isDisabled}
                                         className={`py-1.5 text-[11px] font-bold rounded-lg transition-all
                                             ${isSelected
                                                 ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 ring-1 ring-emerald-600'
-                                                : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 active:bg-emerald-100'
+                                                : isDisabled
+                                                    ? 'text-slate-300 bg-slate-50 cursor-not-allowed'
+                                                    : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 active:bg-emerald-100'
                                             }
                                         `}
                                     >
