@@ -1,9 +1,17 @@
 import utils from './utils';
 
 export const subscriptionsApi = {
-    get_all: (status: string = "active") => {
+    get_all: (params?: { status?: string, search?: string, category?: string, cycle?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.status) query.append('status', params.status);
+        else query.append('status', 'active');
+
+        if (params?.search) query.append('search', params.search);
+        if (params?.category && params.category !== 'All Categories') query.append('category', params.category);
+        if (params?.cycle && params.cycle !== 'All Cycles') query.append('cycle', params.cycle);
+
         return utils.request({
-            url: `/subscriptions?status=${status}`,
+            url: `/subscriptions?${query.toString()}`,
             method: 'GET',
             response_array: true
         });

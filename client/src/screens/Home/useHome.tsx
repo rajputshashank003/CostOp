@@ -10,11 +10,19 @@ const useHome = () => {
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
     const { isLoading: isAuthLoading } = useUser();
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterCategory, setFilterCategory] = useState("All Categories");
+    const [filterCycle, setFilterCycle] = useState("All Cycles");
+
     const fetchSubscriptions = useCallback(async () => {
         if (isAuthLoading) return;
 
         try {
-            const data = await subscriptionsApi.get_all();
+            const data = await subscriptionsApi.get_all({
+                search: searchQuery,
+                category: filterCategory,
+                cycle: filterCycle
+            });
             setSubscriptions(Array.isArray(data) ? data : []);
         } catch (err) {
             setSubscriptions([]);
@@ -22,7 +30,7 @@ const useHome = () => {
         } finally {
             setIsLoadingSubs(false);
         }
-    }, [isAuthLoading]);
+    }, [isAuthLoading, searchQuery, filterCategory, filterCycle]);
 
     const fetchMetrics = useCallback(async () => {
         if (isAuthLoading) return;
@@ -47,6 +55,9 @@ const useHome = () => {
         isLoadingSubs,
         metrics,
         isLoadingMetrics,
+        searchQuery, setSearchQuery,
+        filterCategory, setFilterCategory,
+        filterCycle, setFilterCycle,
         refreshSubscriptions: () => { fetchSubscriptions(); fetchMetrics(); }
     };
 };

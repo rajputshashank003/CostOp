@@ -23,12 +23,12 @@ export default function Sidebar() {
     return (
         <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
             <div className="p-6">
-                <div className="flex items-center gap-2">
+                <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                     <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
                         <Receipt size={28} className="text-emerald-600" />
                     </motion.div>
                     <span className="text-[22px] font-extrabold tracking-[-0.5px] text-slate-900">CostOp</span>
-                </div>
+                </Link>
             </div>
 
             <nav className="flex-1 px-4 flex flex-col gap-2 mt-4">

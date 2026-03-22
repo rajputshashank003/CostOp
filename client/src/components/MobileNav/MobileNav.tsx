@@ -72,12 +72,12 @@ export default function MobileNav() {
                         className="fixed inset-y-0 left-0 w-[280px] bg-white z-[110] shadow-2xl flex flex-col"
                     >
                         <div className="h-[76px] px-6 flex items-center justify-between border-b border-slate-100 flex-shrink-0">
-                            <div className="flex items-center gap-2">
+                            <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
                                     <Receipt size={28} className="text-emerald-600" />
                                 </motion.div>
                                 <span className="text-[22px] font-extrabold tracking-[-0.5px] text-slate-900">CostOp</span>
-                            </div>
+                            </Link>
                             <motion.button
                                 whileTap={{ scale: 0.9 }}
                                 whileHover={{ rotate: 90 }}

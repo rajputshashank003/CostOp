@@ -51,5 +51,11 @@ func SetupRoutes(r *gin.Engine) {
 			categories.GET("", controllers.GetCategories)
 			categories.POST("", controllers.AddCategory)
 		}
+
+		history := api.Group("/history")
+		history.Use(middleware.RequireAuth())
+		{
+			history.GET("/spends", controllers.GetHistoricalSpends)
+		}
 	}
 }

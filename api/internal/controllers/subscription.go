@@ -21,8 +21,26 @@ func GetSubscriptions(c *gin.Context) {
 		return
 	}
 
+	query := database.DB.Where("team_id = ? AND status = ?", user.DefaultTeamID, status)
+
+	// Apply filtering conditions dynamically
+	search := c.Query("search")
+	if search != "" {
+		query = query.Where("name ILIKE ?", "%"+search+"%")
+	}
+
+	category := c.Query("category")
+	if category != "" && category != "All Categories" {
+		query = query.Where("category = ?", category)
+	}
+
+	cycle := c.Query("cycle")
+	if cycle != "" && cycle != "All Cycles" {
+		query = query.Where("billing_cycle = ?", cycle)
+	}
+
 	var subscriptions []models.Subscription
-	if err := database.DB.Where("team_id = ? AND status = ?", user.DefaultTeamID, status).Find(&subscriptions).Error; err != nil {
+	if err := query.Find(&subscriptions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscriptions"})
 		return
 	}

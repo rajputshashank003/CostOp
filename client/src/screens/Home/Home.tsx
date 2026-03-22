@@ -1,8 +1,9 @@
-import { useContext, useState } from "react";
-import { Plus, LayoutDashboard, Settings, LogOut, Receipt, TrendingDown, CalendarClock, CreditCard as CreditCardIcon } from "lucide-react";
+import { useContext, useState, useEffect } from "react";
+import { Plus, LayoutDashboard, Settings, LogOut, Receipt, TrendingDown, CalendarClock, CreditCard as CreditCardIcon, Clock, Search } from "lucide-react";
 import map from "lodash/map";
 import slice from "lodash/slice";
 import size from "lodash/size";
+import reduce from "lodash/reduce";
 import HomeContext from "./context";
 import { motion, AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
@@ -14,15 +15,62 @@ import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/Upcomi
 import Sidebar from "../../components/Sidebar/Sidebar";
 import MobileNav from "../../components/MobileNav/MobileNav";
 import SmallRenewalItem from "./components/SmallRenewalItem";
+import MonthPicker from "../../components/MonthPicker/MonthPicker";
+import TimeframeDropdown from "../../components/TimeframeDropdown/TimeframeDropdown";
 import HomeSkeleton from "../../components/Skeleton/HomeSkeleton";
+import { historyApi } from "../../utils/api_request/history";
+import { categoriesApi } from "../../utils/api_request/categories";
 
 
 const HomeComp = () => {
-    const { subscriptions, isLoadingSubs, refreshSubscriptions, metrics, isLoadingMetrics } = useContext(HomeContext);
+    const {
+        subscriptions, isLoadingSubs, refreshSubscriptions, metrics, isLoadingMetrics,
+        searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterCycle, setFilterCycle
+    } = useContext(HomeContext);
     const { user, logout, isLoading: isAuthLoading } = useUser();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [subToDelete, setSubToDelete] = useState<any>(null);
     const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
+
+    // Active List Filters State
+    const [localSearch, setLocalSearch] = useState("");
+    const [availableCategories, setAvailableCategories] = useState<any[]>([{ value: "All Categories", label: "All Categories" }]);
+
+    useEffect(() => {
+        categoriesApi.get_all().then((res: any) => {
+            const mapped = map((res || []), (c: any) => ({ value: c.name, label: c.name }));
+            setAvailableCategories([{ value: "All Categories", label: "All Categories" }, ...mapped]);
+        }).catch(console.error);
+    }, []);
+
+    // Debounce the physical search input text back up linearly into the React Context triggers
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchQuery(localSearch);
+        }, 400);
+        return () => clearTimeout(handler);
+    }, [localSearch, setSearchQuery]);
+
+    // Dynamic Tracking State
+    const [spendTimeframe, setSpendTimeframe] = useState<number | "current" | "custom">("current");
+    const [customStart, setCustomStart] = useState<string>("");
+    const [customEnd, setCustomEnd] = useState<string>("");
+    const [historicalSpendTotal, setHistoricalSpendTotal] = useState<number>(0);
+    const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
+
+    useEffect(() => {
+        if (spendTimeframe === "current") return;
+        if (spendTimeframe === "custom" && !customStart && !customEnd) return;
+
+        setIsLoadingHistorical(true);
+        historyApi.get_spends(spendTimeframe, customStart, customEnd)
+            .then((res: any) => {
+                const total = reduce((res || []), (acc: number, curr: any) => acc + curr.spend, 0);
+                setHistoricalSpendTotal(total);
+            })
+            .catch((err: any) => console.error(err))
+            .finally(() => setIsLoadingHistorical(false));
+    }, [spendTimeframe, customStart, customEnd]);
 
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -117,21 +165,62 @@ const HomeComp = () => {
                                 className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
                             >
                                 {/* Widget 1: Total Monthly Spend */}
-                                <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm flex items-center justify-between relative overflow-hidden group hover:border-emerald-200 transition-colors">
-                                    <div className="relative z-10">
-                                        <p className="text-[14px] font-semibold text-slate-500 flex items-center gap-2 mb-2">
-                                            <TrendingDown size={16} className="text-emerald-500" />
-                                            Total Monthly Spend
-                                        </p>
-                                        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                                            {isLoadingMetrics ? "..." : formatter.format(metrics?.total_monthly_spend || 0)}
-                                        </h2>
-                                    </div>
-                                    <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center relative z-10 shadow-inner">
-                                        <CreditCardIcon size={28} />
-                                    </div>
+                                <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm flex flex-col justify-between relative group hover:border-emerald-200 transition-colors h-full min-h-[180px]">
                                     {/* Abstract BG Pattern */}
-                                    <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="absolute inset-0 rounded-[1.5rem] overflow-hidden pointer-events-none z-0">
+                                        <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    </div>
+
+                                    <div className="relative z-20 flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[14px] font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
+                                                <TrendingDown size={16} className="text-emerald-500" />
+                                                {spendTimeframe === "current" ? "Current Monthly" : spendTimeframe === "custom" ? "Custom Range" : `Spend (Last ${spendTimeframe} M)`}
+                                            </p>
+                                            <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                                                {spendTimeframe === "current"
+                                                    ? (isLoadingMetrics ? "..." : formatter.format(metrics?.total_monthly_spend || 0))
+                                                    : (isLoadingHistorical ? "..." : formatter.format(historicalSpendTotal))}
+                                            </h2>
+                                        </div>
+                                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner flex-shrink-0">
+                                            <CreditCardIcon size={24} />
+                                        </div>
+                                    </div>
+
+                                    {/* Action Bar Footer Component */}
+                                    <div className="relative z-20 mt-6 pt-4 border-t border-slate-100/80 flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <TimeframeDropdown
+                                                value={spendTimeframe}
+                                                onChange={(v) => setSpendTimeframe(v as number | "current" | "custom")}
+                                                options={[
+                                                    { value: "current", label: "Current Snapshot" },
+                                                    { value: 1, label: "Last 1 Month" },
+                                                    { value: 3, label: "Last 3 Months" },
+                                                    { value: 6, label: "Last 6 Months" },
+                                                    { value: 12, label: "Last 12 Months" },
+                                                    { value: "custom", label: "Custom Absolute Range" },
+                                                ]}
+                                            />
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {spendTimeframe === "custom" && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: "auto" }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg p-2 shadow-inner"
+                                                >
+                                                    <MonthPicker value={customStart} onChange={setCustomStart} placeholder="Start Date" />
+                                                    <span className="text-emerald-700 font-extrabold text-[10px] uppercase">➜</span>
+                                                    <MonthPicker value={customEnd} onChange={setCustomEnd} placeholder="End Date" />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
                                 </div>
 
                                 {/* Widget 2: Upcoming Renewals (30 Days) */}
@@ -172,10 +261,44 @@ const HomeComp = () => {
 
                             {/* Grid */}
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-4 flex items-center gap-2">
-                                    Active Subscriptions
-                                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{size(subscriptions)}</span>
-                                </h3>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                                    <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                                        Active Subscriptions
+                                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{size(subscriptions)}</span>
+                                    </h3>
+
+                                    {/* Backend-Driven Unified Filters */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
+                                        <div className="relative w-full sm:w-[200px]">
+                                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search subscriptions..."
+                                                value={localSearch}
+                                                onChange={(e) => setLocalSearch(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 text-slate-700 text-[12px] font-bold rounded-lg pl-8 pr-3 py-1.5 outline-none hover:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <TimeframeDropdown
+                                                value={filterCategory}
+                                                onChange={(v) => setFilterCategory(v as string)}
+                                                options={availableCategories}
+                                            />
+                                            <TimeframeDropdown
+                                                value={filterCycle}
+                                                onChange={(v) => setFilterCycle(v as string)}
+                                                options={[
+                                                    { value: "All Cycles", label: "All Cycles" },
+                                                    { value: "Monthly", label: "Monthly" },
+                                                    { value: "Yearly", label: "Yearly" }
+                                                ]}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                                     <AnimatePresence>
                                         {map(subscriptions, (sub: any) => (
