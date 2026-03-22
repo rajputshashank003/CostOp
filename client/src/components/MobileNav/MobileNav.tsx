@@ -89,7 +89,7 @@ export default function MobileNav() {
                         </div>
 
                         <nav className="flex-1 px-4 py-6 flex flex-col gap-2 overflow-y-auto">
-                            <MotionLink whileTap={{ scale: 0.98 }} onClick={() => setIsOpen(false)} to="/" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors group ${location.pathname === '/' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            <MotionLink whileTap={{ scale: 0.98 }} onClick={() => setIsOpen(false)} to="/home" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors group ${location.pathname === '/home' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
                                 <motion.div className="group-hover:scale-110 transition-transform"><LayoutDashboard size={20} /></motion.div>
                                 Dashboard
                             </MotionLink>

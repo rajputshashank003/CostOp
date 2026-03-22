@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem(LOCAL_STORAGE.USER, JSON.stringify(newUser));
         setToken(newToken);
         setUser(newUser);
-        navigate("/");
+        navigate("/home");
     };
 
     const logout = () => {

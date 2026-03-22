@@ -4,6 +4,7 @@ import Home from "./screens/Home/Home";
 import Login from "./screens/Login/Login";
 import History from "./screens/History/History";
 import Members from "./screens/Members/Members";
+import Landing from "./screens/Landing/Landing";
 import "./index.css";
 
 function App() {
@@ -11,7 +12,8 @@ function App() {
         <>
             <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Landing />} />
+                <Route path="/home" element={<Home />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/members" element={<Members />} />
             </Routes>
