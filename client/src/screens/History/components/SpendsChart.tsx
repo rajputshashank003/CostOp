@@ -58,14 +58,14 @@ export default function SpendsChart() {
                     <AnimatePresence>
                         {months === "custom" && (
                             <motion.div
-                                initial={{ opacity: 0, x: 20, width: 0 }}
-                                animate={{ opacity: 1, x: 0, width: "auto" }}
-                                exit={{ opacity: 0, x: 20, width: 0 }}
-                                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-1.5 shadow-sm whitespace-nowrap"
+                                initial={{ opacity: 0, width: 0 }}
+                                animate={{ opacity: 1, width: "auto" }}
+                                exit={{ opacity: 0, width: 0 }}
+                                className="flex items-center gap-2"
                             >
-                                <MonthPicker value={customStart} onChange={setCustomStart} placeholder="Start" align="right" />
-                                <span className="text-emerald-600 font-extrabold text-[10px] uppercase mx-1 tracking-widest">TO</span>
-                                <MonthPicker value={customEnd} onChange={setCustomEnd} placeholder="End" align="right" />
+                                <MonthPicker value={customStart} onChange={setCustomStart} placeholder="Start" align="right" maxDate={customEnd} />
+                                <span className="text-slate-300 font-extrabold text-[10px] uppercase">➜</span>
+                                <MonthPicker value={customEnd} onChange={setCustomEnd} placeholder="End" align="right" minDate={customStart} />
                             </motion.div>
                         )}
                     </AnimatePresence>
