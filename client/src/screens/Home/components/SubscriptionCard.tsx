@@ -49,10 +49,6 @@ export default function SubscriptionCard({ sub, onDeleteClick }: { sub: Subscrip
     return (
         <motion.div
             layout
-            variants={{
-                hidden: { opacity: 0, scale: 0.9, y: 20 },
-                show: { opacity: 1, scale: 1, y: 0 }
-            }}
             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
             className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300 group flex flex-col h-full"
         >

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CreditCard, Rocket, ShieldCheck, PieChart, ArrowRight, Github, Globe } from "lucide-react";
+import { Receipt, Rocket, ShieldCheck, PieChart, ArrowRight, Github, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
@@ -13,11 +13,11 @@ export default function Landing() {
             {/* Header */}
             <header className="fixed top-0 inset-x-0 bg-white/80 backdrop-blur-md border-b border-emerald-100 z-50">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-emerald-600/20 shadow-lg">
-                            <CreditCard size={24} />
-                        </div>
-                        <span className="text-2xl font-extrabold tracking-tight text-emerald-950">CostOp</span>
+                    <div className="flex items-center gap-2">
+                        <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                            <Receipt size={28} className="text-emerald-600" />
+                        </motion.div>
+                        <span className="text-[22px] font-extrabold tracking-[-0.5px] text-slate-900">CostOp</span>
                     </div>
                     <nav>
                         {isAuthenticated ? (
@@ -175,8 +175,10 @@ export default function Landing() {
                 <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <CreditCard size={24} className="text-emerald-400" />
-                            <span className="text-2xl font-extrabold tracking-tight text-white">CostOp</span>
+                            <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                                <Receipt size={28} className="text-emerald-400" />
+                            </motion.div>
+                            <span className="text-[22px] font-extrabold tracking-[-0.5px] text-white">CostOp</span>
                         </div>
                         <p className="text-emerald-300 font-medium max-w-sm mb-6">
                             Take absolute control of your SaaS infrastructure. Track, optimize, and save big on software spend.

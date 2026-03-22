@@ -176,24 +176,13 @@ const HomeComp = () => {
                                     Active Subscriptions
                                     <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{size(subscriptions)}</span>
                                 </h3>
-                                <motion.div
-                                    variants={{
-                                        hidden: { opacity: 0 },
-                                        show: {
-                                            opacity: 1,
-                                            transition: { staggerChildren: 0.1 }
-                                        }
-                                    }}
-                                    initial="hidden"
-                                    animate="show"
-                                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6"
-                                >
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                                     <AnimatePresence>
                                         {map(subscriptions, (sub: any) => (
                                             <SubscriptionCard key={sub.id} sub={sub} onDeleteClick={(s) => setSubToDelete(s)} />
                                         ))}
                                     </AnimatePresence>
-                                </motion.div>
+                                </div>
                             </div>
                         </div>
                     )}

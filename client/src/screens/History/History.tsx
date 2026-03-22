@@ -61,24 +61,13 @@ export default function History() {
                             No archived subscriptions found.
                         </div>
                     ) : (
-                        <motion.div
-                            variants={{
-                                hidden: { opacity: 0 },
-                                show: {
-                                    opacity: 1,
-                                    transition: { staggerChildren: 0.1 }
-                                }
-                            }}
-                            initial="hidden"
-                            animate="show"
-                            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6"
-                        >
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                             <AnimatePresence>
                                 {map(archived, (sub: any) => (
                                     <SubscriptionCard key={sub.id} sub={sub} />
                                 ))}
                             </AnimatePresence>
-                        </motion.div>
+                        </div>
                     )}
                 </div>
             </main>
