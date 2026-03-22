@@ -24,7 +24,22 @@ func Connect() {
 
 	fmt.Println("Connected to PostgreSQL successfully")
 
-	db.AutoMigrate(&models.User{}, &models.Team{}, &models.TeamMember{}, &models.TeamInvite{}, &models.Subscription{})
+	db.AutoMigrate(&models.User{}, &models.Team{}, &models.TeamMember{}, &models.TeamInvite{}, &models.Subscription{}, &models.Category{})
 
 	DB = db
+
+	seedCategories()
+}
+
+func seedCategories() {
+	defaultCategories := []string{
+		"Productivity", "Marketing", "Engineering", "Design", "Sales", "Other",
+	}
+
+	for _, name := range defaultCategories {
+		var category models.Category
+		if err := DB.Where("name = ?", name).First(&category).Error; err != nil {
+			DB.Create(&models.Category{Name: name})
+		}
+	}
 }

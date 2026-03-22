@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import map from "lodash/map";
+import size from "lodash/size";
 import { Users, Mail, UserPlus, Clock } from "lucide-react";
 import { membersApi } from "../../utils/api_request/members";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -171,7 +172,7 @@ export default function Members() {
                     {/* Roster Layout */}
                     <div className="grid grid-cols-1 space-y-4">
                         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider pl-2 mt-4 flex items-center gap-2">
-                            <Users size={16} /> Active Members ({members.length})
+                            <Users size={16} /> Active Members ({size(members)})
                         </h3>
 
                         <AnimatePresence>
@@ -205,10 +206,10 @@ export default function Members() {
                             ))}
                         </AnimatePresence>
 
-                        {invites.length > 0 && (
+                        {size(invites) > 0 && (
                             <>
                                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider pl-2 mt-8 flex items-center gap-2">
-                                    <Clock size={16} /> Pending Invites ({invites.length})
+                                    <Clock size={16} /> Pending Invites ({size(invites)})
                                 </h3>
 
                                 <AnimatePresence>

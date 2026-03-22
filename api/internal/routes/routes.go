@@ -44,5 +44,12 @@ func SetupRoutes(r *gin.Engine) {
 			members.POST("/invite", controllers.InviteMember)
 			members.DELETE("/invite/:id", controllers.RevokeInvite)
 		}
+
+		categories := api.Group("/categories")
+		categories.Use(middleware.RequireAuth())
+		{
+			categories.GET("", controllers.GetCategories)
+			categories.POST("", controllers.AddCategory)
+		}
 	}
 }

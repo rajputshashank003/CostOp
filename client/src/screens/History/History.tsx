@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import map from "lodash/map";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
+import size from "lodash/size";
 import SubscriptionCard from "../Home/components/SubscriptionCard";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import MobileNav from "../../components/MobileNav/MobileNav";
@@ -58,7 +59,7 @@ export default function History() {
                 </header>
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
-                    {archived.length === 0 ? (
+                    {size(archived) === 0 ? (
                         <div className="h-full flex items-center justify-center text-slate-500 font-medium pb-20">
                             No archived subscriptions found.
                         </div>

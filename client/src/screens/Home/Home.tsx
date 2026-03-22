@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { Plus, LayoutDashboard, Settings, LogOut, Receipt, TrendingDown, CalendarClock, CreditCard as CreditCardIcon } from "lucide-react";
 import map from "lodash/map";
 import slice from "lodash/slice";
+import size from "lodash/size";
 import HomeContext from "./context";
 import { motion, AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
@@ -86,7 +87,7 @@ const HomeComp = () => {
 
                 {/* Dashboard Area - Scrollable */}
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
-                    {subscriptions.length === 0 ? (
+                    {size(subscriptions) === 0 ? (
                         /* Empty State */
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -148,17 +149,17 @@ const HomeComp = () => {
                                     <div className="relative z-10">
                                         {isLoadingMetrics ? (
                                             <p className="text-slate-400 font-medium">Loading...</p>
-                                        ) : metrics?.upcoming_renewals?.length > 0 ? (
+                                        ) : size(metrics?.upcoming_renewals) > 0 ? (
                                             <div className="flex flex-col gap-3">
                                                 {map(slice(metrics.upcoming_renewals, 0, 2), (r: any) => (
                                                     <SmallRenewalItem key={r.id} r={r} formatter={formatter} />
                                                 ))}
-                                                {metrics.upcoming_renewals.length > 2 && (
+                                                {size(metrics.upcoming_renewals) > 2 && (
                                                     <button
                                                         onClick={() => setIsRenewalsModalOpen(true)}
                                                         className="text-[12px] font-semibold text-slate-400 hover:text-blue-600 transition-colors text-center mt-1 py-1 w-full cursor-pointer"
                                                     >
-                                                        + {metrics.upcoming_renewals.length - 2} more renewals
+                                                        + {size(metrics.upcoming_renewals) - 2} more renewals
                                                     </button>
                                                 )}
                                             </div>
@@ -176,7 +177,7 @@ const HomeComp = () => {
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-4 flex items-center gap-2">
                                     Active Subscriptions
-                                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{subscriptions.length}</span>
+                                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{size(subscriptions)}</span>
                                 </h3>
                                 <motion.div
                                     variants={{

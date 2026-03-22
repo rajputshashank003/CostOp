@@ -2,11 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import map from "lodash/map";
 
+interface CustomSelectProps {
+    options: string[];
+    value: string;
+    onChange: (v: string) => void;
+    icon?: any;
+}
+
 export default function CustomSelect({
     options, value, onChange, icon: Icon
-}: {
-    options: string[], value: string, onChange: (v: string) => void, icon?: any
-}) {
+}: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 

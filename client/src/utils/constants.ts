@@ -3,8 +3,11 @@ export const LOCAL_STORAGE = {
     USER: "costop_user",
 };
 
+export const SESSION_STORAGE = {
+    INVITE_TOKEN: "costop_invite_token",
+};
+
 export const SUBSCRIPTION_OPTIONS = {
-    CATEGORIES: ["Productivity", "Marketing", "Engineering", "Design", "Sales", "Other"],
     PLAN_TYPES: ["Individual", "Team"],
     BILLING_CYCLES: ["Monthly", "Yearly"],
 };

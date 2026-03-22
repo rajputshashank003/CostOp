@@ -6,6 +6,11 @@ import { SUBSCRIPTION_OPTIONS } from "../../utils/constants";
 import map from "lodash/map";
 import CustomSelect from "../CustomSelect/CustomSelect";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
+import { categoriesApi } from "../../utils/api_request/categories";
+import size from "lodash/size";
+import head from "lodash/head";
+import split from "lodash/split";
+import sortBy from "lodash/sortBy";
 import { motion } from "framer-motion";
 
 interface AddSubscriptionModalProps {
@@ -17,15 +22,35 @@ export default function AddSubscriptionModal({ onClose, onSuccess }: AddSubscrip
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
-        category: SUBSCRIPTION_OPTIONS.CATEGORIES[0],
-        plan_type: SUBSCRIPTION_OPTIONS.PLAN_TYPES[0],
+        category: "",
+        plan_type: head(SUBSCRIPTION_OPTIONS.PLAN_TYPES) as string,
         team_name: "",
         team_members_count: 1,
-        billing_cycle: SUBSCRIPTION_OPTIONS.BILLING_CYCLES[0],
+        billing_cycle: head(SUBSCRIPTION_OPTIONS.BILLING_CYCLES) as string,
         cost: "",
-        start_date: new Date().toISOString().split("T")[0],
+        start_date: head(split(new Date().toISOString(), "T")) as string,
         is_auto_pay: true,
     });
+
+    const [categories, setCategories] = useState<string[]>([]);
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await categoriesApi.get_all();
+                const fetchedCats = map(res, (c: any) => c.name);
+                setCategories(fetchedCats);
+                if (size(fetchedCats) > 0) {
+                    setFormData(p => ({ ...p, category: head(fetchedCats) || "" }));
+                }
+            } catch (err) {
+                console.error('FETCH ERR', err);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -38,6 +63,35 @@ export default function AddSubscriptionModal({ onClose, onSuccess }: AddSubscrip
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCategoryChange = (v: string) => {
+        if (v === "+ Add New Category") {
+            setIsAddingCategory(true);
+            setFormData(p => ({ ...p, category: "" }));
+        } else {
+            setIsAddingCategory(false);
+            setFormData(p => ({ ...p, category: v }));
+        }
+    };
+
+    const handleAddNewCategory = async (e?: React.MouseEvent) => {
+        if (e) e.preventDefault();
+        if (!newCategoryName.trim()) {
+            toast.error("Category name cannot be empty");
+            return;
+        }
+
+        try {
+            const res = await categoriesApi.create({ name: newCategoryName.trim() });
+            setCategories(prev => sortBy([...prev, res.name]));
+            setFormData(p => ({ ...p, category: res.name }));
+            setIsAddingCategory(false);
+            setNewCategoryName("");
+            toast.success("Category added!");
+        } catch (err) {
+            // Toast automatically handled by api_request/utils.ts
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -112,7 +166,7 @@ export default function AddSubscriptionModal({ onClose, onSuccess }: AddSubscrip
                 <div className="p-6 overflow-y-auto">
                     <form id="add-sub-form" onSubmit={handleSubmit} className="space-y-5">
                         {/* Name & Cost */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Tool Name</label>
                                 <input
@@ -139,15 +193,46 @@ export default function AddSubscriptionModal({ onClose, onSuccess }: AddSubscrip
                         </div>
 
                         {/* Category & Billing Cycle */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Category</label>
-                                <CustomSelect
-                                    options={SUBSCRIPTION_OPTIONS.CATEGORIES}
-                                    value={formData.category}
-                                    onChange={(v) => setFormData(p => ({ ...p, category: v }))}
-                                    icon={Briefcase}
-                                />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="block text-[13px] font-semibold text-slate-700">Category</label>
+                                {!isAddingCategory ? (
+                                    <CustomSelect
+                                        options={[...categories, "+ Add New Category"]}
+                                        value={formData.category}
+                                        onChange={handleCategoryChange}
+                                        icon={Briefcase}
+                                    />
+                                ) : (
+                                    <div className="flex items-center gap-1 sm:gap-2">
+                                        <input
+                                            type="text"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            placeholder="New Category"
+                                            autoFocus
+                                            className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddNewCategory}
+                                            className="flex-shrink-0 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+                                        >
+                                            Add
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsAddingCategory(false);
+                                                setNewCategoryName("");
+                                                setFormData(p => ({ ...p, category: head(categories) || "" }));
+                                            }}
+                                            className="flex-shrink-0 p-2 sm:p-2.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-xl transition-colors cursor-pointer"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Billing Cycle</label>

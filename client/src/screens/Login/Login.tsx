@@ -3,6 +3,7 @@ import { CreditCard, Rocket, ShieldCheck } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
 import { authApi } from "../../utils/api_request/auth";
+import { SESSION_STORAGE } from "../../utils/constants";
 
 const Login = () => {
     const { login } = useUser();
@@ -12,14 +13,14 @@ const Login = () => {
     const searchParams = new URLSearchParams(location.search);
     const urlToken = searchParams.get('token');
     if (urlToken) {
-        sessionStorage.setItem('costop_invite_token', urlToken);
+        sessionStorage.setItem(SESSION_STORAGE.INVITE_TOKEN, urlToken);
     }
 
     const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
         try {
             if (credentialResponse.credential) {
                 // Read from our rock-solid session storage in case the URL bar wiped it!
-                const inviteToken = sessionStorage.getItem('costop_invite_token') || undefined;
+                const inviteToken = sessionStorage.getItem(SESSION_STORAGE.INVITE_TOKEN) || undefined;
 
                 const data = await authApi.verify_google_token(credentialResponse.credential, inviteToken);
 
@@ -27,7 +28,7 @@ const Login = () => {
                 login(data.token, data.user);
 
                 // Wipe token after it has been safely deployed!
-                sessionStorage.removeItem('costop_invite_token');
+                sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);
             }
         } catch (err) {
             // Global error mapping is handled natively by utils/api_request/utils.ts
