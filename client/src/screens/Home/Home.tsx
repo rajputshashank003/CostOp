@@ -1,17 +1,15 @@
 import { useContext, useState, useEffect } from "react";
 import size from "lodash/size";
-import reduce from "lodash/reduce";
 import map from "lodash/map";
 import HomeContext from "./context";
 import { AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
 import { useUser } from "../../hooks/useUser";
 import AddSubscriptionModal from "../../components/AddSubscriptionModal/AddSubscriptionModal";
-import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal";
+import ArchiveConfirmationModal from "../../components/ArchiveConfirmationModal/ArchiveConfirmationModal";
 import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/UpcomingRenewalsModal";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import HomeSkeleton from "../../components/Skeleton/HomeSkeleton";
-import { historyApi } from "../../utils/api_request/history";
 import { categoriesApi } from "../../utils/api_request/categories";
 
 import HomeHeader from "./components/HomeHeader";
@@ -22,11 +20,13 @@ import ActiveSubscriptions from "./components/ActiveSubscriptions";
 const HomeComp = () => {
     const {
         subscriptions, isLoadingSubs, refreshSubscriptions, metrics, isLoadingMetrics,
-        searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterCycle, setFilterCycle
+        searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterCycle, setFilterCycle,
+        spendTimeframe, setSpendTimeframe, customStart, setCustomStart, customEnd, setCustomEnd,
+        historicalSpendTotal, isLoadingHistorical
     } = useContext(HomeContext);
     const { user, logout, isLoading: isAuthLoading } = useUser();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [subToDelete, setSubToDelete] = useState<any>(null);
+    const [subToArchive, setSubToArchive] = useState<any>(null);
     const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
 
     // Active List Filters State
@@ -47,27 +47,6 @@ const HomeComp = () => {
         }, 400);
         return () => clearTimeout(handler);
     }, [localSearch, setSearchQuery]);
-
-    // Dynamic Tracking State
-    const [spendTimeframe, setSpendTimeframe] = useState<number | "current" | "custom">("current");
-    const [customStart, setCustomStart] = useState<string>("");
-    const [customEnd, setCustomEnd] = useState<string>("");
-    const [historicalSpendTotal, setHistoricalSpendTotal] = useState<number>(0);
-    const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
-
-    useEffect(() => {
-        if (spendTimeframe === "current") return;
-        if (spendTimeframe === "custom" && !customStart && !customEnd) return;
-
-        setIsLoadingHistorical(true);
-        historyApi.get_spends(spendTimeframe, customStart, customEnd)
-            .then((res: any) => {
-                const total = reduce((res || []), (acc: number, curr: any) => acc + curr.spend, 0);
-                setHistoricalSpendTotal(total);
-            })
-            .catch((err: any) => console.error(err))
-            .finally(() => setIsLoadingHistorical(false));
-    }, [spendTimeframe, customStart, customEnd]);
 
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -91,7 +70,7 @@ const HomeComp = () => {
                 <HomeHeader onAddClick={() => setIsAddModalOpen(true)} />
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
-                    {size(subscriptions) === 0 ? (
+                    {metrics?.active_subscriptions === 0 && !searchQuery && filterCategory === "All Categories" && filterCycle === "All Cycles" ? (
                         <HomeEmptyState onAddClick={() => setIsAddModalOpen(true)} />
                     ) : (
                         <div className="flex flex-col gap-6 sm:gap-8 pb-12">
@@ -112,7 +91,7 @@ const HomeComp = () => {
                                 localSearch={localSearch}
                                 setLocalSearch={setLocalSearch}
                                 availableCategories={availableCategories}
-                                onSetDelete={(s) => setSubToDelete(s)}
+                                onSetArchive={(s) => setSubToArchive(s)}
                             />
                         </div>
                     )}
@@ -130,12 +109,12 @@ const HomeComp = () => {
             </AnimatePresence>
 
             <AnimatePresence>
-                {subToDelete && (
-                    <DeleteConfirmationModal
-                        subId={subToDelete.id}
-                        subName={subToDelete.name}
-                        onClose={() => setSubToDelete(null)}
-                        onSuccess={() => { setSubToDelete(null); refreshSubscriptions(); }}
+                {subToArchive && (
+                    <ArchiveConfirmationModal
+                        subId={subToArchive.id}
+                        subName={subToArchive.name}
+                        onClose={() => setSubToArchive(null)}
+                        onSuccess={() => { setSubToArchive(null); refreshSubscriptions(); }}
                     />
                 )}
             </AnimatePresence>

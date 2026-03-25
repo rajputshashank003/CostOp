@@ -12,4 +12,10 @@ export const historyApi = {
             method: "GET",
         });
     },
+    get_department_spends: async () => {
+        return utils.request({
+            url: `/history/department-spends`,
+            method: "GET",
+        });
+    }
 };

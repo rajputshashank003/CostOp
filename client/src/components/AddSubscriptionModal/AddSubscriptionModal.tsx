@@ -165,7 +165,12 @@ export default function AddSubscriptionModal({ onClose, onSuccess }: AddSubscrip
                 </div>
 
                 <div className="p-6 overflow-y-auto">
-                    <form id="add-sub-form" onSubmit={handleSubmit} className="space-y-5">
+                    <form
+                        id="add-sub-form"
+                        onSubmit={handleSubmit}
+                        onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+                        className="space-y-5"
+                    >
                         {/* Name & Cost */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>

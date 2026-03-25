@@ -139,3 +139,75 @@ func GetHistoricalSpends(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+// GetDepartmentSpendHistory aggregates all-time spend grouped by department (team_name) for history screen
+func GetDepartmentSpendHistory(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized user"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	teamID := user.DefaultTeamID
+
+	var subscriptions []models.Subscription
+	if err := database.DB.Where("team_id = ?", teamID).Find(&subscriptions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscriptions"})
+		return
+	}
+
+	type DepartmentSpend struct {
+		Department string  `json:"department"`
+		Spend      float64 `json:"spend"`
+	}
+
+	deptMap := make(map[string]float64)
+
+	// Since this is for historical data, we will just sum all costs assuming each was paid exactly once per cycle since its start date natively.
+	// But actually, for simplicity mirroring the dashboard, let's just aggregate the nominal *current* cost of all items ever created as their relative weight in the portfolio.
+	// Wait, the history metric might want absolute accumulated spend. But the user asked for "spend by team like Marketing... in current ongoing plan which we show on /home... and implement same for /history".
+	// For history, let's calculate the same amortized monthly cost of all historical (and active) subscriptions, to show historical ongoing run-rate by department, OR the accumulated cost.
+	// Let's do accumulated total cost for history to make it different, or amortized. Let's do amortized monthly run-rate for all active+archived logic to see where the money *was* going.
+	// Actually, just sum the active+archived amortized cost.
+
+	for _, sub := range subscriptions {
+		var monthlyEquiv float64
+		switch sub.BillingCycle {
+		case "Monthly":
+			monthlyEquiv = sub.Cost
+		case "Yearly":
+			monthlyEquiv = sub.Cost / 12.0
+		default:
+			monthlyEquiv = sub.Cost
+		}
+
+		dept := sub.TeamName
+		if dept == "" {
+			dept = "Unassigned"
+		}
+		deptMap[dept] += monthlyEquiv
+	}
+
+	var deptSpends []DepartmentSpend
+	for dept, spend := range deptMap {
+		deptSpends = append(deptSpends, DepartmentSpend{Department: dept, Spend: spend})
+	}
+
+	// Sort by spend descending
+	// todo: optimise this
+	for i := 0; i < len(deptSpends); i++ {
+		for j := i + 1; j < len(deptSpends); j++ {
+			if deptSpends[i].Spend < deptSpends[j].Spend {
+				deptSpends[i], deptSpends[j] = deptSpends[j], deptSpends[i]
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, deptSpends)
+}

@@ -8,6 +8,7 @@ export interface User {
     name: string;
     avatar_url: string;
     google_id: string;
+    is_admin: boolean;
 }
 
 interface AuthContextType {
@@ -15,7 +16,7 @@ interface AuthContextType {
     token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (token: string, user: User) => void;
+    login: (token: string, user: User, isAdmin: boolean) => void;
     logout: () => void;
 }
 
@@ -43,11 +44,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
     }, []);
 
-    const login = (newToken: string, newUser: User) => {
+    const login = (newToken: string, newUser: User, isAdmin: boolean) => {
+        const userWithRole = { ...newUser, is_admin: isAdmin };
         localStorage.setItem(LOCAL_STORAGE.TOKEN, newToken);
-        localStorage.setItem(LOCAL_STORAGE.USER, JSON.stringify(newUser));
+        localStorage.setItem(LOCAL_STORAGE.USER, JSON.stringify(userWithRole));
         setToken(newToken);
-        setUser(newUser);
+        setUser(userWithRole);
         navigate("/home");
     };
 

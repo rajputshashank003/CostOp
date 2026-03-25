@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import { Receipt, Plus } from "lucide-react";
+import { useUser } from "../../../hooks/useUser";
 
 interface Props {
     onAddClick: () => void;
 }
 
 export default function HomeEmptyState({ onAddClick }: Props) {
+    const { user } = useUser();
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -19,14 +22,16 @@ export default function HomeEmptyState({ onAddClick }: Props) {
             <p className="text-[14px] sm:text-[15px] text-slate-600 mb-8 leading-[1.6] px-4">
                 Gain visibility into your software spend immediately. Add your first tool to completely track upcoming costs and renewals.
             </p>
-            <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={onAddClick}
-                className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 transform duration-200 cursor-pointer"
-            >
-                <Plus size={22} />
-                Track First Subscription
-            </motion.button>
+            {user?.is_admin && (
+                <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onAddClick}
+                    className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 transform duration-200 cursor-pointer"
+                >
+                    <Plus size={22} />
+                    Track First Subscription
+                </motion.button>
+            )}
         </motion.div>
     );
 }

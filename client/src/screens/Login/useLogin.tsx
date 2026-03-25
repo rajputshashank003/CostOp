@@ -27,7 +27,7 @@ const useLogin = () => {
                 const data = await authApi.verify_google_token(credentialResponse.credential, inviteToken);
 
                 // Process Login successfully!
-                login(data.token, data.user);
+                login(data.token, data.user, data.is_admin ?? false);
 
                 // Wipe token after it has been safely deployed!
                 sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);

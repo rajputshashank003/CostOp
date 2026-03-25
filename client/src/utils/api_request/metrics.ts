@@ -1,9 +1,16 @@
 import utils from './utils';
 
 export const metricsApi = {
-    get_summary: () => {
+    get_summary: (params?: { search?: string; category?: string; cycle?: string; start?: string; end?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.search) query.set("search", params.search);
+        if (params?.category && params.category !== "All Categories") query.set("category", params.category);
+        if (params?.cycle && params.cycle !== "All Cycles") query.set("cycle", params.cycle);
+        if (params?.start) query.set("start", params.start);
+        if (params?.end) query.set("end", params.end);
+        const qs = query.toString();
         return utils.request({
-            url: `/metrics`,
+            url: `/metrics${qs ? `?${qs}` : ""}`,
             method: 'GET'
         });
     }

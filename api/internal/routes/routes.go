@@ -35,6 +35,7 @@ func SetupRoutes(r *gin.Engine) {
 			subscriptions.GET("", controllers.GetSubscriptions)
 			subscriptions.POST("", controllers.AddSubscription)
 			subscriptions.DELETE("/:id", controllers.DeleteSubscription)
+			subscriptions.PATCH("/:id/archive", controllers.ArchiveSubscription)
 		}
 
 		members := api.Group("/members")
@@ -56,6 +57,7 @@ func SetupRoutes(r *gin.Engine) {
 		history.Use(middleware.RequireAuth())
 		{
 			history.GET("/spends", controllers.GetHistoricalSpends)
+			history.GET("/department-spends", controllers.GetDepartmentSpendHistory)
 		}
 	}
 }

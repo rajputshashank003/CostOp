@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "../../hooks/useUser";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 import { categoriesApi } from "../../utils/api_request/categories";
@@ -7,11 +7,19 @@ import map from "lodash/map";
 const useHistory = () => {
     const { isLoading: isAuthLoading } = useUser();
     const [archived, setArchived] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+
+    // isInitialLoading gates the full-page skeleton (first load only)
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    // isRefetching is a lightweight flag for subsequent filter/search refetches
+    const [isRefetching, setIsRefetching] = useState(false);
+
+    const hasFetchedOnce = useRef(false);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [filterCategory, setFilterCategory] = useState("All Categories");
     const [filterCycle, setFilterCycle] = useState("All Cycles");
+    const [dateStart, setDateStart] = useState("");
+    const [dateEnd, setDateEnd] = useState("");
     const [localSearch, setLocalSearch] = useState("");
     const [availableCategories, setAvailableCategories] = useState<any[]>([{ value: "All Categories", label: "All Categories" }]);
 
@@ -22,6 +30,7 @@ const useHistory = () => {
         }).catch(console.error);
     }, []);
 
+    // Debounce local search input → searchQuery
     useEffect(() => {
         const handler = setTimeout(() => {
             setSearchQuery(localSearch);
@@ -31,21 +40,31 @@ const useHistory = () => {
 
     const fetchArchived = useCallback(async () => {
         if (isAuthLoading) return;
-        setIsLoading(true);
+
+        if (!hasFetchedOnce.current) {
+            setIsInitialLoading(true);
+        } else {
+            setIsRefetching(true);
+        }
+
         try {
             const data = await subscriptionsApi.get_all({
                 status: "archived",
                 search: searchQuery,
                 category: filterCategory,
-                cycle: filterCycle
+                cycle: filterCycle,
+                ...(dateStart ? { start: dateStart + "-01" } : {}),
+                ...(dateEnd ? { end: dateEnd + "-01" } : {}),
             });
-            setArchived(data || []);
+            setArchived(Array.isArray(data) ? data : []);
         } catch (err) {
             setArchived([]);
         } finally {
-            setIsLoading(false);
+            hasFetchedOnce.current = true;
+            setIsInitialLoading(false);
+            setIsRefetching(false);
         }
-    }, [isAuthLoading, searchQuery, filterCategory, filterCycle]);
+    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, dateStart, dateEnd]);
 
     useEffect(() => {
         fetchArchived();
@@ -53,10 +72,13 @@ const useHistory = () => {
 
     return {
         archived,
-        isLoading,
+        isLoading: isInitialLoading,
+        isRefetching,
         searchQuery, setSearchQuery,
         filterCategory, setFilterCategory,
         filterCycle, setFilterCycle,
+        dateStart, setDateStart,
+        dateEnd, setDateEnd,
         localSearch, setLocalSearch,
         availableCategories,
         refreshArchived: fetchArchived

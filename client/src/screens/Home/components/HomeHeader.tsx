@@ -18,16 +18,18 @@ export default function HomeHeader({ onAddClick }: Props) {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
-                <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    whileHover={{ scale: 1.02 }}
-                    onClick={onAddClick}
-                    className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold shadow-sm text-sm cursor-pointer"
-                >
-                    <motion.div whileHover={{ rotate: 90 }} transition={{ duration: 0.2 }}><Plus size={18} /></motion.div>
-                    <span className="hidden sm:inline">Add Subscription</span>
-                    <span className="sm:hidden">Add</span>
-                </motion.button>
+                {user?.is_admin && (
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.02 }}
+                        onClick={onAddClick}
+                        className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold shadow-sm text-sm cursor-pointer"
+                    >
+                        <motion.div whileHover={{ rotate: 90 }} transition={{ duration: 0.2 }}><Plus size={18} /></motion.div>
+                        <span className="hidden sm:inline">Add Subscription</span>
+                        <span className="sm:hidden">Add</span>
+                    </motion.button>
+                )}
 
                 {user && (
                     <div className="flex items-center gap-3 ml-2 sm:ml-4 pl-2 sm:pl-4 border-l border-slate-200">

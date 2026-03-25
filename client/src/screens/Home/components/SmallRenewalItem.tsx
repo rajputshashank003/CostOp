@@ -1,7 +1,7 @@
 import { useState } from "react";
 import head from "lodash/head";
 import toUpper from "lodash/toUpper";
-import { getLogoUrl } from "../../../utils/logoService";
+import { getLogoUrl } from "../../../services/logoService";
 
 interface SmallRenewalItemProps {
     r: any;

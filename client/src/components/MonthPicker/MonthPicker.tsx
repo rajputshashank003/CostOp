@@ -54,10 +54,10 @@ export default function MonthPicker({ value, onChange, placeholder = "Select Mon
     };
 
     return (
-        <div className="relative" ref={ref}>
+        <div className="relative w-full" ref={ref}>
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className={`bg-white border text-slate-700 text-[12px] font-bold rounded-lg px-2.5 py-1.5 outline-none transition-all cursor-pointer w-[120px] sm:w-[130px] shadow-sm flex items-center justify-between group
+                className={`bg-white border max-w-[100%] text-slate-700 text-[12px] font-bold rounded-lg px-2.5 py-1.5 outline-none transition-all cursor-pointer w-[120px] sm:w-[130px] shadow-sm flex items-center justify-between group
                 ${isOpen ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200 hover:border-emerald-300'}`}
             >
                 <span className="truncate flex-1 text-left">{getDisplayValue()}</span>
@@ -75,11 +75,11 @@ export default function MonthPicker({ value, onChange, placeholder = "Select Mon
                     >
                         {/* Year Selector */}
                         <div className="flex items-center justify-between mb-3 bg-slate-50/80 rounded-lg p-1 border border-slate-100 shadow-inner">
-                            <button onClick={() => setViewYear(y => y - 1)} className="p-1 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
+                            <button type="button" onClick={() => setViewYear(y => y - 1)} className="p-1 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
                                 <ChevronLeft size={16} />
                             </button>
                             <span className="font-extrabold text-[13px] text-slate-700 tracking-wide">{viewYear}</span>
-                            <button onClick={() => setViewYear(y => y + 1)} className="p-1 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
+                            <button type="button" onClick={() => setViewYear(y => y + 1)} className="p-1 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
                                 <ChevronRight size={16} />
                             </button>
                         </div>
@@ -113,8 +113,8 @@ export default function MonthPicker({ value, onChange, placeholder = "Select Mon
                         </div>
 
                         <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center px-1">
-                            <button onClick={() => { onChange(""); setIsOpen(false); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-rose-500 transition-colors tracking-wider">Reset</button>
-                            <button onClick={() => {
+                            <button type="button" onClick={() => { onChange(""); setIsOpen(false); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-rose-500 transition-colors tracking-wider">Reset</button>
+                            <button type="button" onClick={() => {
                                 const now = new Date();
                                 onChange(`${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`);
                                 setIsOpen(false);

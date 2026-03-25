@@ -126,8 +126,16 @@ func VerifyGoogleToken(c *gin.Context) {
 		return
 	}
 
+	// Determine admin status from TeamMember role
+	var member models.TeamMember
+	isAdmin := false
+	if err := database.DB.Where("team_id = ? AND user_id = ?", user.DefaultTeamID, user.ID).First(&member).Error; err == nil {
+		isAdmin = member.Role == "owner"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": tokenString,
-		"user":  user,
+		"token":    tokenString,
+		"user":     user,
+		"is_admin": isAdmin,
 	})
 }

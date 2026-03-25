@@ -124,11 +124,11 @@ export default function DatePicker({ value, onChange, placeholder = "Select Date
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between mb-3 bg-slate-50/80 rounded-lg p-1 border border-slate-100 shadow-inner">
-                            <button onClick={(e) => { e.stopPropagation(); handlePrevMonth(); }} className="p-1.5 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handlePrevMonth(); }} className="p-1.5 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
                                 <ChevronLeft size={16} />
                             </button>
                             <span className="font-extrabold text-[13px] text-slate-700 tracking-wide">{MONTHS[viewMonth]} {viewYear}</span>
-                            <button onClick={(e) => { e.stopPropagation(); handleNextMonth(); }} className="p-1.5 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handleNextMonth(); }} className="p-1.5 hover:bg-white rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:shadow-sm">
                                 <ChevronRight size={16} />
                             </button>
                         </div>
@@ -156,6 +156,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select Date
 
                                 return (
                                     <button
+                                        type="button"
                                         key={d}
                                         onClick={(e) => { e.stopPropagation(); handleDayClick(d); }}
                                         className={`h-8 text-[12px] font-bold rounded-lg transition-all flex items-center justify-center
@@ -174,8 +175,8 @@ export default function DatePicker({ value, onChange, placeholder = "Select Date
                         </div>
 
                         <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center px-1">
-                            <button onClick={() => { onChange(""); setIsOpen(false); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-rose-500 transition-colors tracking-wider">Clear</button>
-                            <button onClick={() => {
+                            <button type="button" onClick={() => { onChange(""); setIsOpen(false); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-rose-500 transition-colors tracking-wider">Clear</button>
+                            <button type="button" onClick={() => {
                                 const now = new Date();
                                 const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
                                 onChange(todayStr);
