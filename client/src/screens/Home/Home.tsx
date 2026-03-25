@@ -5,7 +5,7 @@ import HomeContext from "./context";
 import { AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
 import { useUser } from "../../hooks/useUser";
-import AddSubscriptionModal from "../../components/AddSubscriptionModal/AddSubscriptionModal";
+import { useNavigate } from "react-router-dom";
 import ArchiveConfirmationModal from "../../components/ArchiveConfirmationModal/ArchiveConfirmationModal";
 import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/UpcomingRenewalsModal";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -25,7 +25,7 @@ const HomeComp = () => {
         historicalSpendTotal, isLoadingHistorical
     } = useContext(HomeContext);
     const { user, logout, isLoading: isAuthLoading } = useUser();
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const navigate = useNavigate();
     const [subToArchive, setSubToArchive] = useState<any>(null);
     const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
 
@@ -54,7 +54,6 @@ const HomeComp = () => {
     });
 
     const handleAddSuccess = () => {
-        setIsAddModalOpen(false);
         refreshSubscriptions();
     };
 
@@ -67,11 +66,11 @@ const HomeComp = () => {
             <Sidebar />
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                <HomeHeader onAddClick={() => setIsAddModalOpen(true)} />
+                <HomeHeader onAddClick={() => navigate('/add-subscription')} />
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
                     {metrics?.active_subscriptions === 0 && !searchQuery && filterCategory === "All Categories" && filterCycle === "All Cycles" ? (
-                        <HomeEmptyState onAddClick={() => setIsAddModalOpen(true)} />
+                        <HomeEmptyState onAddClick={() => navigate('/add-subscription')} />
                     ) : (
                         <div className="flex flex-col gap-6 sm:gap-8 pb-12">
                             <DashboardMetrics
@@ -99,34 +98,26 @@ const HomeComp = () => {
             </main>
 
             {/* Modal Overlay Component */}
-            <AnimatePresence>
-                {isAddModalOpen && (
-                    <AddSubscriptionModal
-                        onClose={() => setIsAddModalOpen(false)}
-                        onSuccess={handleAddSuccess}
-                    />
-                )}
-            </AnimatePresence>
 
-            <AnimatePresence>
-                {subToArchive && (
-                    <ArchiveConfirmationModal
-                        subId={subToArchive.id}
-                        subName={subToArchive.name}
-                        onClose={() => setSubToArchive(null)}
-                        onSuccess={() => { setSubToArchive(null); refreshSubscriptions(); }}
-                    />
-                )}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {subToArchive && (
+                        <ArchiveConfirmationModal
+                            subId={subToArchive.id}
+                            subName={subToArchive.name}
+                            onClose={() => setSubToArchive(null)}
+                            onSuccess={() => { setSubToArchive(null); refreshSubscriptions(); }}
+                        />
+                    )}
+                </AnimatePresence>
 
-            <AnimatePresence>
-                {isRenewalsModalOpen && metrics?.upcoming_renewals && (
-                    <UpcomingRenewalsModal
-                        renewals={metrics.upcoming_renewals}
-                        onClose={() => setIsRenewalsModalOpen(false)}
-                    />
-                )}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {isRenewalsModalOpen && metrics?.upcoming_renewals && (
+                        <UpcomingRenewalsModal
+                            renewals={metrics.upcoming_renewals}
+                            onClose={() => setIsRenewalsModalOpen(false)}
+                        />
+                    )}
+                </AnimatePresence>
         </div>
     );
 };

@@ -1,12 +1,13 @@
-import { Search, SlidersHorizontal, X, CalendarRange } from "lucide-react";
+import { Search, SlidersHorizontal, X, CalendarRange, Users } from "lucide-react";
 import map from "lodash/map";
 import size from "lodash/size";
 import { AnimatePresence, motion } from "framer-motion";
 import SubscriptionCard from "./SubscriptionCard";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import HomeContext from "../context";
+import { teamsApi } from "../../../utils/api_request/teams";
 
 interface Props {
     localSearch: string;
@@ -18,15 +19,26 @@ interface Props {
 export default function ActiveSubscriptions({ localSearch, setLocalSearch, availableCategories, onSetArchive }: Props) {
     const {
         subscriptions, filterCategory, setFilterCategory, filterCycle, setFilterCycle,
-        dateStart, setDateStart, dateEnd, setDateEnd
+        dateStart, setDateStart, dateEnd, setDateEnd,
+        filterTeam, setFilterTeam
     } = useContext(HomeContext);
 
-    const hasActiveFilters = localSearch || filterCategory !== "All Categories" || filterCycle !== "All Cycles" || dateStart || dateEnd;
+    const [availableTeams, setAvailableTeams] = useState<any[]>([{ value: "all", label: "All Teams" }]);
+
+    useEffect(() => {
+        teamsApi.get_all().then((res: any) => {
+            const mapped = map((res || []), (t: any) => ({ value: String(t.id), label: t.name }));
+            setAvailableTeams([{ value: "all", label: "All Teams" }, ...mapped]);
+        }).catch(console.error);
+    }, []);
+
+    const hasActiveFilters = localSearch || filterCategory !== "All Categories" || filterCycle !== "All Cycles" || dateStart || dateEnd || (filterTeam && filterTeam !== "all");
 
     const clearFilters = () => {
         setLocalSearch("");
         setFilterCategory("All Categories");
         setFilterCycle("All Cycles");
+        setFilterTeam("all");
         setDateStart("");
         setDateEnd("");
     };
@@ -39,7 +51,7 @@ export default function ActiveSubscriptions({ localSearch, setLocalSearch, avail
                     <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{size(subscriptions)}</span>
                 </h3>
 
-                {/* Search, Category, Cycle filters */}
+                {/* Search, Category, Cycle, Team filters */}
                 <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
                     <div className="relative w-full sm:w-[200px]">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -66,6 +78,12 @@ export default function ActiveSubscriptions({ localSearch, setLocalSearch, avail
                                 { value: "Monthly", label: "Monthly" },
                                 { value: "Yearly", label: "Yearly" }
                             ]}
+                            align="right"
+                        />
+                        <TimeframeDropdown
+                            value={filterTeam || "all"}
+                            onChange={(v) => setFilterTeam(v as string)}
+                            options={availableTeams}
                             align="right"
                         />
                     </div>
@@ -138,7 +156,7 @@ export default function ActiveSubscriptions({ localSearch, setLocalSearch, avail
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                     <AnimatePresence>
                         {map(subscriptions, (sub: any) => (
-                            <SubscriptionCard key={sub.id} sub={sub} onArchiveClick={() => onSetArchive(sub)} />
+                            <SubscriptionCard key={sub.id} sub={sub} onArchiveClick={() => onSetArchive(sub)} clickable />
                         ))}
                     </AnimatePresence>
                 </div>

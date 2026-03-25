@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { historyApi } from "../../../utils/api_request/history";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
+import HistoryContext from "../context";
 import map from "lodash/map";
 import maxBy from "lodash/maxBy";
 
@@ -13,6 +14,7 @@ interface SpendData {
 }
 
 export default function SpendsChart() {
+    const { filterTeam, historyMode } = React.useContext(HistoryContext);
     const [data, setData] = useState<SpendData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [months, setMonths] = useState<number | "custom">(6);
@@ -23,13 +25,13 @@ export default function SpendsChart() {
         if (months === "custom" && !customStart && !customEnd) return;
 
         setIsLoading(true);
-        historyApi.get_spends(months, customStart, customEnd)
+        historyApi.get_spends(months, customStart, customEnd, filterTeam === "all" ? undefined : filterTeam, historyMode === "all" ? undefined : "archived")
             .then((res: any) => {
                 setData(res || []);
             })
             .catch((err: any) => console.error(err))
             .finally(() => setIsLoading(false));
-    }, [months, customStart, customEnd]);
+    }, [months, customStart, customEnd, filterTeam, historyMode]);
 
     const maxSpend = maxBy(data, 'spend')?.spend || 1; // avoid div by 0
 

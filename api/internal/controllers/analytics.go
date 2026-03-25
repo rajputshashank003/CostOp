@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type MonthlySpend struct {
@@ -29,10 +30,33 @@ func GetHistoricalSpends(c *gin.Context) {
 		return
 	}
 
-	teamID := user.DefaultTeamID
+	var teamFilter uint = user.DefaultTeamID
+	isAllTeams := false
+	if tid := c.Query("team_id"); tid != "" {
+		if tid == "all" {
+			isAllTeams = true
+		} else if parsed, err := strconv.Atoi(tid); err == nil {
+			teamFilter = uint(parsed)
+		}
+	}
+
+	statusFilter := c.Query("status")
+	statusCondition := "status IN (?)"
+	statusArgs := []string{"active", "archived"}
+	if statusFilter == "archived" {
+		statusCondition = "status = ?"
+		statusArgs = []string{"archived"}
+	}
+
+	var query *gorm.DB
+	if isAllTeams {
+		query = database.DB.Where("(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND "+statusCondition, user.ID, user.ID, user.ID, statusArgs)
+	} else {
+		query = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND "+statusCondition, teamFilter, user.ID, user.ID, statusArgs)
+	}
 
 	var subscriptions []models.Subscription
-	if err := database.DB.Where("team_id = ?", teamID).Find(&subscriptions).Error; err != nil {
+	if err := query.Find(&subscriptions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscriptions"})
 		return
 	}
@@ -154,10 +178,33 @@ func GetDepartmentSpendHistory(c *gin.Context) {
 		return
 	}
 
-	teamID := user.DefaultTeamID
+	var teamFilter uint = user.DefaultTeamID
+	isAllTeams := false
+	if tid := c.Query("team_id"); tid != "" {
+		if tid == "all" {
+			isAllTeams = true
+		} else if parsed, err := strconv.Atoi(tid); err == nil {
+			teamFilter = uint(parsed)
+		}
+	}
+
+	statusFilter := c.Query("status")
+	statusCondition := "status IN (?)"
+	statusArgs := []string{"active", "archived"}
+	if statusFilter == "archived" {
+		statusCondition = "status = ?"
+		statusArgs = []string{"archived"}
+	}
+
+	var query *gorm.DB
+	if isAllTeams {
+		query = database.DB.Where("(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND "+statusCondition, user.ID, user.ID, user.ID, statusArgs)
+	} else {
+		query = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND "+statusCondition, teamFilter, user.ID, user.ID, statusArgs)
+	}
 
 	var subscriptions []models.Subscription
-	if err := database.DB.Where("team_id = ?", teamID).Find(&subscriptions).Error; err != nil {
+	if err := query.Find(&subscriptions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscriptions"})
 		return
 	}
@@ -187,9 +234,9 @@ func GetDepartmentSpendHistory(c *gin.Context) {
 			monthlyEquiv = sub.Cost
 		}
 
-		dept := sub.TeamName
+		dept := sub.Category
 		if dept == "" {
-			dept = "Unassigned"
+			dept = "Uncategorized"
 		}
 		deptMap[dept] += monthlyEquiv
 	}

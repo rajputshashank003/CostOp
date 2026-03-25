@@ -5,9 +5,11 @@ import (
 	"costop/internal/models"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type DepartmentSpend struct {
@@ -36,7 +38,23 @@ func GetMetrics(c *gin.Context) {
 	category := c.Query("category")
 	cycle := c.Query("cycle")
 
-	subsQuery := database.DB.Where("team_id = ? AND status = ?", user.DefaultTeamID, "active")
+	var teamFilter uint = user.DefaultTeamID
+	isAllTeams := false
+	if tid := c.Query("team_id"); tid != "" {
+		if tid == "all" {
+			isAllTeams = true
+		} else if parsed, err := strconv.Atoi(tid); err == nil {
+			teamFilter = uint(parsed)
+		}
+	}
+
+	var subsQuery *gorm.DB
+	if isAllTeams {
+		subsQuery = database.DB.Where("(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR scope = 'organization' OR (scope = 'individual' AND user_id = ?)) AND status = ?", user.ID, user.ID, "active")
+	} else {
+		subsQuery = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?)) AND status = ?", teamFilter, user.ID, "active")
+	}
+
 	if search != "" {
 		subsQuery = subsQuery.Where("name ILIKE ?", "%"+search+"%")
 	}
@@ -79,9 +97,9 @@ func GetMetrics(c *gin.Context) {
 
 		totalMonthlySpend += monthlyEquiv
 
-		dept := sub.TeamName
+		dept := sub.Category
 		if dept == "" {
-			dept = "Unassigned"
+			dept = "Uncategorized"
 		}
 		deptMap[dept] += monthlyEquiv
 	}
@@ -100,7 +118,7 @@ func GetMetrics(c *gin.Context) {
 	thirtyDaysFromNow := now.AddDate(0, 0, 31)
 
 	renewalQuery := database.DB.Where(
-		"team_id = ? AND status = ? AND is_auto_pay = ? AND next_billing_date BETWEEN ? AND ?",
+		"(team_id = ? OR scope = 'organization') AND status = ? AND is_auto_pay = ? AND next_billing_date BETWEEN ? AND ?",
 		user.DefaultTeamID, "active", true, now.AddDate(0, 0, -1), thirtyDaysFromNow,
 	).Order("next_billing_date ASC")
 

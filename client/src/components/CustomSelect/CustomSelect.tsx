@@ -7,10 +7,12 @@ interface CustomSelectProps {
     value: string;
     onChange: (v: string) => void;
     icon?: any;
+    /** Optional: override how the value / option text is displayed */
+    renderLabel?: (val: string) => string;
 }
 
 export default function CustomSelect({
-    options, value, onChange, icon: Icon
+    options, value, onChange, icon: Icon, renderLabel
 }: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -23,6 +25,8 @@ export default function CustomSelect({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const label = (v: string) => renderLabel ? renderLabel(v) : v;
+
     return (
         <div className="relative" ref={ref}>
             {Icon && (
@@ -34,7 +38,7 @@ export default function CustomSelect({
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2.5 rounded-xl border outline-none transition-all flex items-center justify-between cursor-pointer text-sm bg-white ${isOpen ? 'border-emerald-500 ring-4 ring-emerald-500/10' : 'border-slate-200 hover:border-slate-300'}`}
             >
-                <span className="text-slate-700">{value}</span>
+                <span className="text-slate-700">{label(value)}</span>
                 <ChevronDown size={16} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </div>
 
@@ -46,7 +50,7 @@ export default function CustomSelect({
                             onClick={() => { onChange(opt); setIsOpen(false); }}
                             className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center ${value === opt ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
                         >
-                            {opt}
+                            {label(opt)}
                         </div>
                     ))}
                 </div>

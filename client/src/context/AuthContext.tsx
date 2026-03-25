@@ -8,6 +8,7 @@ export interface User {
     name: string;
     avatar_url: string;
     google_id: string;
+    default_team_id: number;
     is_admin: boolean;
 }
 

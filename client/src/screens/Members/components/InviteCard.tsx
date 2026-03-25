@@ -1,16 +1,20 @@
 import { useContext } from "react";
-import { UserPlus, Mail } from "lucide-react";
+import { UserPlus, Mail, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import MembersContext from "../context";
 
 export default function InviteCard() {
     const {
+        teams, selectedTeamId,
         inviteEmail, setInviteEmail,
+        inviteDesignation, setInviteDesignation,
         isInviting,
         generatedLink,
-        handleInvite
+        handleInvite,
     } = useContext(MembersContext);
+
+    const selectedTeamName = teams.find((t: any) => t.id === selectedTeamId)?.name || "Your Team";
 
     return (
         <motion.div
@@ -25,7 +29,9 @@ export default function InviteCard() {
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-slate-900">Invite Coworkers</h2>
-                    <p className="text-[13px] text-slate-500 font-medium">Add members to track SaaS tools together.</p>
+                    <p className="text-[13px] text-slate-500 font-medium">
+                        Inviting to <span className="font-bold text-slate-700">{selectedTeamName}</span>
+                    </p>
                 </div>
             </div>
 
@@ -39,6 +45,19 @@ export default function InviteCard() {
                         placeholder="colleague@company.com"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
+                        required
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-slate-700"
+                    />
+                </div>
+                <div className="relative flex-1 sm:max-w-[200px]">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <Tag size={16} />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Role (e.g. Frontend)"
+                        value={inviteDesignation}
+                        onChange={(e) => setInviteDesignation(e.target.value)}
                         required
                         className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-slate-700"
                     />

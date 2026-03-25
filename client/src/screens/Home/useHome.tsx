@@ -49,6 +49,7 @@ const useHome = () => {
     const [searchQuery, setSearchQuery] = useState(() => readParam("q", ""));
     const [filterCategory, setFilterCategory] = useState(() => readParam("category", "All Categories"));
     const [filterCycle, setFilterCycle] = useState(() => readParam("cycle", "All Cycles"));
+    const [filterTeam, setFilterTeam] = useState(() => readParam("team", "all"));
 
     // Date range / spend widget (lifted here so it drives subscriptions fetch)
     const [spendTimeframe, setSpendTimeframe] = useState<number | "current" | "custom">(() => {
@@ -96,6 +97,7 @@ const useHome = () => {
                 search: searchQuery,
                 category: filterCategory,
                 cycle: filterCycle,
+                team_id: filterTeam,
                 ...(dateStart ? { start: dateStart + "-01" } : {}),
                 ...(dateEnd ? { end: dateEnd + "-01" } : {}),
             });
@@ -105,7 +107,7 @@ const useHome = () => {
         } finally {
             setIsLoadingSubs(false);
         }
-    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, dateStart, dateEnd]);
+    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
 
     const fetchMetrics = useCallback(async () => {
         if (isAuthLoading) return;
@@ -115,6 +117,7 @@ const useHome = () => {
                 search: searchQuery,
                 category: filterCategory,
                 cycle: filterCycle,
+                team_id: filterTeam,
                 ...(dateStart ? { start: dateStart + "-01" } : {}),
                 ...(dateEnd ? { end: dateEnd + "-01" } : {}),
             });
@@ -146,6 +149,7 @@ const useHome = () => {
         dateEnd, setDateEnd,
         historicalSpendTotal,
         isLoadingHistorical,
+        filterTeam, setFilterTeam,
         refreshSubscriptions: () => { fetchSubscriptions(); fetchMetrics(); }
     };
 };

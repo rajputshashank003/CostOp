@@ -1,9 +1,11 @@
 import { Search, X, CalendarRange } from "lucide-react";
 import size from "lodash/size";
-import { useContext } from "react";
+import map from "lodash/map";
+import { useContext, useEffect, useState } from "react";
 import HistoryContext from "../context";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
+import { teamsApi } from "../../../utils/api_request/teams";
 
 export default function HistoryToolbar() {
     const {
@@ -12,9 +14,19 @@ export default function HistoryToolbar() {
         filterCategory, setFilterCategory,
         availableCategories,
         filterCycle, setFilterCycle,
+        filterTeam, setFilterTeam,
         dateStart, setDateStart,
         dateEnd, setDateEnd
     } = useContext(HistoryContext);
+
+    const [availableTeams, setAvailableTeams] = useState<any[]>([{ value: "all", label: "All Teams" }]);
+
+    useEffect(() => {
+        teamsApi.get_all().then((res: any) => {
+            const mapped = map((res || []), (t: any) => ({ value: String(t.id), label: t.name }));
+            setAvailableTeams([{ value: "all", label: "All Teams" }, ...mapped]);
+        }).catch(console.error);
+    }, []);
 
     const hasDateFilter = dateStart || dateEnd;
 
@@ -54,6 +66,11 @@ export default function HistoryToolbar() {
                                 { value: "Monthly", label: "Monthly" },
                                 { value: "Yearly", label: "Yearly" }
                             ]}
+                        />
+                        <TimeframeDropdown
+                            value={filterTeam || "all"}
+                            onChange={(v) => setFilterTeam(v as string)}
+                            options={availableTeams}
                         />
                     </div>
                 </div>

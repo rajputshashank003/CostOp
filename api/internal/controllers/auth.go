@@ -73,7 +73,7 @@ func VerifyGoogleToken(c *gin.Context) {
 		}
 
 		if hasInvite {
-			database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member"})
+			database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			database.DB.Model(&invite).Update("status", "accepted")
 		} else {
 			// Phase 5: Auto-provision a completely isolated Default Team space for organic signups!
@@ -100,7 +100,7 @@ func VerifyGoogleToken(c *gin.Context) {
 			var exists int64
 			database.DB.Model(&models.TeamMember{}).Where("team_id = ? AND user_id = ?", invite.TeamID, user.ID).Count(&exists)
 			if exists == 0 {
-				database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member"})
+				database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			}
 			database.DB.Model(&invite).Update("status", "accepted")
 		}

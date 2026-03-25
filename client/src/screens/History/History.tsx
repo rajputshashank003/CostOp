@@ -13,12 +13,24 @@ import HistoryHeader from "./components/HistoryHeader";
 import HistoryToolbar from "./components/HistoryToolbar";
 import { useContext, useState } from "react";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal/DeleteConfirmationModal";
+import toast from "react-hot-toast";
+import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 
 const HistoryComp = () => {
     const { user, isLoading: isAuthLoading } = useUser();
     const { archived, isLoading, isRefetching, refreshArchived } = useContext(HistoryContext);
     const [subToDelete, setSubToDelete] = useState<any>(null);
     const isAdmin = user?.is_admin ?? false;
+
+    const handleRestore = async (sub: any) => {
+        try {
+            await subscriptionsApi.restore(sub.id);
+            toast.success(`${sub.name} restored successfully`);
+            refreshArchived();
+        } catch (err: any) {
+            toast.error(err?.error || "Failed to restore subscription");
+        }
+    };
 
     // Only show full-page skeleton on very first load; filter/search changes are silent
     if (isLoading || isAuthLoading) {
@@ -52,13 +64,18 @@ const HistoryComp = () => {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                                 <AnimatePresence>
-                                    {map(archived, (sub: any) => (
-                                        <SubscriptionCard
-                                            key={sub.id}
-                                            sub={sub}
-                                            onDeleteClick={isAdmin ? () => setSubToDelete(sub) : undefined}
-                                        />
-                                    ))}
+                                    {map(archived, (sub: any) => {
+                                        const canRestore = sub.next_billing_date ? new Date(sub.next_billing_date) > new Date() : false;
+                                        return (
+                                            <SubscriptionCard
+                                                key={sub.id}
+                                                sub={sub}
+                                                onDeleteClick={isAdmin ? () => setSubToDelete(sub) : undefined}
+                                                onRestoreClick={isAdmin ? () => handleRestore(sub) : undefined}
+                                                canRestore={canRestore}
+                                            />
+                                        );
+                                    })}
                                 </AnimatePresence>
                             </div>
                         )}

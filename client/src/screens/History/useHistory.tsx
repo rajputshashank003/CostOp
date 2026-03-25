@@ -8,6 +8,8 @@ const useHistory = () => {
     const { isLoading: isAuthLoading } = useUser();
     const [archived, setArchived] = useState<any[]>([]);
 
+    const [historyMode, setHistoryMode] = useState<"all" | "archived">("all");
+
     // isInitialLoading gates the full-page skeleton (first load only)
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     // isRefetching is a lightweight flag for subsequent filter/search refetches
@@ -21,6 +23,7 @@ const useHistory = () => {
     const [dateStart, setDateStart] = useState("");
     const [dateEnd, setDateEnd] = useState("");
     const [localSearch, setLocalSearch] = useState("");
+    const [filterTeam, setFilterTeam] = useState("all");
     const [availableCategories, setAvailableCategories] = useState<any[]>([{ value: "All Categories", label: "All Categories" }]);
 
     useEffect(() => {
@@ -53,6 +56,7 @@ const useHistory = () => {
                 search: searchQuery,
                 category: filterCategory,
                 cycle: filterCycle,
+                team_id: filterTeam,
                 ...(dateStart ? { start: dateStart + "-01" } : {}),
                 ...(dateEnd ? { end: dateEnd + "-01" } : {}),
             });
@@ -64,7 +68,7 @@ const useHistory = () => {
             setIsInitialLoading(false);
             setIsRefetching(false);
         }
-    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, dateStart, dateEnd]);
+    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
 
     useEffect(() => {
         fetchArchived();
@@ -74,12 +78,14 @@ const useHistory = () => {
         archived,
         isLoading: isInitialLoading,
         isRefetching,
+        historyMode, setHistoryMode,
         searchQuery, setSearchQuery,
         filterCategory, setFilterCategory,
         filterCycle, setFilterCycle,
         dateStart, setDateStart,
         dateEnd, setDateEnd,
         localSearch, setLocalSearch,
+        filterTeam, setFilterTeam,
         availableCategories,
         refreshArchived: fetchArchived
     };

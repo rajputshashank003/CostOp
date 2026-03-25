@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Generate a secure random string for tokens
+// generateToken produces a secure hex token of the given byte length.
 func generateToken(length int) (string, error) {
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
@@ -23,7 +23,135 @@ func generateToken(length int) (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// GetTeamMembers fetches all active members and pending invites for the user's active workspace
+// GetMyTeams returns all teams the authenticated user belongs to, with their role in each.
+// GET /api/teams
+func GetMyTeams(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	var memberships []models.TeamMember
+	if err := database.DB.Where("user_id = ?", userID).Find(&memberships).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team memberships"})
+		return
+	}
+
+	type TeamWithRole struct {
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
+		Role string `json:"role"`
+	}
+
+	result := make([]TeamWithRole, 0, len(memberships))
+	for _, m := range memberships {
+		var team models.Team
+		if database.DB.First(&team, m.TeamID).Error == nil {
+			result = append(result, TeamWithRole{
+				ID:   team.ID,
+				Name: team.Name,
+				Role: m.Role,
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetMembersByTeam returns all active members and pending invites for a specific team.
+// The caller must be a member of the team.
+// GET /api/teams/:id/members
+func GetMembersByTeam(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	teamIDParam := c.Param("id")
+
+	var targetTeam models.Team
+	if err := database.DB.First(&targetTeam, teamIDParam).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
+	}
+
+	// Verify caller is a member of this team
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", targetTeam.ID, userID).First(&callerMembership).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not a member of this team"})
+		return
+	}
+
+	// Fetch all active members with user details
+	var members []models.TeamMember
+	database.DB.Where("team_id = ?", targetTeam.ID).Find(&members)
+
+	type MemberResponse struct {
+		Role string      `json:"role"`
+		User models.User `json:"user"`
+	}
+	enrichedMembers := make([]MemberResponse, 0, len(members))
+	for _, m := range members {
+		var u models.User
+		if database.DB.First(&u, m.UserID).Error == nil {
+			enrichedMembers = append(enrichedMembers, MemberResponse{Role: m.Role, User: u})
+		}
+	}
+
+	// Fetch pending invites
+	var invites []models.TeamInvite
+	database.DB.Where("team_id = ? AND status = ?", targetTeam.ID, "pending").Find(&invites)
+
+	c.JSON(http.StatusOK, gin.H{
+		"team":    targetTeam,
+		"members": enrichedMembers,
+		"invites": invites,
+	})
+}
+
+// UpdateMemberTeam moves a member to a different team. Caller must be an owner.
+// PATCH /api/teams/:id/members/:uid  { "new_team_id": uint }
+func UpdateMemberTeam(c *gin.Context) {
+	callerID := c.MustGet("userID").(uint)
+	teamIDParam := c.Param("id")
+	targetUID := c.Param("uid")
+
+	var input struct {
+		NewTeamID uint `json:"new_team_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "new_team_id is required"})
+		return
+	}
+
+	// Caller must be owner of the source team
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", teamIDParam, callerID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only team owners can reassign members"})
+		return
+	}
+
+	// Verify the target team exists
+	var targetTeam models.Team
+	if err := database.DB.First(&targetTeam, input.NewTeamID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Target team not found"})
+		return
+	}
+
+	// Find the membership to move
+	var membership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", teamIDParam, targetUID).First(&membership).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found in this team"})
+		return
+	}
+
+	// Update their team membership
+	if err := database.DB.Model(&membership).Update("team_id", input.NewTeamID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update team membership"})
+		return
+	}
+
+	// Also update their DefaultTeamID so the UI context switches immediately
+	database.DB.Model(&models.User{}).Where("id = ?", membership.UserID).Update("default_team_id", input.NewTeamID)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Member moved to new team successfully"})
+}
+
+// GetTeamMembers fetches members and invites for the caller's current default team.
+// GET /api/members
 func GetTeamMembers(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
@@ -33,32 +161,23 @@ func GetTeamMembers(c *gin.Context) {
 		return
 	}
 
-	// Fetch active members
 	var members []models.TeamMember
-	if err := database.DB.Where("team_id = ?", user.DefaultTeamID).Find(&members).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team members"})
-		return
-	}
+	database.DB.Where("team_id = ?", user.DefaultTeamID).Find(&members)
 
-	// Fetch pending invites
 	var invites []models.TeamInvite
-	if err := database.DB.Where("team_id = ? AND status = ?", user.DefaultTeamID, "pending").Find(&invites).Error; err != nil {
-		invites = []models.TeamInvite{} // safe fallback
-	}
+	database.DB.Where("team_id = ? AND status = ?", user.DefaultTeamID, "pending").Find(&invites)
 
-	// Enrich member data with User info
 	type MemberResponse struct {
-		Role string      `json:"role"`
-		User models.User `json:"user"`
+		Role        string      `json:"role"`
+		Designation string      `json:"designation"`
+		User        models.User `json:"user"`
 	}
-	var enrichedMembers []MemberResponse
+	enrichedMembers := make([]MemberResponse, 0, len(members))
 	for _, m := range members {
 		var u models.User
-		database.DB.First(&u, m.UserID)
-		enrichedMembers = append(enrichedMembers, MemberResponse{
-			Role: m.Role,
-			User: u,
-		})
+		if database.DB.First(&u, m.UserID).Error == nil {
+			enrichedMembers = append(enrichedMembers, MemberResponse{Role: m.Role, Designation: m.Designation, User: u})
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -67,73 +186,78 @@ func GetTeamMembers(c *gin.Context) {
 	})
 }
 
-// InviteMember securely generates a token and fires a Resend email invitation
+// InviteMember sends an email invite for a specific team (defaults to caller's DefaultTeamID).
+// POST /api/members/invite  { "email": string, "team_id"?: uint }
 func InviteMember(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
 	var input struct {
-		Email string `json:"email" binding:"required,email"`
+		Email       string `json:"email" binding:"required,email"`
+		Designation string `json:"designation"`
+		TeamID      *uint  `json:"team_id"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email address"})
 		return
 	}
 
-	// 1. Get the current user's workspace context
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
 	}
 
+	// Resolve target team
+	targetTeamID := user.DefaultTeamID
+	if input.TeamID != nil {
+		targetTeamID = *input.TeamID
+	}
+
+	// Verify caller is an owner of the target team
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", targetTeamID, userID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only team owners can send invitations"})
+		return
+	}
+
 	var team models.Team
-	if err := database.DB.First(&team, user.DefaultTeamID).Error; err != nil {
+	if err := database.DB.First(&team, targetTeamID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Workspace not found"})
 		return
 	}
 
-	// 2. Prevent duplicate active invites for the exact same email & team
-	type InviteCheck struct{ ID uint }
-	var existing InviteCheck
+	// Prevent duplicate active invites
+	var existing struct{ ID uint }
 	if err := database.DB.Model(&models.TeamInvite{}).Where("team_id = ? AND email = ? AND status = ?", team.ID, input.Email, "pending").First(&existing).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "This email already has a pending invite for this workspace."})
 		return
 	}
 
-	// 3. Generate secure cryptographic token
 	token, err := generateToken(32)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate security token"})
 		return
 	}
 
-	// 4. Save invite record
-	invite := models.TeamInvite{
-		TeamID: team.ID,
-		Email:  input.Email,
-		Token:  token,
-		Status: "pending",
-	}
+	invite := models.TeamInvite{TeamID: team.ID, Email: input.Email, Designation: input.Designation, Token: token, Status: "pending"}
 	if err := database.DB.Create(&invite).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to construct invite record"})
 		return
 	}
 
-	// 5. Fire Email via Resend Go SDK gracefully (Warning: Requires verified domain)
 	go func() {
 		services.SendTeamInviteEmail(input.Email, user.Name, team.Name, token)
 	}()
 
-	frontendURL := config.FrontendURL
-	inviteLink := fmt.Sprintf("%s/login?token=%s", frontendURL, token)
-
+	inviteLink := fmt.Sprintf("%s/login?token=%s", config.FrontendURL, token)
 	c.JSON(http.StatusOK, gin.H{
 		"message":     "Invitation created! You can copy the link below.",
 		"invite_link": inviteLink,
 	})
 }
 
-// RevokeInvite safely drops a pending invitation ensuring workspace authorization
+// RevokeInvite safely removes a pending invitation.
+// DELETE /api/members/invite/:id
 func RevokeInvite(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 	inviteID := c.Param("id")
@@ -150,10 +274,60 @@ func RevokeInvite(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Delete(&invite).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to revoke invitation"})
+	database.DB.Delete(&invite)
+	c.JSON(http.StatusOK, gin.H{"message": "Invite successfully revoked"})
+}
+
+// CreateTeam creates a new team in the workspace. The caller becomes the owner.
+// POST /api/teams  { "name": string }
+func CreateTeam(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	var input struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Team name is required"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Invite successfully revoked"})
+	team := models.Team{
+		Name:    input.Name,
+		OwnerID: userID,
+	}
+	if err := database.DB.Create(&team).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create team"})
+		return
+	}
+
+	// Auto-add the creator as owner member of the new team
+	membership := models.TeamMember{
+		TeamID: team.ID,
+		UserID: userID,
+		Role:   "owner",
+	}
+	database.DB.Create(&membership)
+
+	c.JSON(http.StatusCreated, gin.H{"id": team.ID, "name": team.Name})
+}
+
+// GetAllTeams returns ALL teams in the workspace (for dropdowns).
+// Distinct from GetMyTeams which returns only teams the user belongs to.
+// GET /api/teams/all
+func GetAllTeams(c *gin.Context) {
+	var teams []models.Team
+	if err := database.DB.Find(&teams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
+		return
+	}
+
+	type TeamResponse struct {
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
+	}
+	result := make([]TeamResponse, 0, len(teams))
+	for _, t := range teams {
+		result = append(result, TeamResponse{ID: t.ID, Name: t.Name})
+	}
+	c.JSON(http.StatusOK, result)
 }

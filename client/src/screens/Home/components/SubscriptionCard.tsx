@@ -1,23 +1,28 @@
 import { useState } from "react";
-import { Calendar, CreditCard, Users, Briefcase, User, Archive, Trash2 } from "lucide-react";
+import { Calendar, CreditCard, Users, Briefcase, User, Archive, Trash2, RotateCcw } from "lucide-react";
 import toUpper from "lodash/toUpper";
 import head from "lodash/head";
 import { getLogoUrl } from "../../../services/logoService";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export interface Subscription {
     id: number;
     name: string;
     category: string;
     plan_type: string;
-    team_members_count: number;
+    seat_count: number;
+    assigned_count: number;
+    available_seats: number;
     billing_cycle: string;
     cost: number;
     is_auto_pay: boolean;
     start_date: string;
     next_billing_date: string;
     added_by_name?: string;
+    owner_name?: string;
     archived_by_name?: string;
+    status?: string;
 }
 
 interface Props {
@@ -26,10 +31,21 @@ interface Props {
     onArchiveClick?: (sub: Subscription) => void;
     /** Called when the user clicks the delete button on an archived card (admin only) */
     onDeleteClick?: (sub: Subscription) => void;
+    /** Called when the user clicks restore on an archived card (admin only) */
+    onRestoreClick?: (sub: Subscription) => void;
+    /** Whether restore is available (next_billing_date > now) */
+    canRestore?: boolean;
+    /** Whether clicking the card navigates to detail page */
+    clickable?: boolean;
+    /** If true, hides admin buttons like Archive/Assign for the user profile view */
+    isProfileView?: boolean;
+    /** Called when the user clicks the manage access button */
+    onAssignClick?: (sub: Subscription) => void;
 }
 
-export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick }: Props) {
+export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, onRestoreClick, canRestore, clickable = false, isProfileView = false }: Props) {
     const [imgError, setImgError] = useState(false);
+    const navigate = useNavigate();
 
     const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -45,11 +61,16 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick }:
     const initial = sub.name ? toUpper(head(sub.name) as string) : "?";
     const logoUrl = !imgError ? getLogoUrl(sub.name) : null;
 
+    const handleCardClick = () => {
+        if (clickable) navigate(`/subscription/${sub.id}`);
+    };
+
     return (
         <motion.div
             layout
             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-            className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300 group flex flex-col h-full"
+            onClick={handleCardClick}
+            className={`bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300 group flex flex-col h-full ${clickable ? "cursor-pointer" : ""}`}
         >
             <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-4">
@@ -69,9 +90,9 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick }:
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                    {/* Archive button — shown on active cards */}
-                    {onArchiveClick && (
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    {/* Archive button — shown on active cards unless profile view */}
+                    {onArchiveClick && !isProfileView && (
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => onArchiveClick(sub)}
@@ -81,12 +102,23 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick }:
                             <Archive size={16} />
                         </motion.button>
                     )}
+                    {/* Restore button — only on archived cards where billing hasn't expired */}
+                    {onRestoreClick && canRestore && (
+                        <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => onRestoreClick(sub)}
+                            title="Restore to active"
+                            className="p-2.5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 cursor-pointer border border-transparent hover:border-emerald-100"
+                        >
+                            <RotateCcw size={16} />
+                        </motion.button>
+                    )}
                     {/* Delete button — shown on archived cards (admin only, passed from parent) */}
                     {onDeleteClick && (
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => onDeleteClick(sub)}
-                            title="Permanently delete"
+                            title="Delete subscription"
                             className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 cursor-pointer border border-transparent hover:border-red-100"
                         >
                             <Trash2 size={16} />
@@ -117,11 +149,23 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick }:
                 </div>
             </div>
 
-            {sub.plan_type === "Team" ? (
+            {sub.plan_type === "Organization" ? (
+                <div className="mt-5 flex flex-col md:flex-row md:items-center justify-between gap-2 text-[13px] font-semibold text-slate-600 border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-2">
+                        <Briefcase size={16} className="text-indigo-400" />
+                        <span>Org Plan ({sub.seat_count || 0} seats)</span>
+                    </div>
+                    {sub.archived_by_name ? (
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Archived by {sub.archived_by_name}</div>
+                    ) : sub.added_by_name ? (
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Added by {sub.added_by_name}</div>
+                    ) : null}
+                </div>
+            ) : sub.plan_type === "Team" ? (
                 <div className="mt-5 flex flex-col md:flex-row md:items-center justify-between gap-2 text-[13px] font-semibold text-slate-600 border-t border-slate-100 pt-4">
                     <div className="flex items-center gap-2">
                         <Users size={16} className="text-slate-400" />
-                        <span>Team Plan ({sub.team_members_count} seats)</span>
+                        <span>Team Plan ({sub.seat_count || 0} seats)</span>
                     </div>
                     {sub.archived_by_name ? (
                         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Archived by {sub.archived_by_name}</div>

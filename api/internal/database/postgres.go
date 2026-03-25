@@ -24,7 +24,7 @@ func Connect() {
 
 	fmt.Println("Connected to PostgreSQL successfully")
 
-	db.AutoMigrate(&models.User{}, &models.Team{}, &models.TeamMember{}, &models.TeamInvite{}, &models.Subscription{}, &models.Category{})
+	db.AutoMigrate(&models.User{}, &models.Team{}, &models.TeamMember{}, &models.TeamInvite{}, &models.Category{}, &models.Subscription{}, &models.SubscriptionAssignment{}, &models.SubscriptionRequest{})
 
 	DB = db
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configures all the endpoints for the API
+// SetupRoutes configures all endpoints for the CostOp API.
 func SetupRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	{
@@ -16,28 +16,24 @@ func SetupRoutes(r *gin.Engine) {
 			c.JSON(200, gin.H{"status": "ok"})
 		})
 
-		// Authentication Routes
+		// ── Authentication ────────────────────────────────────────────────────
 		auth := api.Group("/auth")
 		{
 			auth.POST("/google", controllers.VerifyGoogleToken)
 		}
 
-		// Protected Routes
-		metrics := api.Group("/metrics")
-		metrics.Use(middleware.RequireAuth())
+		// ── Teams ─────────────────────────────────────────────────────────────
+		teams := api.Group("/teams")
+		teams.Use(middleware.RequireAuth())
 		{
-			metrics.GET("", controllers.GetMetrics)
+			teams.GET("", controllers.GetMyTeams)                          // all teams for current user
+			teams.GET("/all", controllers.GetAllTeams)                     // all teams in workspace (for dropdowns)
+			teams.POST("", controllers.CreateTeam)                         // create a new team
+			teams.GET("/:id/members", controllers.GetMembersByTeam)        // members of a specific team
+			teams.PATCH("/:id/members/:uid", controllers.UpdateMemberTeam) // admin: move member to another team
 		}
 
-		subscriptions := api.Group("/subscriptions")
-		subscriptions.Use(middleware.RequireAuth())
-		{
-			subscriptions.GET("", controllers.GetSubscriptions)
-			subscriptions.POST("", controllers.AddSubscription)
-			subscriptions.DELETE("/:id", controllers.DeleteSubscription)
-			subscriptions.PATCH("/:id/archive", controllers.ArchiveSubscription)
-		}
-
+		// ── Members (default-team scoped convenience endpoints) ───────────────
 		members := api.Group("/members")
 		members.Use(middleware.RequireAuth())
 		{
@@ -46,6 +42,47 @@ func SetupRoutes(r *gin.Engine) {
 			members.DELETE("/invite/:id", controllers.RevokeInvite)
 		}
 
+		// ── Subscriptions ─────────────────────────────────────────────────────
+		subscriptions := api.Group("/subscriptions")
+		subscriptions.Use(middleware.RequireAuth())
+		{
+			subscriptions.GET("", controllers.GetSubscriptions)
+			subscriptions.GET("/:id", controllers.GetSubscriptionByID)
+			subscriptions.POST("", controllers.AddSubscription)
+			subscriptions.DELETE("/:id", controllers.DeleteSubscription)
+			subscriptions.PATCH("/:id/archive", controllers.ArchiveSubscription)
+			subscriptions.PATCH("/:id/restore", controllers.RestoreSubscription)
+			// Seat management
+			subscriptions.GET("/:id/seats", controllers.GetSeats)
+			subscriptions.POST("/:id/assign", controllers.AssignSeat)
+			subscriptions.DELETE("/:id/assign/:uid", controllers.UnassignSeat)
+		}
+
+		// ── Users (Profile) ───────────────────────────────────────────────────
+		users := api.Group("/users")
+		users.Use(middleware.RequireAuth())
+		{
+			users.GET("/profile/subscriptions", controllers.GetProfileSubscriptions)
+		}
+
+		// ── Subscription Requests (member → admin approval) ───────────────────
+		requests := api.Group("/requests")
+		requests.Use(middleware.RequireAuth())
+		{
+			requests.GET("", controllers.GetRequests)
+			requests.POST("", controllers.CreateRequest)
+			requests.PATCH("/:id/approve", controllers.ApproveRequest)
+			requests.PATCH("/:id/reject", controllers.RejectRequest)
+		}
+
+		// ── Metrics ───────────────────────────────────────────────────────────
+		metrics := api.Group("/metrics")
+		metrics.Use(middleware.RequireAuth())
+		{
+			metrics.GET("", controllers.GetMetrics)
+		}
+
+		// ── Categories ────────────────────────────────────────────────────────
 		categories := api.Group("/categories")
 		categories.Use(middleware.RequireAuth())
 		{
@@ -53,6 +90,7 @@ func SetupRoutes(r *gin.Engine) {
 			categories.POST("", controllers.AddCategory)
 		}
 
+		// ── History / Analytics ───────────────────────────────────────────────
 		history := api.Group("/history")
 		history.Use(middleware.RequireAuth())
 		{
