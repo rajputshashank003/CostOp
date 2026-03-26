@@ -101,11 +101,13 @@ export default function TimeframeDropdown({ value, onChange, options, align = "l
         <div className="relative" ref={ref}>
             <div
                 onClick={handleToggle}
-                className={`flex items-center gap-2 bg-white border text-slate-700 text-[12px] font-bold rounded-lg px-2.5 py-1.5 outline-none transition-all cursor-pointer shadow-sm
+                className={`flex items-center justify-between gap-2 bg-white border text-slate-700 text-[12px] font-bold rounded-lg px-2.5 py-1.5 outline-none transition-all cursor-pointer shadow-sm
                 ${isOpen ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200 hover:border-emerald-300'}`}
             >
-                <Clock size={13} className={`flex-shrink-0 transition-colors ${isOpen ? 'text-emerald-500' : 'text-slate-400'}`} />
-                <span className="truncate tracking-wide flex-1 text-left max-w-[130px] sm:max-w-[180px]">{selectedOption?.label || "Select Range"}</span>
+                <div className="flex items-center gap-2">
+                    <Clock size={13} className={`flex-shrink-0 transition-colors ${isOpen ? 'text-emerald-500' : 'text-slate-400'}`} />
+                    <span className="truncate tracking-wide flex-1 text-left max-w-[130px] sm:max-w-[180px]">{selectedOption?.label || "Select Range"}</span>
+                </div>
                 <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-emerald-500' : ''}`} />
             </div>
 

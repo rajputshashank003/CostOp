@@ -91,11 +91,11 @@ export default function HistoryToolbar() {
                     Billing date
                 </span>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="flex-1 sm:flex-none sm:w-[130px]">
+                    <div className="w-fit">
                         <MonthPicker value={dateStart} onChange={setDateStart} placeholder="From" maxDate={dateEnd} />
                     </div>
                     <span className="text-slate-400 font-extrabold text-[10px] uppercase">→</span>
-                    <div className="flex-1 sm:flex-none sm:w-[130px]">
+                    <div className="w-fit">
                         <MonthPicker value={dateEnd} onChange={setDateEnd} placeholder="To" minDate={dateStart} align="right" />
                     </div>
                     {hasDateFilter && (
