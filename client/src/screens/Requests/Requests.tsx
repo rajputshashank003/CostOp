@@ -105,14 +105,38 @@ function RequestsComp() {
                 <header className="h-[76px] flex-shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8">
                     <div className="flex items-center gap-3 relative z-[60]">
                         <MobileNav />
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900 hidden sm:block">Subscription Requests</h1>
-                        </div>
+                        <h1 className="text-xl font-bold text-slate-900 hidden sm:block">Subscription Requests</h1>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="hidden sm:block text-[13px] font-semibold text-slate-500">
-                            {isAdmin ? "Team Admin" : "Team Member"}
-                        </span>
+
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                            {STATUS_TABS.map(tab => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key)}
+                                    className={`px-2 sm:px-4 py-1.5 min-w-[70px] sm:min-w-[100px] text-[11px] sm:text-sm font-bold rounded-lg transition-all whitespace-nowrap ${activeTab === tab.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {user && (
+                            <div className="flex items-center gap-2 sm:gap-3 border-l border-slate-200 pl-2 sm:pl-4">
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-sm font-semibold text-slate-900">{user.name}</p>
+                                    <p className="text-[13px] text-slate-500 truncate max-w-[120px] lg:max-w-none">{user.email}</p>
+                                </div>
+                                <img
+                                    src={user.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.name || "U")}
+                                    alt="Avatar"
+                                    className="w-10 h-10 rounded-full border border-slate-200"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "U")}&background=random`;
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </header>
 
@@ -190,20 +214,8 @@ function RequestsComp() {
                             </motion.div>
                         )}
 
-                        {/* Tabs + List */}
+                        {/* List */}
                         <div>
-                            <div className="flex gap-2 mb-4">
-                                {STATUS_TABS.map(tab => (
-                                    <button
-                                        key={tab.key}
-                                        onClick={() => setActiveTab(tab.key)}
-                                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all border cursor-pointer ${activeTab === tab.key ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
-                                    >
-                                        <tab.icon size={14} />
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
 
                             {isLoading ? (
                                 <div className="flex items-center justify-center h-32 text-slate-400 font-semibold">Loading...</div>

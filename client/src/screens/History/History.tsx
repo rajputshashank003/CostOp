@@ -18,7 +18,7 @@ import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 
 const HistoryComp = () => {
     const { user, isLoading: isAuthLoading } = useUser();
-    const { archived, isLoading, isRefetching, refreshArchived } = useContext(HistoryContext);
+    const { archived, isLoading, isRefetching, refreshArchived, historyMode, setHistoryMode } = useContext(HistoryContext);
     const [subToDelete, setSubToDelete] = useState<any>(null);
     const isAdmin = user?.is_admin ?? false;
 

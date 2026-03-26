@@ -6,38 +6,39 @@ import map from "lodash/map";
 import MembersContext from "../context";
 
 export default function MembersRoster() {
-    const { members, invites, handleRevoke, handleMoveToTeam, teams, selectedTeamId, setSelectedTeamId } = useContext(MembersContext);
+    const { members, invites, handleRevoke, handleMoveToTeam, teams, selectedTeamId, searchQuery, subscriptionFilter } = useContext(MembersContext);
+
+    const filteredMembers = members.filter((m: any) => {
+        const matchesSearch = !searchQuery ||
+            m.user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            m.user.email?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        let matchesSub = true;
+        if (subscriptionFilter === "has") {
+            matchesSub = !!m.has_subscription;
+        } else if (subscriptionFilter === "without") {
+            matchesSub = !m.has_subscription;
+        }
+
+        return matchesSearch && matchesSub;
+    });
+
+    const filteredInvites = invites.filter((inv: any) => {
+        const matchesSearch = !searchQuery ||
+            inv.email?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return matchesSearch;
+    });
 
     return (
         <div className="grid grid-cols-1 space-y-4">
 
-            {/* Team Tabs — only shown when user belongs to multiple teams */}
-            {teams.length > 1 && (
-                <div className="flex gap-2 flex-wrap mb-2">
-                    {map(teams, (t: any) => (
-                        <button
-                            key={t.id}
-                            onClick={() => setSelectedTeamId(t.id)}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border cursor-pointer ${selectedTeamId === t.id
-                                ? "bg-emerald-600 text-white border-emerald-600 shadow-md"
-                                : "bg-white text-slate-600 border-slate-200 hover:border-emerald-400"
-                                }`}
-                        >
-                            {t.name}
-                            <span className={`ml-2 text-xs font-bold px-1.5 py-0.5 rounded-md ${selectedTeamId === t.id ? "bg-emerald-500" : "bg-slate-100 text-slate-500"}`}>
-                                {t.role}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-            )}
-
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider pl-2 mt-4 flex items-center gap-2">
-                <Users size={16} /> Active Members ({size(members)})
+                <Users size={16} /> Active Members ({size(filteredMembers)})
             </h3>
 
             <AnimatePresence>
-                {map(members, (m: any) => {
+                {map(filteredMembers, (m: any) => {
                     const currentTeamRole = teams.find((t: any) => t.id === selectedTeamId)?.role;
                     const isAdmin = currentTeamRole === "owner";
                     const otherTeams = teams.filter((t: any) => t.id !== selectedTeamId);
@@ -102,14 +103,14 @@ export default function MembersRoster() {
                 })}
             </AnimatePresence>
 
-            {size(invites) > 0 && (
+            {size(filteredInvites) > 0 && (
                 <>
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider pl-2 mt-8 flex items-center gap-2">
-                        <Clock size={16} /> Pending Invites ({size(invites)})
+                        <Clock size={16} /> Pending Invites ({size(filteredInvites)})
                     </h3>
 
                     <AnimatePresence>
-                        {map(invites, (inv: any) => (
+                        {map(filteredInvites, (inv: any) => (
                             <motion.div
                                 layout
                                 initial={{ opacity: 0, y: 10 }}

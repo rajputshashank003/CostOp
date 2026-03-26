@@ -5,6 +5,7 @@ import MembersContext from "./context";
 import useMembers from "./useMembers";
 import MembersHeader from "./components/MembersHeader";
 import InviteCard from "./components/InviteCard";
+import MembersToolbar from "./components/MembersToolbar";
 import MembersRoster from "./components/MembersRoster";
 import { useContext } from "react";
 
@@ -25,6 +26,7 @@ const MembersComp = () => {
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto max-w-5xl mx-auto w-full">
                     <InviteCard />
+                    <MembersToolbar />
                     <MembersRoster />
                 </div>
             </main>

@@ -7,8 +7,13 @@ const useMembers = () => {
     const { user, isLoading: isAuthLoading } = useUser();
 
     // Team state
+    // Team state
     const [teams, setTeams] = useState<any[]>([]);
     const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+
+    // Filtering state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [subscriptionFilter, setSubscriptionFilter] = useState("all");
 
     // Roster state
     const [members, setMembers] = useState<any[]>([]);
@@ -105,6 +110,8 @@ const useMembers = () => {
         handleRevoke,
         handleMoveToTeam,
         fetchRoster,
+        searchQuery, setSearchQuery,
+        subscriptionFilter, setSubscriptionFilter
     };
 };
 

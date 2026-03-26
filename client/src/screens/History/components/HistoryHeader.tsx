@@ -14,24 +14,25 @@ export default function HistoryHeader() {
                 <h1 className="text-xl font-bold text-slate-900 hidden sm:block">History</h1>
             </div>
 
-            <div className="flex items-center gap-4">
-                <div className="hidden sm:flex bg-slate-100 p-1 rounded-xl">
+            <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex bg-slate-100 p-1 rounded-xl">
                     <button
                         onClick={() => setHistoryMode("all")}
-                        className={`px-4 py-1.5 min-w-[100px] text-sm font-bold rounded-lg transition-all ${historyMode === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                        className={`px-2 sm:px-4 py-1.5 min-w-[60px] sm:min-w-[100px] text-[11px] sm:text-sm font-bold rounded-lg transition-all whitespace-nowrap ${historyMode === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                     >
                         All Time
                     </button>
                     <button
                         onClick={() => setHistoryMode("archived")}
-                        className={`px-4 py-1.5 min-w-[120px] text-sm font-bold rounded-lg transition-all ${historyMode === "archived" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                        className={`px-2 sm:px-4 py-1.5 min-w-[70px] sm:min-w-[120px] text-[11px] sm:text-sm font-bold rounded-lg transition-all whitespace-nowrap ${historyMode === "archived" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                     >
-                        Archived Only
+                        <span className="sm:hidden">Archived</span>
+                        <span className="hidden sm:inline">Archived Only</span>
                     </button>
                 </div>
 
                 {user && (
-                    <div className="flex items-center gap-3 border-l border-slate-200 pl-2 sm:pl-4">
+                    <div className="flex items-center gap-2 sm:gap-3 border-l border-slate-200 pl-2 sm:pl-4">
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                             <p className="text-[13px] text-slate-500 truncate max-w-[120px] lg:max-w-none">{user.email}</p>
