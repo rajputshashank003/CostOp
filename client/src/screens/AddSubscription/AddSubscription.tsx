@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useContext } from "react";
 import { Calendar, DollarSign, Users, Briefcase, Building, Tag, Check, ArrowLeft, Search, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { SUBSCRIPTION_OPTIONS } from "../../utils/constants";
@@ -17,15 +17,16 @@ import { requestsApi } from "../../utils/api_request/requests";
 import { categoriesApi } from "../../utils/api_request/categories";
 import { teamsApi } from "../../utils/api_request/teams";
 import { membersApi } from "../../utils/api_request/members";
+import AddSubscriptionContext from "./context";
+import useAddSubscriptions from "./useAddSubscriptions";
 
-export default function AddSubscription() {
+const  AddSubscriptionComp = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const originRequest = location.state?.request || null;
     const isRequestMode = location.state?.mode === "request"; // Regular team member submitting a request
     const [isLoading, setIsLoading] = useState(false);
 
-    // Core Form Data
     const [formData, setFormData] = useState({
         name: "",
         category: "",
@@ -306,7 +307,7 @@ export default function AddSubscription() {
                         <div>
                             <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Scope / Visibility</label>
                             <div className="grid grid-cols-3 gap-2">
-                                {SUBSCRIPTION_OPTIONS.PLAN_TYPES.map(type => (
+                                {map(SUBSCRIPTION_OPTIONS.PLAN_TYPES, type => (
                                     <div key={type} onClick={() => setFormData(p => ({ ...p, plan_type: type }))} className={`border p-3 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${formData.plan_type === type ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500"}`}>
                                         {type === "Individual" ? <Users size={16} /> : type === "Team" ? <Users size={18} /> : <Building size={18} />}
                                         <span className="text-xs font-bold">{type}</span>
@@ -421,3 +422,15 @@ export default function AddSubscription() {
         </div>
     );
 }
+
+const AddSubscription = () => {
+    const value = useAddSubscriptions();
+
+    return (
+        <AddSubscriptionContext.Provider value={value} >
+            <AddSubscriptionComp />
+        </AddSubscriptionContext.Provider>
+    )
+};
+
+export default AddSubscription;
