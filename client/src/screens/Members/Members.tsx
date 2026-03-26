@@ -10,12 +10,15 @@ import MembersRoster from "./components/MembersRoster";
 import { useContext } from "react";
 
 const MembersComp = () => {
-    const { isLoading: isAuthLoading } = useUser();
-    const { isLoading } = useContext(MembersContext);
+    const { user, isLoading: isAuthLoading } = useUser();
+    const { isLoading, allowMemberInvites } = useContext(MembersContext);
 
     if (isAuthLoading) {
         return <MembersSkeleton />;
     }
+
+    // Show InviteCard if: user is admin (always), or the team allows all members to invite
+    const canInvite = user?.is_admin || allowMemberInvites;
 
     return (
         <div className="flex min-h-screen bg-[#f0f0f5]">
@@ -25,7 +28,7 @@ const MembersComp = () => {
                 <MembersHeader />
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto max-w-5xl mx-auto w-full">
-                    <InviteCard />
+                    {canInvite && <InviteCard />}
                     <MembersToolbar />
                     <MembersRoster />
                 </div>

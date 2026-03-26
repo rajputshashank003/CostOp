@@ -64,12 +64,18 @@ func GetSubscriptions(c *gin.Context) {
 		}
 	}
 
-	// Include team-scoped subs for the selected team(s) + org-wide subs visible to everyone + individual subs created by user
+	// Include team-scoped subs for the selected team(s) + individual subs for the user
 	var query *gorm.DB
 	if isAllTeams {
-		query = database.DB.Where("(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND status = ?", user.ID, user.ID, user.ID, status)
+		query = database.DB.Where(
+			"(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND status = ?",
+			user.ID, user.ID, user.ID, status,
+		)
 	} else {
-		query = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND status = ?", teamFilter, user.ID, user.ID, status)
+		query = database.DB.Where(
+			"(team_id = ? OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND status = ?",
+			teamFilter, user.ID, user.ID, status,
+		)
 	}
 
 	if search := c.Query("search"); search != "" {

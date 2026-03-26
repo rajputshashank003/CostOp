@@ -10,6 +10,7 @@ export interface User {
     google_id: string;
     default_team_id: number;
     is_admin: boolean;
+    is_onboarded: boolean;
 }
 
 interface AuthContextType {
@@ -19,6 +20,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (token: string, user: User, isAdmin: boolean) => void;
     logout: () => void;
+    updateOnboardingStatus: (isAdmin?: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,7 +53,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem(LOCAL_STORAGE.USER, JSON.stringify(userWithRole));
         setToken(newToken);
         setUser(userWithRole);
-        navigate("/home");
+
+        if (!userWithRole.is_onboarded) {
+            navigate("/onboarding");
+        } else {
+            navigate("/home");
+        }
+    };
+
+    const updateOnboardingStatus = (isAdmin = false) => {
+        if (!user) return;
+        const updatedUser = { ...user, is_onboarded: true, is_admin: isAdmin };
+        localStorage.setItem(LOCAL_STORAGE.USER, JSON.stringify(updatedUser));
+        setUser(updatedUser);
     };
 
     const logout = () => {
@@ -63,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isLoading, login, logout, updateOnboardingStatus }}>
             {children}
         </AuthContext.Provider>
     );

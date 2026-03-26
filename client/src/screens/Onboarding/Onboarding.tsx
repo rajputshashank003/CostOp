@@ -1,0 +1,128 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Building2, Briefcase, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../../hooks/useUser";
+import toast from "react-hot-toast";
+import utils from "../../utils/api_request/utils";
+
+export default function Onboarding() {
+    const { user, updateOnboardingStatus } = useUser();
+    const navigate = useNavigate();
+
+    const [teamName, setTeamName] = useState("");
+    const [designation, setDesignation] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!teamName || !designation) {
+            toast.error("Please fill in both fields");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const res = await utils.request({
+                url: '/users/onboard',
+                method: 'PATCH',
+                data: { team_name: teamName, designation }
+            });
+
+            // Mark user as onboarded and set admin role from the response
+            updateOnboardingStatus(res?.is_admin === true);
+            toast.success("Welcome aboard!");
+            navigate("/home");
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Failed to complete onboarding");
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[#f0f0f5] flex flex-col items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden"
+            >
+                <div className="bg-emerald-600 p-8 text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                        className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl mx-auto flex items-center justify-center mb-4 border border-white/20 shadow-lg"
+                    >
+                        <Building2 size={32} className="text-white" />
+                    </motion.div>
+                    <h1 className="text-2xl font-extrabold text-white mb-2 relative z-10">Let's set up your workspace</h1>
+                    <p className="text-emerald-50 font-medium relative z-10 text-sm">
+                        Welcome {user?.name?.split(' ')[0] || "aboard"}! Tell us a bit about you and your organization to get started.
+                    </p>
+                </div>
+
+                <div className="p-8">
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-[13px] font-bold text-slate-700 uppercase tracking-widest pl-1">
+                                Workspace Name
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                                    <Building2 size={18} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={teamName}
+                                    onChange={(e) => setTeamName(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none text-[15px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
+                                    placeholder="e.g. Acme Corp"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-[13px] font-bold text-slate-700 uppercase tracking-widest pl-1 mt-2">
+                                Your Role
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                                    <Briefcase size={18} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={designation}
+                                    onChange={(e) => setDesignation(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none text-[15px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
+                                    placeholder="e.g. Head of Engineering"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="submit"
+                            disabled={isSubmitting}
+                            className={`mt-6 w-full py-4 rounded-xl flex items-center justify-center gap-2 text-white font-extrabold text-[15px] transition-all shadow-lg ${isSubmitting ? 'bg-emerald-400 cursor-not-allowed shadow-none' : 'bg-emerald-600 hover:bg-emerald-500 hover:shadow-emerald-500/25 cursor-pointer'}`}
+                        >
+                            {isSubmitting ? (
+                                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <>Continue to App <ArrowRight size={18} strokeWidth={2.5} /></>
+                            )}
+                        </motion.button>
+                    </form>
+
+                    <div className="mt-8 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-400">
+                        <CheckCircle2 size={14} className="text-emerald-500" /> Auto-creates your isolated secure data vault
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+}

@@ -55,6 +55,28 @@ func GetMyTeams(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GetTeamByID returns a single team the caller belongs to, with full settings.
+// GET /api/teams/:id
+func GetTeamByID(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	teamID := c.Param("id")
+
+	var team models.Team
+	if err := database.DB.First(&team, teamID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
+	}
+
+	// Verify caller is a member of this team
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", team.ID, userID).First(&callerMembership).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not a member of this team"})
+		return
+	}
+
+	c.JSON(http.StatusOK, team)
+}
+
 // GetMembersByTeam returns all active members and pending invites for a specific team.
 // The caller must be a member of the team.
 // GET /api/teams/:id/members
@@ -291,19 +313,24 @@ func InviteMember(c *gin.Context) {
 		targetTeamID = *input.TeamID
 	}
 
-	// Verify caller is an owner of the target team
-	var callerMembership models.TeamMember
-	if err := database.DB.Where("team_id = ? AND user_id = ?", targetTeamID, userID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only team owners can send invitations"})
-		return
-	}
-
 	var team models.Team
 	if err := database.DB.First(&team, targetTeamID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Workspace not found"})
 		return
 	}
 
+	// Verify caller is a member of the target team
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", targetTeamID, userID).First(&callerMembership).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not a member of this workspace"})
+		return
+	}
+
+	// Enforce the AllowMemberInvites organization setting
+	if !team.AllowMemberInvites && callerMembership.Role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Workspace settings restrict invitations to owners only"})
+		return
+	}
 	// Prevent duplicate active invites
 	var existing struct{ ID uint }
 	if err := database.DB.Model(&models.TeamInvite{}).Where("team_id = ? AND email = ? AND status = ?", team.ID, input.Email, "pending").First(&existing).Error; err == nil {
@@ -408,4 +435,47 @@ func GetAllTeams(c *gin.Context) {
 		result = append(result, TeamResponse{ID: t.ID, Name: t.Name})
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+// UpdateTeamSettings modifies a team's name and settings (Admin only).
+// PATCH /api/teams/:id/settings
+func UpdateTeamSettings(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	teamID := c.Param("id")
+
+	var input struct {
+		Name               string `json:"name"`
+		AllowMemberInvites *bool  `json:"allow_member_invites"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	var team models.Team
+	if err := database.DB.First(&team, teamID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Workspace not found"})
+		return
+	}
+
+	// Verify caller is an owner of the target team
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", team.ID, userID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only workspace owners can update settings"})
+		return
+	}
+
+	if input.Name != "" {
+		team.Name = input.Name
+	}
+	if input.AllowMemberInvites != nil {
+		team.AllowMemberInvites = *input.AllowMemberInvites
+	}
+
+	if err := database.DB.Save(&team).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update workspace settings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Settings updated successfully", "team": team})
 }

@@ -60,11 +60,11 @@ export default function MembersRoster() {
 
                                     <div className="flex items-center gap-2 flex-shrink-0">
                                         {m.designation && (
-                                            <span className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-xs font-bold text-emerald-600 tracking-wide capitalize">
+                                            <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[10px] sm:text-xs font-bold text-emerald-600 tracking-wide capitalize">
                                                 {m.designation}
                                             </span>
                                         )}
-                                        <span className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-xs font-bold text-slate-600 uppercase tracking-wide">
+                                        <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-wide">
                                             {m.role}
                                         </span>
 

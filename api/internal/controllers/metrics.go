@@ -50,9 +50,17 @@ func GetMetrics(c *gin.Context) {
 
 	var subsQuery *gorm.DB
 	if isAllTeams {
-		subsQuery = database.DB.Where("(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR scope = 'organization' OR (scope = 'individual' AND user_id = ?)) AND status = ?", user.ID, user.ID, "active")
+		// Fetch all subscriptions belonging to any team the user is a member of, plus their individual ones
+		subsQuery = database.DB.Where(
+			"(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR (scope = 'individual' AND user_id = ?)) AND status = ?",
+			user.ID, user.ID, "active",
+		)
 	} else {
-		subsQuery = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?)) AND status = ?", teamFilter, user.ID, "active")
+		// Single-team view
+		subsQuery = database.DB.Where(
+			"(team_id = ? OR (scope = 'individual' AND user_id = ?)) AND status = ?",
+			teamFilter, user.ID, "active",
+		)
 	}
 
 	if search != "" {

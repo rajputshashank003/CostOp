@@ -75,6 +75,8 @@ func VerifyGoogleToken(c *gin.Context) {
 		if hasInvite {
 			database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			database.DB.Model(&invite).Update("status", "accepted")
+			user.IsOnboarded = true // They don't need onboarding if they were invited
+			database.DB.Save(&user)
 		} else {
 			// Phase 5: Auto-provision a completely isolated Default Team space for organic signups!
 			newTeam := models.Team{

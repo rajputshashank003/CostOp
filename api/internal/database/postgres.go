@@ -17,7 +17,9 @@ func Connect() {
 	// dsn is managed globally by config.go in the config.PostgresDSN property!
 	dsn := config.PostgresDSN
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		PrepareStmt: false,
+	})
 	if err != nil {
 		log.Fatalf("Failed to connect to PostgreSQL: %v\n", err)
 	}

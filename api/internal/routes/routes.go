@@ -28,9 +28,11 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			teams.GET("", controllers.GetMyTeams)                          // all teams for current user
 			teams.GET("/all", controllers.GetAllTeams)                     // all teams in workspace (for dropdowns)
+			teams.GET("/:id", controllers.GetTeamByID)                     // get a single team (with settings)
 			teams.POST("", controllers.CreateTeam)                         // create a new team
 			teams.GET("/:id/members", controllers.GetMembersByTeam)        // members of a specific team
 			teams.PATCH("/:id/members/:uid", controllers.UpdateMemberTeam) // admin: move member to another team
+			teams.PATCH("/:id/settings", controllers.UpdateTeamSettings)   // admin: update settings / team name
 		}
 
 		// ── Members (default-team scoped convenience endpoints) ───────────────
@@ -63,6 +65,7 @@ func SetupRoutes(r *gin.Engine) {
 		users.Use(middleware.RequireAuth())
 		{
 			users.GET("/profile/subscriptions", controllers.GetProfileSubscriptions)
+			users.PATCH("/onboard", controllers.OnboardUser)
 		}
 
 		// ── Subscription Requests (member → admin approval) ───────────────────

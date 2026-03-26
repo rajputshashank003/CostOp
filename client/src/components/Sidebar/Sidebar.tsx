@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const MotionLink = motion(Link as any);
 
 export default function Sidebar() {
-    const { logout } = useUser();
+    const { user, logout } = useUser();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -52,10 +52,13 @@ export default function Sidebar() {
                     <motion.div className="group-hover:scale-110 transition-transform"><Users size={20} /></motion.div>
                     Profile
                 </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors group">
-                    <motion.div className="group-hover:rotate-45 transition-transform"><Settings size={20} /></motion.div>
-                    Settings
-                </MotionLink>
+
+                {user?.is_admin && (
+                    <MotionLink whileTap={{ scale: 0.98 }} to="/settings" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/settings' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                        <motion.div className={location.pathname === '/settings' ? '' : 'group-hover:rotate-45 transition-transform'}><Settings size={20} /></motion.div>
+                        Settings
+                    </MotionLink>
+                )}
             </nav>
 
             <div className="p-4 mt-auto border-t border-slate-100">

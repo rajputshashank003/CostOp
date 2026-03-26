@@ -19,6 +19,7 @@ const useMembers = () => {
     const [members, setMembers] = useState<any[]>([]);
     const [invites, setInvites] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [allowMemberInvites, setAllowMemberInvites] = useState(true);
 
     // Debounce search
     useEffect(() => {
@@ -46,6 +47,18 @@ const useMembers = () => {
             }
         }).catch(console.error);
     }, [isAuthLoading, user]);
+
+    // Fetch team settings when the selected team changes
+    useEffect(() => {
+        if (!selectedTeamId) return;
+        import('../../utils/api_request/utils').then(({ default: utils }) => {
+            utils.request({ url: `/teams/${selectedTeamId}`, method: 'GET' })
+                .then((team: any) => {
+                    setAllowMemberInvites(team.allow_member_invites ?? true);
+                })
+                .catch(console.error);
+        });
+    }, [selectedTeamId]);
 
     // Fetch roster whenever selected team OR filters change
     const fetchRoster = useCallback(() => {
@@ -118,6 +131,7 @@ const useMembers = () => {
         teams, selectedTeamId, setSelectedTeamId,
         members, invites,
         isLoading,
+        allowMemberInvites,
         inviteEmail, setInviteEmail,
         inviteDesignation, setInviteDesignation,
         isInviting,
