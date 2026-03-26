@@ -374,8 +374,8 @@ export default function AddSubscription() {
                                         </div>
                                     </div>
                                     <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-                                        {filteredMembers.length === 0 && <p className="text-sm font-medium text-slate-400 text-center py-4">No members found.</p>}
-                                        {filteredMembers.map((m: any) => {
+                                        {size(filteredMembers) === 0 && <p className="text-sm font-medium text-slate-400 text-center py-4">No members found.</p>}
+                                        {map(filteredMembers, (m: any) => {
                                             const isSelected = formData.assigned_user_ids.includes(m.user.id);
                                             return (
                                                 <div key={m.user.id} onClick={() => toggleUserAssignment(m.user.id)} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? "bg-emerald-50 border-emerald-200" : "bg-white border-transparent hover:border-slate-200 hover:bg-slate-50"}`}>
