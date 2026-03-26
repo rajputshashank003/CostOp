@@ -13,7 +13,7 @@ const MembersComp = () => {
     const { isLoading: isAuthLoading } = useUser();
     const { isLoading } = useContext(MembersContext);
 
-    if (isLoading || isAuthLoading) {
+    if (isAuthLoading) {
         return <MembersSkeleton />;
     }
 

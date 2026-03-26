@@ -3,6 +3,7 @@ import { Calendar, CreditCard, Users, Briefcase, User, Archive, Trash2, RotateCc
 import toUpper from "lodash/toUpper";
 import head from "lodash/head";
 import { getLogoUrl } from "../../../services/logoService";
+import { getCategoryIcon } from "../../../utils/helpers";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -84,7 +85,7 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
                     <div>
                         <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-none mb-2">{sub.name}</h3>
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md tracking-wide uppercase">
-                            <Briefcase size={10} />
+                            {getCategoryIcon(sub.category, 10)}
                             {sub.category}
                         </span>
                     </div>

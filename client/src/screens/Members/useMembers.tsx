@@ -6,19 +6,25 @@ import toast from "react-hot-toast";
 const useMembers = () => {
     const { user, isLoading: isAuthLoading } = useUser();
 
-    // Team state
-    // Team state
+    // Team state — null means "All Teams"
     const [teams, setTeams] = useState<any[]>([]);
     const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
     // Filtering state
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
     const [subscriptionFilter, setSubscriptionFilter] = useState("all");
 
     // Roster state
     const [members, setMembers] = useState<any[]>([]);
     const [invites, setInvites] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Debounce search
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+        return () => clearTimeout(t);
+    }, [searchQuery]);
 
     // Invite form state
     const [inviteEmail, setInviteEmail] = useState("");
@@ -41,18 +47,28 @@ const useMembers = () => {
         }).catch(console.error);
     }, [isAuthLoading, user]);
 
-    // Fetch roster whenever selected team changes
+    // Fetch roster whenever selected team OR filters change
     const fetchRoster = useCallback(() => {
-        if (!selectedTeamId) return;
         setIsLoading(true);
-        membersApi.get_by_team(selectedTeamId)
-            .then((data: any) => {
-                setMembers(data.members || []);
-                setInvites(data.invites || []);
-            })
-            .catch(console.error)
-            .finally(() => setIsLoading(false));
-    }, [selectedTeamId]);
+        if (selectedTeamId === null) {
+            // "All Teams" — fetch across all teams; filtering is done server-side via get_all
+            membersApi.get_all(debouncedSearchQuery, subscriptionFilter)
+                .then((data: any) => {
+                    setMembers(data.members || []);
+                    setInvites(data.invites || []);
+                })
+                .catch(console.error)
+                .finally(() => setIsLoading(false));
+        } else {
+            membersApi.get_by_team(selectedTeamId, debouncedSearchQuery, subscriptionFilter)
+                .then((data: any) => {
+                    setMembers(data.members || []);
+                    setInvites(data.invites || []);
+                })
+                .catch(console.error)
+                .finally(() => setIsLoading(false));
+        }
+    }, [selectedTeamId, debouncedSearchQuery, subscriptionFilter]);
 
     useEffect(() => {
         fetchRoster();

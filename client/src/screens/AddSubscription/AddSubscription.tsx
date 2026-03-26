@@ -9,16 +9,20 @@ import head from "lodash/head";
 import split from "lodash/split";
 import sortBy from "lodash/sortBy";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import CustomSelect from "../../components/CustomSelect/CustomSelect";
 import DatePicker from "../../components/DatePicker/DatePicker";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
+import { requestsApi } from "../../utils/api_request/requests";
 import { categoriesApi } from "../../utils/api_request/categories";
 import { teamsApi } from "../../utils/api_request/teams";
 import { membersApi } from "../../utils/api_request/members";
 
 export default function AddSubscription() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const originRequest = location.state?.request || null;
+    const isRequestMode = location.state?.mode === "request"; // Regular team member submitting a request
     const [isLoading, setIsLoading] = useState(false);
 
     // Core Form Data
@@ -36,7 +40,9 @@ export default function AddSubscription() {
         pricing_model: "per_seat" as "per_seat" | "site_license",
         seat_count: 1,
         access_type: "all_members" as "all_members" | "selected_members",
-        assigned_user_ids: [] as number[]
+        assigned_user_ids: [] as number[],
+        origin_request_id: originRequest?.id || null,
+        requester_id: originRequest?.requester_id || null
     });
 
     const [categories, setCategories] = useState<string[]>([]);
@@ -57,15 +63,36 @@ export default function AddSubscription() {
                 const catRes = await categoriesApi.get_all();
                 const fetchedCats = map(catRes, (c: any) => c.name);
                 setCategories(fetchedCats);
-                if (size(fetchedCats) > 0) setFormData(p => ({ ...p, category: head(fetchedCats) || "" }));
+
+                // If it's a new form without request prepopulation
+                if (!originRequest && size(fetchedCats) > 0) {
+                    setFormData(p => ({ ...p, category: head(fetchedCats) || "" }));
+                }
 
                 const teamRes = await teamsApi.get_all();
                 setTeams(teamRes || []);
-                if (size(teamRes) > 0) setFormData(p => ({ ...p, team_id: teamRes[0].id }));
+                if (!originRequest && size(teamRes) > 0) {
+                    setFormData(p => ({ ...p, team_id: teamRes[0].id }));
+                }
             } catch (err) { }
         };
         fetchDropdowns();
     }, []);
+
+    useEffect(() => {
+        if (originRequest) {
+            setFormData(p => ({
+                ...p,
+                name: originRequest.name || "",
+                category: originRequest.category || "",
+                plan_type: originRequest.plan_type || p.plan_type,
+                billing_cycle: originRequest.billing_cycle || p.billing_cycle,
+                cost: originRequest.cost ? String(originRequest.cost) : "",
+                seat_count: originRequest.seat_count || 1,
+                team_id: originRequest.team_id || p.team_id,
+            }));
+        }
+    }, [originRequest]);
 
     // Fetch members when scope/team changes
     useEffect(() => {
@@ -152,45 +179,83 @@ export default function AddSubscription() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name || !formData.cost || (formData.pricing_model === "per_seat" && formData.seat_count < 1)) {
+        if (!formData.name || (!isRequestMode && !formData.cost) || (formData.pricing_model === "per_seat" && formData.seat_count < 1)) {
             toast.error("Please fill in all required fields!"); return;
         }
         setIsLoading(true);
         try {
-            const startDate = new Date(formData.start_date);
-            const nextBillingDate = new Date(startDate);
-            if (formData.billing_cycle === "Monthly") nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-            else nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+            if (isRequestMode) {
+                // Regular user: submit as a pending request for admin approval
+                await requestsApi.create({
+                    name: formData.name,
+                    category: formData.category,
+                    plan_type: formData.plan_type,
+                    billing_cycle: formData.billing_cycle,
+                    cost: parseFloat(formData.cost) || 0,
+                    seat_count: formData.seat_count,
+                    scope: formData.plan_type === "Organization" ? "organization" : formData.plan_type === "Team" ? "team" : "individual",
+                    justification: "",
+                });
+                toast.success("Request submitted! Waiting for admin approval.");
+                navigate("/requests");
+            } else {
+                // Admin: create the subscription directly
+                const startDate = new Date(formData.start_date);
+                const nextBillingDate = new Date(startDate);
+                if (formData.billing_cycle === "Monthly") nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+                else nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
 
-            const payload: any = {
-                name: formData.name, category: formData.category, plan_type: formData.plan_type,
-                billing_cycle: formData.billing_cycle, cost: parseFloat(formData.cost),
-                start_date: startDate.toISOString(), next_billing_date: nextBillingDate.toISOString(),
-                is_auto_pay: formData.is_auto_pay,
-                seat_count: formData.pricing_model === "site_license" ? 999999 : parseInt(formData.seat_count.toString(), 10),
-                assigned_user_ids: formData.access_type === "all_members" ? map(availableMembers, m => m.user.id) : formData.assigned_user_ids
-            };
+                const payload: any = {
+                    name: formData.name, category: formData.category, plan_type: formData.plan_type,
+                    billing_cycle: formData.billing_cycle, cost: parseFloat(formData.cost),
+                    start_date: startDate.toISOString(), next_billing_date: nextBillingDate.toISOString(),
+                    is_auto_pay: formData.is_auto_pay,
+                    seat_count: formData.pricing_model === "site_license" ? 999999 : parseInt(formData.seat_count.toString(), 10),
+                    assigned_user_ids: formData.access_type === "all_members" ? map(availableMembers, m => m.user.id) : formData.assigned_user_ids
+                };
 
-            if (formData.plan_type === "Organization") { payload.scope = "organization"; }
-            else if (formData.plan_type === "Team" && formData.team_id) { payload.scope = "team"; payload.team_id = formData.team_id; }
-            else { payload.scope = "individual"; }
+                if (formData.origin_request_id) {
+                    payload.origin_request_id = formData.origin_request_id;
+                    payload.owner_id = formData.requester_id;
+                }
 
-            await subscriptionsApi.create(payload);
-            toast.success("Subscription added with access configurations!");
-            navigate("/home");
+                if (formData.plan_type === "Organization") { payload.scope = "organization"; }
+                else if (formData.plan_type === "Team" && formData.team_id) { payload.scope = "team"; payload.team_id = formData.team_id; }
+                else { payload.scope = "individual"; }
+
+                await subscriptionsApi.create(payload);
+                toast.success("Subscription added with access configurations!");
+                navigate("/home");
+            }
         } catch (err) { } finally { setIsLoading(false); }
     };
 
     return (
         <div className="max-w-4xl mx-auto pb-12">
-            <div className="flex items-center gap-4 mb-8">
-                <button onClick={() => navigate(-1)} className="p-2 bg-white text-slate-500 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all border border-slate-200">
-                    <ArrowLeft size={20} />
-                </button>
-                <div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Add Subscription</h1>
-                    <p className="text-slate-500 font-medium">Link a new tool to track cost and manage seat assignments.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate(-1)} className="p-2 bg-white text-slate-500 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all border border-slate-200">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+                            {isRequestMode ? "Request a Subscription" : originRequest ? "Approve Subscription" : "Add Subscription"}
+                        </h1>
+                        <p className="text-slate-500 font-medium">
+                            {isRequestMode ? "Fill in details and submit for admin approval." : "Link a new tool to track cost and manage seat assignments."}
+                        </p>
+                    </div>
                 </div>
+                {originRequest && (
+                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold border border-emerald-100 hidden sm:block">
+                        Fulfilling Request from {originRequest.requester_name || "Team Member"}
+                    </div>
+                )}
+                {isRequestMode && (
+                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold border border-emerald-100 hidden sm:block">
+                        Pending admin review
+                    </div>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -345,8 +410,11 @@ export default function AddSubscription() {
                 {/* BOTTOM ACTIONS */}
                 <div className="flex justify-end gap-3 pt-4">
                     <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">Cancel</button>
-                    <button type="submit" disabled={isLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center min-w-[160px]">
-                        {isLoading ? <span className="w-5 h-5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin"></span> : "Track Subscription"}
+                    <button type="submit" disabled={isLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center min-w-[180px]">
+                        {isLoading
+                            ? <span className="w-5 h-5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
+                            : isRequestMode ? "Submit Request" : "Track Subscription"
+                        }
                     </button>
                 </div>
             </form>

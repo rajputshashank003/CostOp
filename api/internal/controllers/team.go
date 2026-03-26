@@ -61,6 +61,8 @@ func GetMyTeams(c *gin.Context) {
 func GetMembersByTeam(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 	teamIDParam := c.Param("id")
+	search := c.Query("search")
+	subscriptionFilter := c.Query("subscription")
 
 	var targetTeam models.Team
 	if err := database.DB.First(&targetTeam, teamIDParam).Error; err != nil {
@@ -75,25 +77,57 @@ func GetMembersByTeam(c *gin.Context) {
 		return
 	}
 
-	// Fetch all active members with user details
+	// Prepare base query for members
+	memberQuery := database.DB.Model(&models.TeamMember{}).Where("team_members.team_id = ?", targetTeam.ID)
+
+	if search != "" {
+		searchTerm := "%" + search + "%"
+		// Only join users if searching
+		memberQuery = memberQuery.Joins("JOIN users ON users.id = team_members.user_id").
+			Where("users.name ILIKE ? OR users.email ILIKE ? OR team_members.designation ILIKE ?", searchTerm, searchTerm, searchTerm)
+	}
+
+	if subscriptionFilter == "has" {
+		memberQuery = memberQuery.Where("EXISTS (SELECT 1 FROM subscription_assignments sa WHERE sa.user_id = team_members.user_id)")
+	} else if subscriptionFilter == "without" {
+		memberQuery = memberQuery.Where("NOT EXISTS (SELECT 1 FROM subscription_assignments sa WHERE sa.user_id = team_members.user_id)")
+	}
+
+	// Fetch all active members matching filters
 	var members []models.TeamMember
-	database.DB.Where("team_id = ?", targetTeam.ID).Find(&members)
+	memberQuery.Find(&members)
 
 	type MemberResponse struct {
-		Role string      `json:"role"`
-		User models.User `json:"user"`
+		Role            string      `json:"role"`
+		User            models.User `json:"user"`
+		HasSubscription bool        `json:"has_subscription"`
 	}
 	enrichedMembers := make([]MemberResponse, 0, len(members))
 	for _, m := range members {
 		var u models.User
 		if database.DB.First(&u, m.UserID).Error == nil {
-			enrichedMembers = append(enrichedMembers, MemberResponse{Role: m.Role, User: u})
+			var assignCount int64
+			database.DB.Model(&models.SubscriptionAssignment{}).Where("user_id = ?", m.UserID).Count(&assignCount)
+
+			enrichedMembers = append(enrichedMembers, MemberResponse{
+				Role:            m.Role,
+				User:            u,
+				HasSubscription: assignCount > 0,
+			})
 		}
 	}
 
-	// Fetch pending invites
+	// Fetch pending invites (filter by search if applicable)
+	inviteQuery := database.DB.Model(&models.TeamInvite{}).Where("team_id = ? AND status = ?", targetTeam.ID, "pending")
+	if search != "" {
+		searchTerm := "%" + search + "%"
+		inviteQuery = inviteQuery.Where("email ILIKE ? OR designation ILIKE ?", searchTerm, searchTerm)
+	}
+	// Note: invites don't have subscriptions yet, so subscriptionFilter is naturally ignored or hides them
 	var invites []models.TeamInvite
-	database.DB.Where("team_id = ? AND status = ?", targetTeam.ID, "pending").Find(&invites)
+	if subscriptionFilter == "without" || subscriptionFilter == "" || subscriptionFilter == "all" {
+		inviteQuery.Find(&invites)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"team":    targetTeam,
@@ -150,39 +184,83 @@ func UpdateMemberTeam(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Member moved to new team successfully"})
 }
 
-// GetTeamMembers fetches members and invites for the caller's current default team.
+// GetTeamMembers fetches members and invites across ALL teams the caller belongs to.
+// Used by the frontend "All Teams" filter on the /members route.
 // GET /api/members
 func GetTeamMembers(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
+	search := c.Query("search")
+	subscriptionFilter := c.Query("subscription")
 
-	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+	// Find all teams the user belongs to
+	var memberships []models.TeamMember
+	if err := database.DB.Where("user_id = ?", userID).Find(&memberships).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team memberships"})
 		return
 	}
 
-	var members []models.TeamMember
-	database.DB.Where("team_id = ?", user.DefaultTeamID).Find(&members)
-
-	var invites []models.TeamInvite
-	database.DB.Where("team_id = ? AND status = ?", user.DefaultTeamID, "pending").Find(&invites)
-
 	type MemberResponse struct {
-		Role        string      `json:"role"`
-		Designation string      `json:"designation"`
-		User        models.User `json:"user"`
+		Role            string      `json:"role"`
+		Designation     string      `json:"designation"`
+		User            models.User `json:"user"`
+		HasSubscription bool        `json:"has_subscription"`
 	}
-	enrichedMembers := make([]MemberResponse, 0, len(members))
-	for _, m := range members {
-		var u models.User
-		if database.DB.First(&u, m.UserID).Error == nil {
-			enrichedMembers = append(enrichedMembers, MemberResponse{Role: m.Role, Designation: m.Designation, User: u})
+
+	seen := make(map[uint]bool)
+	allMembers := make([]MemberResponse, 0)
+	allInvites := make([]models.TeamInvite, 0)
+
+	for _, ms := range memberships {
+		// Base query for members of this team
+		memberQuery := database.DB.Model(&models.TeamMember{}).Where("team_members.team_id = ?", ms.TeamID)
+
+		if search != "" {
+			searchTerm := "%" + search + "%"
+			memberQuery = memberQuery.Joins("JOIN users ON users.id = team_members.user_id").
+				Where("users.name ILIKE ? OR users.email ILIKE ? OR team_members.designation ILIKE ?", searchTerm, searchTerm, searchTerm)
+		}
+
+		if subscriptionFilter == "has" {
+			memberQuery = memberQuery.Where("EXISTS (SELECT 1 FROM subscription_assignments sa WHERE sa.user_id = team_members.user_id)")
+		} else if subscriptionFilter == "without" {
+			memberQuery = memberQuery.Where("NOT EXISTS (SELECT 1 FROM subscription_assignments sa WHERE sa.user_id = team_members.user_id)")
+		}
+
+		var teamMembers []models.TeamMember
+		memberQuery.Find(&teamMembers)
+
+		for _, m := range teamMembers {
+			if seen[m.UserID] {
+				continue
+			}
+			seen[m.UserID] = true
+			var u models.User
+			if database.DB.First(&u, m.UserID).Error != nil {
+				continue
+			}
+			var hasSub int64
+			database.DB.Model(&models.SubscriptionAssignment{}).Where("user_id = ?", m.UserID).Count(&hasSub)
+			allMembers = append(allMembers, MemberResponse{
+				Role: m.Role, Designation: m.Designation, User: u, HasSubscription: hasSub > 0,
+			})
+		}
+
+		inviteQuery := database.DB.Model(&models.TeamInvite{}).Where("team_id = ? AND status = ?", ms.TeamID, "pending")
+		if search != "" {
+			searchTerm := "%" + search + "%"
+			inviteQuery = inviteQuery.Where("email ILIKE ? OR designation ILIKE ?", searchTerm, searchTerm)
+		}
+
+		var invites []models.TeamInvite
+		if subscriptionFilter == "without" || subscriptionFilter == "" || subscriptionFilter == "all" {
+			inviteQuery.Find(&invites)
+			allInvites = append(allInvites, invites...)
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"members": enrichedMembers,
-		"invites": invites,
+		"members": allMembers,
+		"invites": allInvites,
 	})
 }
 

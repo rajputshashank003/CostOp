@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, CreditCard, Calendar, Briefcase, User, Crown, Clock, MessageSquare } from "lucide-react";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 import { getLogoUrl } from "../../services/logoService";
+import { getCategoryIcon } from "../../utils/helpers";
 import { motion } from "framer-motion";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import toUpper from "lodash/toUpper";
@@ -75,7 +76,7 @@ export default function SubscriptionDetail() {
                         <div>
                             <h1 className="text-lg font-bold text-slate-900 tracking-tight">{sub.name}</h1>
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md tracking-wide uppercase">
-                                <Briefcase size={9} /> {sub.category}
+                                {getCategoryIcon(sub.category, 10)} {sub.category}
                             </span>
                         </div>
                     </div>

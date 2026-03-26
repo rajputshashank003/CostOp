@@ -107,6 +107,7 @@ func AddSubscription(c *gin.Context) {
 	var req struct {
 		models.Subscription
 		AssignedUserIDs []uint `json:"assigned_user_ids"`
+		OriginRequestID *uint  `json:"origin_request_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -153,26 +154,43 @@ func AddSubscription(c *gin.Context) {
 		input.TeamID = &teamID
 	}
 
-	if err := database.DB.Create(&input).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create subscription"})
-		return
-	}
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&input).Error; err != nil {
+			return err
+		}
 
-	// Create seat assignments immediately
-	var assignedCount int = 0
-	for _, uid := range req.AssignedUserIDs {
-		// Stop if we hit the seat limit, but allow unlimited if SeatCount is unusually large (e.g. 9999)
-		if assignedCount >= input.SeatCount {
-			break
+		// Approve the origin request atomically, if provided
+		if req.OriginRequestID != nil {
+			if err := tx.Model(&models.SubscriptionRequest{}).Where("id = ?", *req.OriginRequestID).Updates(map[string]interface{}{
+				"status":      "approved",
+				"reviewed_by": userID,
+			}).Error; err != nil {
+				return err
+			}
 		}
-		assign := models.SubscriptionAssignment{
-			SubscriptionID: input.ID,
-			UserID:         uid,
-			AssignedAt:     time.Now(),
+
+		// Create seat assignments immediately
+		var assignedCount int = 0
+		for _, uid := range req.AssignedUserIDs {
+			if assignedCount >= input.SeatCount {
+				break
+			}
+			assign := models.SubscriptionAssignment{
+				SubscriptionID: input.ID,
+				UserID:         uid,
+				AssignedAt:     time.Now(),
+			}
+			if err := tx.Create(&assign).Error; err == nil {
+				assignedCount++
+			}
 		}
-		if err := database.DB.Create(&assign).Error; err == nil {
-			assignedCount++
-		}
+
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create subscription and process request"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, input)
