@@ -1,4 +1,5 @@
 import utils from "./utils";
+import { METHODS } from '../constants';
 
 export const historyApi = {
     get_spends: async (months: number | "custom" = 6, start?: string, end?: string, team_id?: string, status?: string) => {
@@ -11,7 +12,7 @@ export const historyApi = {
 
         return utils.request({
             url: `/history/spends?${query.toString()}`,
-            method: "GET",
+            method: METHODS.GET,
         });
     },
     get_department_spends: async (team_id?: string, status?: string) => {
@@ -20,7 +21,7 @@ export const historyApi = {
         if (status) query.append('status', status);
         return utils.request({
             url: `/history/department-spends?${query.toString()}`,
-            method: "GET",
+            method: METHODS.GET,
         });
     }
 };

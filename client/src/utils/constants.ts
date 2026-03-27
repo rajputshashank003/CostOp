@@ -11,3 +11,13 @@ export const SUBSCRIPTION_OPTIONS = {
     PLAN_TYPES: ["Individual", "Team", "Organization"],
     BILLING_CYCLES: ["Monthly", "Yearly"],
 };
+
+export const METHODS = {
+    GET: "GET",
+    POST: "POST",
+    PUT: "PUT",
+    DELETE: "DELETE",
+    PATCH: "PATCH",
+};
+
+export type HttpMethod = typeof METHODS[keyof typeof METHODS];

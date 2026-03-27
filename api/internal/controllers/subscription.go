@@ -40,7 +40,6 @@ func enrichSubscriptions(subs []models.Subscription) []models.Subscription {
 	return subs
 }
 
-// GetSubscriptions fetches all subscriptions for the user's active workspace.
 func GetSubscriptions(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 	status := c.DefaultQuery("status", "active")
@@ -151,8 +150,6 @@ func AddSubscription(c *gin.Context) {
 	if input.SeatCount < 1 {
 		input.SeatCount = 1
 	}
-	// Organization scope: team_id stays NULL (visible to all teams)
-	// Team/individual scope: use provided team_id or default to user's team
 	if input.Scope != "organization" && input.TeamID == nil {
 		teamID := user.DefaultTeamID
 		input.TeamID = &teamID

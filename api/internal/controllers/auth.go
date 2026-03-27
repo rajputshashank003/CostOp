@@ -53,9 +53,23 @@ func VerifyGoogleToken(c *gin.Context) {
 		}
 	}
 
-	// Upsert user in database
-	var user models.User
-	if err := database.DB.Where("google_id = ?", googleID).First(&user).Error; err != nil {
+	// Fetch user + their current team role in a single LEFT JOIN query.
+	// For new users (ID == 0) the role is determined by the code path below.
+	type userWithRole struct {
+		models.User
+		Role string `gorm:"column:role"`
+	}
+	var uwr userWithRole
+	database.DB.Table("users").
+		Select("users.*, team_members.role").
+		Joins("LEFT JOIN team_members ON team_members.user_id = users.id AND team_members.team_id = users.default_team_id").
+		Where("users.google_id = ? AND users.deleted_at IS NULL", googleID).
+		Scan(&uwr)
+
+	user := uwr.User
+	isAdmin := false
+
+	if user.ID == 0 {
 		user = models.User{
 			Email:     email,
 			Name:      name,
@@ -71,36 +85,36 @@ func VerifyGoogleToken(c *gin.Context) {
 		}
 
 		if hasInvite {
+			// Invited → joins as member of an existing team
 			database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			database.DB.Model(&invite).Update("status", "accepted")
 			user.IsOnboarded = true
 			database.DB.Save(&user)
+			isAdmin = false
 		} else {
-			newTeam := models.Team{
-				Name:    user.Name + "'s Workspace",
-				OwnerID: user.ID,
-			}
+			// Organic signup → create personal workspace and become owner
+			newTeam := models.Team{Name: user.Name + "'s Workspace", OwnerID: user.ID}
 			database.DB.Create(&newTeam)
 			database.DB.Create(&models.TeamMember{TeamID: newTeam.ID, UserID: user.ID, Role: "owner"})
 			user.DefaultTeamID = newTeam.ID
 			database.DB.Save(&user)
+			isAdmin = true
 		}
 	} else {
 		if hasInvite && user.DefaultTeamID != invite.TeamID {
-			// Pre-existing user clicked an invite link to jump into a new Team!
+			// Accepted invite to a different team
 			user.DefaultTeamID = invite.TeamID
-			database.DB.Save(&user)
-
-			// Check if they are already in the team somehow
 			var exists int64
 			database.DB.Model(&models.TeamMember{}).Where("team_id = ? AND user_id = ?", invite.TeamID, user.ID).Count(&exists)
 			if exists == 0 {
 				database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			}
 			database.DB.Model(&invite).Update("status", "accepted")
+			isAdmin = false
+		} else {
+			// Regular login — role came from the JOIN, no extra query needed
+			isAdmin = uwr.Role == "owner"
 		}
-
-		// Update existing user info just in case
 		user.Name = name
 		user.AvatarURL = avatarURL
 		database.DB.Save(&user)
@@ -116,13 +130,6 @@ func VerifyGoogleToken(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate auth token"})
 		return
-	}
-
-	// Determine admin status from TeamMember role
-	var member models.TeamMember
-	isAdmin := false
-	if err := database.DB.Where("team_id = ? AND user_id = ?", user.DefaultTeamID, user.ID).First(&member).Error; err == nil {
-		isAdmin = member.Role == "owner"
 	}
 
 	c.JSON(http.StatusOK, gin.H{

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { membersApi } from "../../utils/api_request/members";
+import { teamsApi } from "../../utils/api_request/teams";
 import { useUser } from "../../hooks/useUser";
 import toast from "react-hot-toast";
 
@@ -21,65 +22,27 @@ const useMembers = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [allowMemberInvites, setAllowMemberInvites] = useState(true);
 
-    // Debounce search
-    useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
-        return () => clearTimeout(t);
-    }, [searchQuery]);
-
     // Invite form state
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteDesignation, setInviteDesignation] = useState("");
     const [isInviting, setIsInviting] = useState(false);
     const [generatedLink, setGeneratedLink] = useState("");
 
-    // Load all teams the user belongs to
-    useEffect(() => {
-        if (isAuthLoading) return;
-        membersApi.get_teams().then((data: any[]) => {
-            setTeams(data || []);
-            // Default to "All Teams" (null) so all members are visible on first load
-        }).catch(console.error);
-    }, [isAuthLoading, user]);
-
-    // Fetch team settings when the selected team changes
-    useEffect(() => {
-        if (!selectedTeamId) return;
-        import('../../utils/api_request/utils').then(({ default: utils }) => {
-            utils.request({ url: `/teams/${selectedTeamId}`, method: 'GET' })
-                .then((team: any) => {
-                    setAllowMemberInvites(team.allow_member_invites ?? true);
-                })
-                .catch(console.error);
-        });
-    }, [selectedTeamId]);
-
     // Fetch roster whenever selected team OR filters change
-    const fetchRoster = useCallback(() => {
+    const fetchRoster = useCallback(async () => {
         setIsLoading(true);
-        if (selectedTeamId === null) {
-            // "All Teams" — fetch across all teams; filtering is done server-side via get_all
-            membersApi.get_all(debouncedSearchQuery, subscriptionFilter)
-                .then((data: any) => {
-                    setMembers(data.members || []);
-                    setInvites(data.invites || []);
-                })
-                .catch(console.error)
-                .finally(() => setIsLoading(false));
-        } else {
-            membersApi.get_by_team(selectedTeamId, debouncedSearchQuery, subscriptionFilter)
-                .then((data: any) => {
-                    setMembers(data.members || []);
-                    setInvites(data.invites || []);
-                })
-                .catch(console.error)
-                .finally(() => setIsLoading(false));
+        try {
+            const data = selectedTeamId === null
+                ? await membersApi.get_all(debouncedSearchQuery, subscriptionFilter)
+                : await membersApi.get_by_team(selectedTeamId, debouncedSearchQuery, subscriptionFilter);
+            setMembers(data.members || []);
+            setInvites(data.invites || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     }, [selectedTeamId, debouncedSearchQuery, subscriptionFilter]);
-
-    useEffect(() => {
-        fetchRoster();
-    }, [fetchRoster]);
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -121,13 +84,57 @@ const useMembers = () => {
         }
     };
 
+    useEffect(() => {
+        fetchRoster();
+    }, [fetchRoster]);
+
+    // Debounce search
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), 500);
+        return () => clearTimeout(t);
+    }, [searchQuery]);
+
+    // Load all teams the user belongs to
+    useEffect(() => {
+        if (isAuthLoading) return;
+        const fetchTeams = async () => {
+            try {
+                const data = await membersApi.get_teams();
+                setTeams(data || []);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchTeams();
+    }, [isAuthLoading, user]);
+
+    // Fetch team settings when the selected team changes
+    useEffect(() => {
+        if (!selectedTeamId) return;
+        const fetchTeamSettings = async () => {
+            try {
+                const team = await teamsApi.get_by_id(selectedTeamId);
+                setAllowMemberInvites(team.allow_member_invites ?? true);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchTeamSettings();
+    }, [selectedTeamId]);
+
+
     return {
-        teams, selectedTeamId, setSelectedTeamId,
-        members, invites,
+        teams,
+        selectedTeamId,
+        setSelectedTeamId,
+        members,
+        invites,
         isLoading,
         allowMemberInvites,
-        inviteEmail, setInviteEmail,
-        inviteDesignation, setInviteDesignation,
+        inviteEmail,
+        setInviteEmail,
+        inviteDesignation,
+        setInviteDesignation,
         isInviting,
         generatedLink, setGeneratedLink,
         handleInvite,

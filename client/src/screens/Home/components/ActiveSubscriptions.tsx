@@ -7,30 +7,26 @@ import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDr
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
 import { useContext, useEffect, useState } from "react";
 import HomeContext from "../context";
-import { teamsApi } from "../../../utils/api_request/teams";
 
-interface Props {
-    localSearch: string;
-    setLocalSearch: (val: string) => void;
-    availableCategories: any[];
-    onSetArchive: (sub: any) => void;
-}
-
-export default function ActiveSubscriptions({ localSearch, setLocalSearch, availableCategories, onSetArchive }: Props) {
+export default function ActiveSubscriptions() {
     const {
-        subscriptions, filterCategory, setFilterCategory, filterCycle, setFilterCycle,
-        dateStart, setDateStart, dateEnd, setDateEnd,
-        filterTeam, setFilterTeam
+        subscriptions, 
+        filterCategory, 
+        setFilterCategory, 
+        filterCycle, 
+        setFilterCycle,
+        dateStart, 
+        setDateStart, 
+        dateEnd, 
+        setDateEnd,
+        filterTeam, 
+        setFilterTeam,
+        localSearch, 
+        setLocalSearch,
+        availableCategories,
+        availableTeams,
+        setSubToArchive
     } = useContext(HomeContext);
-
-    const [availableTeams, setAvailableTeams] = useState<any[]>([{ value: "all", label: "All Teams" }]);
-
-    useEffect(() => {
-        teamsApi.get_all().then((res: any) => {
-            const mapped = map((res || []), (t: any) => ({ value: String(t.id), label: t.name }));
-            setAvailableTeams([{ value: "all", label: "All Teams" }, ...mapped]);
-        }).catch(console.error);
-    }, []);
 
     const hasActiveFilters = localSearch || filterCategory !== "All Categories" || filterCycle !== "All Cycles" || dateStart || dateEnd || (filterTeam && filterTeam !== "all");
 
@@ -162,7 +158,7 @@ export default function ActiveSubscriptions({ localSearch, setLocalSearch, avail
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                     <AnimatePresence>
                         {map(subscriptions, (sub: any) => (
-                            <SubscriptionCard key={sub.id} sub={sub} onArchiveClick={() => onSetArchive(sub)} clickable />
+                            <SubscriptionCard key={sub.id} sub={sub} onArchiveClick={() => setSubToArchive(sub)} clickable />
                         ))}
                     </AnimatePresence>
                 </div>

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import {useContext } from "react";
 import { DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { historyApi } from "../../../utils/api_request/history";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
 import HistoryContext from "../context";
 import map from "lodash/map";
 import maxBy from "lodash/maxBy";
+import split from "lodash/split";
+import head from "lodash/head";
 
 interface SpendData {
     month: string;
@@ -14,28 +15,17 @@ interface SpendData {
 }
 
 export default function SpendsChart() {
-    const { filterTeam, historyMode } = React.useContext(HistoryContext);
-    const [data, setData] = useState<SpendData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [months, setMonths] = useState<number | "custom">(6);
-    const [customStart, setCustomStart] = useState<string>("");
-    const [customEnd, setCustomEnd] = useState<string>("");
+    const {
+        spendData,
+        isLoadingSpends: isLoading,
+        spendsMonths: months, setSpendsMonths: setMonths,
+        spendsCustomStart: customStart, setSpendsCustomStart: setCustomStart,
+        spendsCustomEnd: customEnd, setSpendsCustomEnd: setCustomEnd
+    } = useContext(HistoryContext);
 
-    useEffect(() => {
-        if (months === "custom" && !customStart && !customEnd) return;
+    const data = (spendData || []) as SpendData[];
 
-        setIsLoading(true);
-        historyApi.get_spends(months, customStart, customEnd, filterTeam === "all" ? undefined : filterTeam, historyMode === "all" ? undefined : "archived")
-            .then((res: any) => {
-                setData(res || []);
-            })
-            .catch((err: any) => console.error(err))
-            .finally(() => setIsLoading(false));
-    }, [months, customStart, customEnd, filterTeam, historyMode]);
-
-    const maxSpend = maxBy(data, 'spend')?.spend || 1; // avoid div by 0
-
-    // Format currency
+    const maxSpend = maxBy(data, 'spend')?.spend || 1;
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
@@ -150,7 +140,7 @@ export default function SpendsChart() {
                                 <div key={`label-${i}`} className={`flex-1 text-center text-[10px] sm:text-[11px] font-bold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis
                                     ${isCurrentMonth ? 'text-emerald-700' : 'text-slate-500'}
                                 `}>
-                                    {item.month.split(" ")[0]}
+                                    {head(split(item.month, " "))}
                                 </div>
                             )
                         })}

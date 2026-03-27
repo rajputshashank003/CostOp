@@ -1,4 +1,5 @@
 import utils from './utils';
+import { METHODS } from '../constants';
 
 export const subscriptionsApi = {
     get_all: (params?: { status?: string, search?: string, category?: string, cycle?: string, start?: string, end?: string, team_id?: string | number }) => {
@@ -15,37 +16,37 @@ export const subscriptionsApi = {
 
         return utils.request({
             url: `/subscriptions?${query.toString()}`,
-            method: 'GET',
+            method: METHODS.GET,
             response_array: true
         });
     },
     get_by_id: (id: number | string) => {
-        return utils.request({ url: `/subscriptions/${id}`, method: 'GET' });
+        return utils.request({ url: `/subscriptions/${id}`, method: METHODS.GET });
     },
     create: (payload: any) => {
         return utils.request({
             url: `/subscriptions`,
-            method: 'POST',
+            method: METHODS.POST,
             data: payload
         });
     },
     delete: (id: number) => {
         return utils.request({
             url: `/subscriptions/${id}`,
-            method: 'DELETE',
+            method: METHODS.DELETE,
             show_error: false
         });
     },
     archive: (id: number) => {
         return utils.request({
             url: `/subscriptions/${id}/archive`,
-            method: 'PATCH',
+            method: METHODS.PATCH,
         });
     },
     restore: (id: number) => {
         return utils.request({
             url: `/subscriptions/${id}/restore`,
-            method: 'PATCH',
+            method: METHODS.PATCH,
         });
     }
 };

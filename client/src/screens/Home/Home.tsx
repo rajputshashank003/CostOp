@@ -1,16 +1,11 @@
-import { useContext, useState, useEffect } from "react";
-import size from "lodash/size";
-import map from "lodash/map";
+import { useContext } from "react";
 import HomeContext from "./context";
 import { AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
-import { useUser } from "../../hooks/useUser";
-import { useNavigate } from "react-router-dom";
 import ArchiveConfirmationModal from "../../components/ArchiveConfirmationModal/ArchiveConfirmationModal";
 import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/UpcomingRenewalsModal";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import HomeSkeleton from "../../components/Skeleton/HomeSkeleton";
-import { categoriesApi } from "../../utils/api_request/categories";
 
 import HomeHeader from "./components/HomeHeader";
 import HomeEmptyState from "./components/HomeEmptyState";
@@ -19,43 +14,20 @@ import ActiveSubscriptions from "./components/ActiveSubscriptions";
 
 const HomeComp = () => {
     const {
-        subscriptions, isLoadingSubs, refreshSubscriptions, metrics, isLoadingMetrics,
-        searchQuery, setSearchQuery, filterCategory, setFilterCategory, filterCycle, setFilterCycle,
+        isLoadingSubs, refreshSubscriptions, metrics,
+        localSearch, setLocalSearch,
         spendTimeframe, setSpendTimeframe, customStart, setCustomStart, customEnd, setCustomEnd,
-        historicalSpendTotal, isLoadingHistorical
+        historicalSpendTotal, isLoadingHistorical,
+        subToArchive, setSubToArchive,
+        isRenewalsModalOpen, setIsRenewalsModalOpen,
+        searchQuery, filterCategory, filterCycle,
+        user, isAuthLoading, navigate
     } = useContext(HomeContext);
-    const { user, logout, isLoading: isAuthLoading } = useUser();
-    const navigate = useNavigate();
-    const [subToArchive, setSubToArchive] = useState<any>(null);
-    const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
-
-    // Active List Filters State
-    const [localSearch, setLocalSearch] = useState("");
-    const [availableCategories, setAvailableCategories] = useState<any[]>([{ value: "All Categories", label: "All Categories" }]);
-
-    useEffect(() => {
-        categoriesApi.get_all().then((res: any) => {
-            const mapped = map((res || []), (c: any) => ({ value: c.name, label: c.name }));
-            setAvailableCategories([{ value: "All Categories", label: "All Categories" }, ...mapped]);
-        }).catch(console.error);
-    }, []);
-
-    // Debounce the physical search input text back up linearly into the React Context triggers
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setSearchQuery(localSearch);
-        }, 400);
-        return () => clearTimeout(handler);
-    }, [localSearch, setSearchQuery]);
 
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
     });
-
-    const handleAddSuccess = () => {
-        refreshSubscriptions();
-    };
 
     if (isLoadingSubs || isAuthLoading) {
         return <HomeSkeleton />;
@@ -86,38 +58,31 @@ const HomeComp = () => {
                                 onOpenRenewals={() => setIsRenewalsModalOpen(true)}
                             />
 
-                            <ActiveSubscriptions
-                                localSearch={localSearch}
-                                setLocalSearch={setLocalSearch}
-                                availableCategories={availableCategories}
-                                onSetArchive={(s) => setSubToArchive(s)}
-                            />
+                            <ActiveSubscriptions />
                         </div>
                     )}
                 </div>
             </main>
 
-            {/* Modal Overlay Component */}
+            <AnimatePresence>
+                {subToArchive && (
+                    <ArchiveConfirmationModal
+                        subId={subToArchive.id}
+                        subName={subToArchive.name}
+                        onClose={() => setSubToArchive(null)}
+                        onSuccess={() => { setSubToArchive(null); refreshSubscriptions(); }}
+                    />
+                )}
+            </AnimatePresence>
 
-                <AnimatePresence>
-                    {subToArchive && (
-                        <ArchiveConfirmationModal
-                            subId={subToArchive.id}
-                            subName={subToArchive.name}
-                            onClose={() => setSubToArchive(null)}
-                            onSuccess={() => { setSubToArchive(null); refreshSubscriptions(); }}
-                        />
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                    {isRenewalsModalOpen && metrics?.upcoming_renewals && (
-                        <UpcomingRenewalsModal
-                            renewals={metrics.upcoming_renewals}
-                            onClose={() => setIsRenewalsModalOpen(false)}
-                        />
-                    )}
-                </AnimatePresence>
+            <AnimatePresence>
+                {isRenewalsModalOpen && metrics?.upcoming_renewals && (
+                    <UpcomingRenewalsModal
+                        renewals={metrics.upcoming_renewals}
+                        onClose={() => setIsRenewalsModalOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

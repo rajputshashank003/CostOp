@@ -9,20 +9,19 @@ const useRequests = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
-    const fetchRequests = useCallback(() => {
+    const fetchRequests = useCallback(async () => {
         setIsLoading(true);
-        requestsApi.get_all(activeTab)
-            .then((data: any) => setRequests(data || []))
-            .catch(console.error)
-            .finally(() => setIsLoading(false));
+        try {
+            const data = await requestsApi.get_all(activeTab);
+            setRequests(data || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
     }, [activeTab]);
 
-    useEffect(() => {
-        fetchRequests();
-    }, [fetchRequests]);
-
     const handleApprove = (req: any) => {
-        // Redirect admin to the full form to fill in remaining details (start date, seats, etc.)
         navigate("/add-subscription", { state: { request: req } });
     };
 
@@ -35,6 +34,10 @@ const useRequests = () => {
             toast.error(err.response?.data?.error || "Failed to reject.");
         }
     };
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
 
     return {
         requests, isLoading,

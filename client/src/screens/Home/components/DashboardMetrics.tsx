@@ -24,8 +24,16 @@ interface Props {
 }
 
 export default function DashboardMetrics({
-    spendTimeframe, setSpendTimeframe, customStart, setCustomStart, customEnd, setCustomEnd,
-    historicalSpendTotal, isLoadingHistorical, formatter, onOpenRenewals
+    spendTimeframe,
+    setSpendTimeframe,
+    customStart,
+    setCustomStart,
+    customEnd,
+    setCustomEnd,
+    historicalSpendTotal,
+    isLoadingHistorical,
+    formatter,
+    onOpenRenewals
 }: Props) {
     const { metrics, isLoadingMetrics } = useContext(HomeContext);
     const scrollRef = useRef<HTMLDivElement>(null);

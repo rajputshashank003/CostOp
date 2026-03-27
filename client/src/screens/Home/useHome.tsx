@@ -3,7 +3,10 @@ import { useUser } from "../../hooks/useUser";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 import { metricsApi } from "../../utils/api_request/metrics";
 import { historyApi } from "../../utils/api_request/history";
+import { categoriesApi } from "../../utils/api_request/categories";
+import { teamsApi } from "../../utils/api_request/teams";
 import reduce from "lodash/reduce";
+import map from "lodash/map";
 
 const readParam = (key: string, fallback: string): string => {
     const params = new URLSearchParams(window.location.search);
@@ -24,34 +27,23 @@ const syncParams = (search: string, category: string, cycle: string, spendTimefr
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
 };
 
-// Convert a "last N months" timeframe to ISO date strings
-const timeframeToRange = (timeframe: number | "current" | "custom", customStart: string, customEnd: string): { start?: string; end?: string } => {
-    if (timeframe === "current" || timeframe === "custom") {
-        return { start: customStart || undefined, end: customEnd || undefined };
-    }
-    const end = new Date();
-    const start = new Date();
-    start.setMonth(start.getMonth() - (timeframe as number));
-    return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
-    };
-};
-
 const useHome = () => {
+    const { user, isLoading: isAuthLoading } = useUser();
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [isLoadingSubs, setIsLoadingSubs] = useState(true);
     const [metrics, setMetrics] = useState<any>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
-    const { isLoading: isAuthLoading } = useUser();
 
-    // Initialise from URL on first mount
+    // Filter and UI State
+    const [localSearch, setLocalSearch] = useState(() => readParam("q", ""));
     const [searchQuery, setSearchQuery] = useState(() => readParam("q", ""));
     const [filterCategory, setFilterCategory] = useState(() => readParam("category", "All Categories"));
     const [filterCycle, setFilterCycle] = useState(() => readParam("cycle", "All Cycles"));
     const [filterTeam, setFilterTeam] = useState(() => readParam("team", "all"));
 
-    // Date range / spend widget (lifted here so it drives subscriptions fetch)
+    const [availableCategories, setAvailableCategories] = useState<any[]>([{ value: "All Categories", label: "All Categories" }]);
+    const [availableTeams, setAvailableTeams] = useState<any[]>([{ value: "all", label: "All Teams" }]);
+
     const [spendTimeframe, setSpendTimeframe] = useState<number | "current" | "custom">(() => {
         const raw = readParam("timeframe", "current");
         if (raw === "current" || raw === "custom") return raw;
@@ -60,38 +52,19 @@ const useHome = () => {
     });
     const [customStart, setCustomStart] = useState(() => readParam("cs", ""));
     const [customEnd, setCustomEnd] = useState(() => readParam("ce", ""));
-
-    // Separate date range for the subscription list (next_billing_date filter)
     const [dateStart, setDateStart] = useState(() => readParam("start", ""));
     const [dateEnd, setDateEnd] = useState(() => readParam("end", ""));
 
-    // Derived historical spend total for the widget
     const [historicalSpendTotal, setHistoricalSpendTotal] = useState(0);
     const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
 
-    // Sync all filters to URL
-    useEffect(() => {
-        syncParams(searchQuery, filterCategory, filterCycle, String(spendTimeframe), customStart, customEnd, dateStart, dateEnd);
-    }, [searchQuery, filterCategory, filterCycle, spendTimeframe, customStart, customEnd, dateStart, dateEnd]);
-
-    // Fetch historical spend total for the widget number (separate from list filter)
-    useEffect(() => {
-        if (spendTimeframe === "current") return;
-        if (spendTimeframe === "custom" && !customStart && !customEnd) return;
-
-        setIsLoadingHistorical(true);
-        historyApi.get_spends(spendTimeframe, customStart, customEnd)
-            .then((res: any) => {
-                const total = reduce((res || []), (acc: number, curr: any) => acc + curr.spend, 0);
-                setHistoricalSpendTotal(total);
-            })
-            .catch((err: any) => console.error(err))
-            .finally(() => setIsLoadingHistorical(false));
-    }, [spendTimeframe, customStart, customEnd]);
+    // Modal States
+    const [subToArchive, setSubToArchive] = useState<any>(null);
+    const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
 
     const fetchSubscriptions = useCallback(async () => {
         if (isAuthLoading) return;
-
+        setIsLoadingSubs(true);
         try {
             const data = await subscriptionsApi.get_all({
                 search: searchQuery,
@@ -111,7 +84,7 @@ const useHome = () => {
 
     const fetchMetrics = useCallback(async () => {
         if (isAuthLoading) return;
-
+        setIsLoadingMetrics(true);
         try {
             const data = await metricsApi.get_summary({
                 search: searchQuery,
@@ -134,22 +107,93 @@ const useHome = () => {
         fetchMetrics();
     }, [fetchSubscriptions, fetchMetrics]);
 
+    // Sync all filters to URL
+    useEffect(() => {
+        syncParams(searchQuery, filterCategory, filterCycle, String(spendTimeframe), customStart, customEnd, dateStart, dateEnd);
+    }, [searchQuery, filterCategory, filterCycle, spendTimeframe, customStart, customEnd, dateStart, dateEnd]);
+
+    // Debounce search
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchQuery(localSearch);
+        }, 400);
+        return () => clearTimeout(handler);
+    }, [localSearch]);
+
+    // Fetch supporting data (categories, teams)
+    useEffect(() => {
+        const fetchSupportingData = async () => {
+            try {
+                const [categories, teams] = await Promise.all([
+                    categoriesApi.get_all(),
+                    teamsApi.get_all()
+                ]);
+
+                const catMapped = map((categories || []), (c: any) => ({ value: c.name, label: c.name }));
+                setAvailableCategories([{ value: "All Categories", label: "All Categories" }, ...catMapped]);
+
+                const teamMapped = map((teams || []), (t: any) => ({ value: String(t.id), label: t.name }));
+                setAvailableTeams([{ value: "all", label: "All Teams" }, ...teamMapped]);
+            } catch (err) {
+                console.error("Error fetching supporting data:", err);
+            }
+        };
+        fetchSupportingData();
+    }, []);
+
+    // Fetch historical spend total
+    useEffect(() => {
+        if (spendTimeframe === "current") return;
+        if (spendTimeframe === "custom" && !customStart && !customEnd) return;
+
+        const fetchHistorical = async () => {
+            setIsLoadingHistorical(true);
+            try {
+                const res = await historyApi.get_spends(spendTimeframe, customStart, customEnd);
+                const total = reduce((res || []), (acc: number, curr: any) => acc + curr.spend, 0);
+                setHistoricalSpendTotal(total);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsLoadingHistorical(false);
+            }
+        };
+        fetchHistorical();
+    }, [spendTimeframe, customStart, customEnd]);
+
     return {
+        user,
         subscriptions,
         isLoadingSubs,
         metrics,
         isLoadingMetrics,
-        searchQuery, setSearchQuery,
-        filterCategory, setFilterCategory,
-        filterCycle, setFilterCycle,
-        spendTimeframe, setSpendTimeframe,
-        customStart, setCustomStart,
-        customEnd, setCustomEnd,
-        dateStart, setDateStart,
-        dateEnd, setDateEnd,
+        localSearch, 
+        setLocalSearch,
+        searchQuery,
+        filterCategory, 
+        setFilterCategory,
+        filterCycle, 
+        setFilterCycle,
+        filterTeam, 
+        setFilterTeam,
+        availableCategories,
+        availableTeams,
+        spendTimeframe, 
+        setSpendTimeframe,
+        customStart, 
+        setCustomStart,
+        customEnd, 
+        setCustomEnd,
+        dateStart, 
+        setDateStart,
+        dateEnd, 
+        setDateEnd,
         historicalSpendTotal,
         isLoadingHistorical,
-        filterTeam, setFilterTeam,
+        subToArchive, 
+        setSubToArchive,
+        isRenewalsModalOpen, 
+        setIsRenewalsModalOpen,
         refreshSubscriptions: () => { fetchSubscriptions(); fetchMetrics(); }
     };
 };

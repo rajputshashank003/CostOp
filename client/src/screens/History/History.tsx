@@ -18,7 +18,7 @@ import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 
 const HistoryComp = () => {
     const { user, isLoading: isAuthLoading } = useUser();
-    const { archived, isLoading, isRefetching, refreshArchived, historyMode, setHistoryMode } = useContext(HistoryContext);
+    const { archived, isLoading, isRefetching, refreshArchived } = useContext(HistoryContext);
     const [subToDelete, setSubToDelete] = useState<any>(null);
     const isAdmin = user?.is_admin ?? false;
 
@@ -45,7 +45,6 @@ const HistoryComp = () => {
                 <HistoryHeader />
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto w-full max-w-7xl mx-auto">
-                    {/* Widgets are always rendered; never affected by filter/search refetches */}
                     <SpendsChart />
 
                     <DepartmentSpendHistory />

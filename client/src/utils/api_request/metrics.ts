@@ -1,4 +1,5 @@
 import utils from './utils';
+import { METHODS } from '../constants';
 
 export const metricsApi = {
     get_summary: (params?: { search?: string; category?: string; cycle?: string; start?: string; end?: string; team_id?: string }) => {
@@ -12,7 +13,7 @@ export const metricsApi = {
         const qs = query.toString();
         return utils.request({
             url: `/metrics${qs ? `?${qs}` : ""}`,
-            method: 'GET'
+            method: METHODS.GET
         });
     }
 };

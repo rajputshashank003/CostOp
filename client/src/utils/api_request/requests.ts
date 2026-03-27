@@ -1,12 +1,11 @@
 import utils from './utils';
+import { METHODS } from '../constants';
 
 export const requestsApi = {
-    // Get all subscription requests (admins see all; members see their own)
     get_all: (status?: 'pending' | 'approved' | 'rejected') => {
         const params = status ? `?status=${status}` : '';
-        return utils.request({ url: `/requests${params}`, method: 'GET' });
+        return utils.request({ url: `/requests${params}`, method: METHODS.GET });
     },
-    // Submit a new subscription request (any team member)
     create: (data: {
         name: string;
         category?: string;
@@ -17,14 +16,12 @@ export const requestsApi = {
         seat_count?: number;
         justification?: string;
     }) => {
-        return utils.request({ url: `/requests`, method: 'POST', data });
+        return utils.request({ url: `/requests`, method: METHODS.POST, data });
     },
-    // Approve a pending request — auto-creates a Subscription (admin only)
     approve: (id: number | string) => {
-        return utils.request({ url: `/requests/${id}/approve`, method: 'PATCH' });
+        return utils.request({ url: `/requests/${id}/approve`, method: METHODS.PATCH });
     },
-    // Reject a pending request (admin only)
     reject: (id: number | string) => {
-        return utils.request({ url: `/requests/${id}/reject`, method: 'PATCH' });
+        return utils.request({ url: `/requests/${id}/reject`, method: METHODS.PATCH });
     }
 };

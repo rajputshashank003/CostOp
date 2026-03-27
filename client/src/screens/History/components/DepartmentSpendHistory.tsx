@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { PieChart } from "lucide-react";
 import { motion } from "framer-motion";
-import { historyApi } from "../../../utils/api_request/history";
 import HistoryContext from "../context";
 import map from "lodash/map";
 import sumBy from "lodash/sumBy";
@@ -13,23 +12,9 @@ interface DeptSpendData {
 }
 
 export default function DepartmentSpendHistory() {
-    const { filterTeam, historyMode } = React.useContext(HistoryContext);
-    const [data, setData] = useState<DeptSpendData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { deptSpendData: data, isLoadingDeptSpends: isLoading } = React.useContext(HistoryContext);
 
-    useEffect(() => {
-        setIsLoading(true);
-        historyApi.get_department_spends(filterTeam === "all" ? undefined : filterTeam, historyMode === "all" ? undefined : "archived")
-            .then((res: any) => {
-                setData(res || []);
-            })
-            .catch((err: any) => console.error(err))
-            .finally(() => setIsLoading(false));
-    }, [filterTeam, historyMode]);
-
-    const totalSpend = sumBy(data, 'spend') || 1; // avoid div by 0
-
-    // Format currency
+    const totalSpend = sumBy(data, 'spend') || 1;
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',

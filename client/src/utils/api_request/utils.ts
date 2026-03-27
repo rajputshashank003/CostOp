@@ -1,11 +1,12 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
-import { LOCAL_STORAGE } from '../constants'; // Assuming we have it
+import { LOCAL_STORAGE, HttpMethod } from '../constants';
 
 export interface RequestProps extends AxiosRequestConfig {
     show_error?: boolean;
     response_array?: boolean;
     base?: string;
+    method?: HttpMethod;
 }
 
 const utils = {

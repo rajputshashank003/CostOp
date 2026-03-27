@@ -1,32 +1,28 @@
 import { Search, X, CalendarRange } from "lucide-react";
 import size from "lodash/size";
-import map from "lodash/map";
 import { useContext, useEffect, useState } from "react";
 import HistoryContext from "../context";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
-import { teamsApi } from "../../../utils/api_request/teams";
 
 export default function HistoryToolbar() {
     const {
         archived,
-        localSearch, setLocalSearch,
-        filterCategory, setFilterCategory,
+        localSearch, 
+        setLocalSearch,
+        filterCategory, 
+        setFilterCategory,
         availableCategories,
-        filterCycle, setFilterCycle,
-        filterTeam, setFilterTeam,
-        dateStart, setDateStart,
-        dateEnd, setDateEnd
+        filterCycle, 
+        setFilterCycle,
+        filterTeam, 
+        setFilterTeam,
+        availableTeams,
+        dateStart, 
+        setDateStart,
+        dateEnd, 
+        setDateEnd
     } = useContext(HistoryContext);
-
-    const [availableTeams, setAvailableTeams] = useState<any[]>([{ value: "all", label: "All Teams" }]);
-
-    useEffect(() => {
-        teamsApi.get_all().then((res: any) => {
-            const mapped = map((res || []), (t: any) => ({ value: String(t.id), label: t.name }));
-            setAvailableTeams([{ value: "all", label: "All Teams" }, ...mapped]);
-        }).catch(console.error);
-    }, []);
 
     const hasDateFilter = dateStart || dateEnd;
 
