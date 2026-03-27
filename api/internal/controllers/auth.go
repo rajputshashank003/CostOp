@@ -19,7 +19,6 @@ type GoogleLoginRequest struct {
 	InviteToken string `json:"invite_token"`
 }
 
-// VerifyGoogleToken receives the Google ID Token from the frontend, validates it, and issues our own JWT.
 func VerifyGoogleToken(c *gin.Context) {
 	var req GoogleLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -37,10 +36,10 @@ func VerifyGoogleToken(c *gin.Context) {
 	}
 
 	// Extract user details
-	email := payload.Claims["email"].(string)
-	name := payload.Claims["name"].(string)
-	googleID := payload.Claims["sub"].(string)
-	avatarURL := ""
+	email 		:= payload.Claims["email"].(string)
+	name 		:= payload.Claims["name"].(string)
+	googleID 	:= payload.Claims["sub"].(string)
+	avatarURL 	:= ""
 	if pict, ok := payload.Claims["picture"].(string); ok {
 		avatarURL = pict
 	}
@@ -57,7 +56,6 @@ func VerifyGoogleToken(c *gin.Context) {
 	// Upsert user in database
 	var user models.User
 	if err := database.DB.Where("google_id = ?", googleID).First(&user).Error; err != nil {
-		// Create new user
 		user = models.User{
 			Email:     email,
 			Name:      name,
@@ -75,20 +73,15 @@ func VerifyGoogleToken(c *gin.Context) {
 		if hasInvite {
 			database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			database.DB.Model(&invite).Update("status", "accepted")
-			user.IsOnboarded = true // They don't need onboarding if they were invited
+			user.IsOnboarded = true
 			database.DB.Save(&user)
 		} else {
-			// Phase 5: Auto-provision a completely isolated Default Team space for organic signups!
 			newTeam := models.Team{
 				Name:    user.Name + "'s Workspace",
 				OwnerID: user.ID,
 			}
 			database.DB.Create(&newTeam)
-
-			// Establish strict Owner access mapping
 			database.DB.Create(&models.TeamMember{TeamID: newTeam.ID, UserID: user.ID, Role: "owner"})
-
-			// Elevate their default UI context permanently
 			user.DefaultTeamID = newTeam.ID
 			database.DB.Save(&user)
 		}
@@ -112,10 +105,7 @@ func VerifyGoogleToken(c *gin.Context) {
 		user.AvatarURL = avatarURL
 		database.DB.Save(&user)
 	}
-
-	// Generate JWT our backend will use
 	secret := config.JWTSecret
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,

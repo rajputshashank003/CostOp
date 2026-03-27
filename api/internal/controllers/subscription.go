@@ -51,8 +51,6 @@ func GetSubscriptions(c *gin.Context) {
 		return
 	}
 
-	autoArchiveExpired(user.DefaultTeamID)
-
 	// Default to user's team; allow override via ?team_id=
 	var teamFilter uint = user.DefaultTeamID
 	isAllTeams := false
@@ -68,13 +66,13 @@ func GetSubscriptions(c *gin.Context) {
 	var query *gorm.DB
 	if isAllTeams {
 		query = database.DB.Where(
-			"(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND status = ?",
-			user.ID, user.ID, user.ID, status,
+			"(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR (scope = 'individual' AND user_id = ?) OR owner_id = ? OR (scope = 'organization' AND owner_id IN (SELECT user_id FROM team_members WHERE team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))) AND status = ?",
+			user.ID, user.ID, user.ID, user.ID, status,
 		)
 	} else {
 		query = database.DB.Where(
-			"(team_id = ? OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND status = ?",
-			teamFilter, user.ID, user.ID, status,
+			"(team_id = ? OR (scope = 'individual' AND user_id = ?) OR owner_id = ? OR (scope = 'organization' AND owner_id IN (SELECT user_id FROM team_members WHERE team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))) AND status = ?",
+			teamFilter, user.ID, user.ID, user.ID, status,
 		)
 	}
 

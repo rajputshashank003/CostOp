@@ -154,7 +154,7 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
                 <div className="mt-5 flex flex-col md:flex-row md:items-center justify-between gap-2 text-[13px] font-semibold text-slate-600 border-t border-slate-100 pt-4">
                     <div className="flex items-center gap-2">
                         <Briefcase size={16} className="text-indigo-400" />
-                        <span>Org Plan ({sub.seat_count || 0} seats)</span>
+                        <span>Org Plan</span>
                     </div>
                     {sub.archived_by_name ? (
                         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Archived by {sub.archived_by_name}</div>

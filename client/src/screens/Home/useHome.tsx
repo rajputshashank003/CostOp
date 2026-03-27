@@ -127,7 +127,7 @@ const useHome = () => {
         } finally {
             setIsLoadingMetrics(false);
         }
-    }, [isAuthLoading, searchQuery, filterCategory, filterCycle]);
+    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
 
     useEffect(() => {
         fetchSubscriptions();

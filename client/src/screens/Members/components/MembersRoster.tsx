@@ -36,46 +36,48 @@ export default function MembersRoster() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     key={m.user.id}
-                                    className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between gap-4"
+                                    className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                                 >
-                                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    {/* Row 1 (mobile) / Left side (desktop): Avatar + Name + Email */}
+                                    <div className="flex items-center gap-3 min-w-0">
                                         <img
                                             src={m.user.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(m.user.name || "U")}
                                             alt="Avatar"
-                                            className="w-12 h-12 rounded-full border border-slate-100 flex-shrink-0"
+                                            className="w-11 h-11 rounded-full border border-slate-100 flex-shrink-0"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.user.name || "U")}&background=random`;
                                             }}
                                         />
                                         <div className="min-w-0">
-                                            <div className="flex items-center gap-2 mb-1.5">
-                                                <p className="text-[15px] font-bold text-slate-900 leading-none truncate">{m.user.name || "User"}</p>
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <p className="text-[15px] font-bold text-slate-900 leading-none">{m.user.name || "User"}</p>
                                                 {m.has_subscription && (
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" title="Has active subscriptions"></span>
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Has active subscriptions"></span>
                                                 )}
                                             </div>
-                                            <p className="text-[13px] font-semibold text-slate-500 truncate">{m.user.email}</p>
+                                            <p className="text-[12px] font-semibold text-slate-400">{m.user.email}</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                    {/* Row 2 (mobile) / Right side (desktop): Badges + Role + Actions */}
+                                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0 pl-14 sm:pl-0">
                                         {m.designation && (
-                                            <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[10px] sm:text-xs font-bold text-emerald-600 tracking-wide capitalize">
+                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-600 tracking-wide capitalize">
                                                 {m.designation}
                                             </span>
                                         )}
-                                        <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-wide">
+                                        <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                                             {m.role}
                                         </span>
 
                                         {/* Admin: Move to Team dropdown */}
                                         {isAdmin && m.role !== "owner" && otherTeams.length > 0 && (
                                             <div className="relative group">
-                                                <button className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-emerald-600 px-2 py-1.5 rounded-lg hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200 cursor-pointer">
+                                                <button className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200 cursor-pointer">
                                                     <ArrowRightLeft size={13} />
                                                     <span className="hidden sm:inline">Move</span>
                                                 </button>
-                                                <div className="absolute right-0 top-8 z-20 hidden group-hover:block bg-white border border-slate-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                                                <div className="absolute left-0 sm:right-0 sm:left-auto top-8 z-20 hidden group-hover:block bg-white border border-slate-200 rounded-xl shadow-lg py-1 min-w-[160px]">
                                                     {otherTeams.map((t: any) => (
                                                         <button
                                                             key={t.id}

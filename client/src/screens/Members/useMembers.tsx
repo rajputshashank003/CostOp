@@ -38,13 +38,7 @@ const useMembers = () => {
         if (isAuthLoading) return;
         membersApi.get_teams().then((data: any[]) => {
             setTeams(data || []);
-            // Default to the user's current default_team_id
-            if (data && data.length > 0 && user?.default_team_id) {
-                const found = data.find((t: any) => t.id === user.default_team_id);
-                setSelectedTeamId(found ? found.id : data[0].id);
-            } else if (data?.length > 0) {
-                setSelectedTeamId(data[0].id);
-            }
+            // Default to "All Teams" (null) so all members are visible on first load
         }).catch(console.error);
     }, [isAuthLoading, user]);
 
