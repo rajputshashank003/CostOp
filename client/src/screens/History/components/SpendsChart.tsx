@@ -18,9 +18,12 @@ export default function SpendsChart() {
     const {
         spendData,
         isLoadingSpends: isLoading,
-        spendsMonths: months, setSpendsMonths: setMonths,
-        spendsCustomStart: customStart, setSpendsCustomStart: setCustomStart,
-        spendsCustomEnd: customEnd, setSpendsCustomEnd: setCustomEnd
+        spendsMonths: months, 
+        setSpendsMonths: setMonths,
+        spendsCustomStart: customStart, 
+        setSpendsCustomStart: setCustomStart,
+        spendsCustomEnd: customEnd, 
+        setSpendsCustomEnd: setCustomEnd
     } = useContext(HistoryContext);
 
     const data = (spendData || []) as SpendData[];

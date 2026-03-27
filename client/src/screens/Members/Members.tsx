@@ -11,7 +11,7 @@ import { useContext } from "react";
 
 const MembersComp = () => {
     const { user, isLoading: isAuthLoading } = useUser();
-    const { isLoading, allowMemberInvites } = useContext(MembersContext);
+    const { allowMemberInvites } = useContext(MembersContext);
 
     if (isAuthLoading) {
         return <MembersSkeleton />;

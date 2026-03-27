@@ -6,24 +6,36 @@ import ArchiveConfirmationModal from "../../components/ArchiveConfirmationModal/
 import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/UpcomingRenewalsModal";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import HomeSkeleton from "../../components/Skeleton/HomeSkeleton";
-
 import HomeHeader from "./components/HomeHeader";
 import HomeEmptyState from "./components/HomeEmptyState";
 import DashboardMetrics from "./components/DashboardMetrics";
 import ActiveSubscriptions from "./components/ActiveSubscriptions";
+import { useNavigate } from "react-router-dom";
 
 const HomeComp = () => {
     const {
-        isLoadingSubs, refreshSubscriptions, metrics,
-        localSearch, setLocalSearch,
-        spendTimeframe, setSpendTimeframe, customStart, setCustomStart, customEnd, setCustomEnd,
-        historicalSpendTotal, isLoadingHistorical,
-        subToArchive, setSubToArchive,
-        isRenewalsModalOpen, setIsRenewalsModalOpen,
-        searchQuery, filterCategory, filterCycle,
-        user, isAuthLoading, navigate
+        isLoadingSubs,
+        refreshSubscriptions,
+        metrics,
+        spendTimeframe,
+        setSpendTimeframe,
+        customStart,
+        setCustomStart,
+        customEnd,
+        setCustomEnd,
+        historicalSpendTotal,
+        isLoadingHistorical,
+        subToArchive,
+        setSubToArchive,
+        isRenewalsModalOpen,
+        setIsRenewalsModalOpen,
+        searchQuery,
+        filterCategory,
+        filterCycle,
+        isAuthLoading,
     } = useContext(HomeContext);
-
+    const navigate = useNavigate();
+    
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',

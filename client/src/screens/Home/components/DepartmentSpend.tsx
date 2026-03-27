@@ -11,7 +11,6 @@ interface Props {
 }
 
 export default function DepartmentSpend({ formatter }: Props) {
-    // Backend now returns pre-aggregated, filter-aware department spends
     const { metrics, isLoadingMetrics } = useContext(HomeContext);
     const deptSpends = metrics?.department_spends || [];
     const totalSpend = sumBy(deptSpends, "spend") || 1;

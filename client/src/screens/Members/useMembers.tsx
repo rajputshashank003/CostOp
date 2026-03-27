@@ -20,7 +20,7 @@ const useMembers = () => {
     const [members, setMembers] = useState<any[]>([]);
     const [invites, setInvites] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [allowMemberInvites, setAllowMemberInvites] = useState(true);
+    const [allowMemberInvites, setAllowMemberInvites] = useState(false);
 
     // Invite form state
     const [inviteEmail, setInviteEmail] = useState("");
@@ -94,13 +94,19 @@ const useMembers = () => {
         return () => clearTimeout(t);
     }, [searchQuery]);
 
-    // Load all teams the user belongs to
+    // Load all teams and fetch the default team's invite settings
     useEffect(() => {
         if (isAuthLoading) return;
         const fetchTeams = async () => {
             try {
                 const data = await membersApi.get_teams();
-                setTeams(data || []);
+                const teamList = data || [];
+                setTeams(teamList);
+                // On initial load (no team selected), use the first team to get workspace-level invite setting
+                if (!selectedTeamId && teamList.length > 0) {
+                    const team = await teamsApi.get_by_id(teamList[0].id);
+                    setAllowMemberInvites(team.allow_member_invites ?? false);
+                }
             } catch (err) {
                 console.error(err);
             }
@@ -108,13 +114,13 @@ const useMembers = () => {
         fetchTeams();
     }, [isAuthLoading, user]);
 
-    // Fetch team settings when the selected team changes
+    // Re-fetch team settings whenever the selected team changes
     useEffect(() => {
         if (!selectedTeamId) return;
         const fetchTeamSettings = async () => {
             try {
                 const team = await teamsApi.get_by_id(selectedTeamId);
-                setAllowMemberInvites(team.allow_member_invites ?? true);
+                setAllowMemberInvites(team.allow_member_invites ?? false);
             } catch (err) {
                 console.error(err);
             }
