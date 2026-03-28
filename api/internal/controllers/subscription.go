@@ -63,57 +63,16 @@ func GetSubscriptions(c *gin.Context) {
 	}
 
 	// Build query based on team filter
-	// Access is resolved from subscription_assignments (materialized access table)
-	// and subscription_teams (team-level grants)
 	var query *gorm.DB
 	if isAllTeams {
-		// Org-wide: find subscriptions where the user has a materialized assignment,
-		// or via the org-network team graph, or individual/org-scoped subs.
-		query = database.DB.Where(
-			`(id IN (SELECT subscription_id FROM subscription_assignments WHERE user_id = ?)
-			OR id IN (
-				SELECT st.subscription_id FROM subscription_teams st
-				WHERE st.team_id IN (
-					SELECT DISTINCT tm2.team_id FROM team_members tm2
-					WHERE tm2.user_id IN (
-						SELECT DISTINCT tm1.user_id FROM team_members tm1
-						WHERE tm1.team_id IN (
-							SELECT team_id FROM team_members WHERE user_id = ?
-						)
-					)
-				)
-			)
-			OR (scope = 'individual' AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))
-			OR (scope = 'organization' AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))
-			OR (team_id IS NULL AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))
-			OR owner_id = ?) AND status = ?`,
-			user.ID, user.ID, user.ID, user.ID, user.ID, user.ID, status,
-		)
+		// Org-wide: simple org_id lookup replaces the old 3-level nested team-graph subquery
+		query = orgSubscriptionQuery(user.OrgID, status)
 	} else {
-		// Single-team view: only subscriptions explicitly granted to this team,
-		// or org-scoped subs from the workspace owner
-		var selectedTeam models.Team
-		database.DB.First(&selectedTeam, teamFilter)
-
+		// Single-team view: subscriptions granted to this team + org-scoped subs
 		query = database.DB.Where(
 			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR (scope = 'organization' AND owner_id = ?)) AND status = ?`,
-			teamFilter, selectedTeam.OwnerID, status,
+			OR (scope = 'organization' AND org_id = ?)) AND status = ?`,
+			teamFilter, user.OrgID, status,
 		)
 	}
 
@@ -186,6 +145,7 @@ func AddSubscription(c *gin.Context) {
 
 	// Set server-controlled fields
 	input.UserID = userID
+	input.OrgID = user.OrgID
 	if input.OwnerID == 0 {
 		input.OwnerID = userID
 	}
@@ -416,24 +376,9 @@ func GetSubscriptionByID(c *gin.Context) {
 		return
 	}
 
-	// Access check: same org-network scope as GetSubscriptions
-	// User can view if: they have an assignment, are in a granted team,
-	// are the owner, or the sub belongs to a team in their workspace network.
+	// Access check: user must be in the same org as the subscription
 	var sub models.Subscription
-	if err := database.DB.Where(
-		`id = ? AND (
-			id IN (SELECT subscription_id FROM subscription_assignments WHERE user_id = ?)
-			OR id IN (SELECT subscription_id FROM subscription_teams WHERE team_id IN (
-				SELECT DISTINCT tm2.team_id FROM team_members tm2
-				WHERE tm2.user_id IN (
-					SELECT DISTINCT tm1.user_id FROM team_members tm1
-					WHERE tm1.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)
-				)
-			))
-			OR owner_id = ?
-		)`,
-		uint(subID), caller.ID, caller.ID, caller.ID,
-	).First(&sub).Error; err != nil {
+	if err := database.DB.Where("id = ? AND org_id = ?", uint(subID), caller.OrgID).First(&sub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
 	}

@@ -63,7 +63,12 @@ func OnboardUser(c *gin.Context) {
 		return
 	}
 
-	// Update the default team's name
+	// Update the organization name (org stores the workspace/company name)
+	if user.OrgID != 0 {
+		database.DB.Model(&models.Organization{}).Where("id = ?", user.OrgID).Update("name", input.TeamName)
+	}
+
+	// Also update the default team's name for backward compat
 	var team models.Team
 	if err := database.DB.First(&team, user.DefaultTeamID).Error; err == nil {
 		team.Name = input.TeamName

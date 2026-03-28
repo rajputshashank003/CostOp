@@ -50,30 +50,15 @@ func GetHistoricalSpends(c *gin.Context) {
 
 	var query *gorm.DB
 	if isAllTeams {
-		query = database.DB.Where(
-			`(team_id IN (
-				SELECT DISTINCT tm2.team_id FROM team_members tm2
-				WHERE tm2.user_id IN (
-					SELECT DISTINCT tm1.user_id FROM team_members tm1
-					WHERE tm1.team_id IN (
-						SELECT team_id FROM team_members WHERE user_id = ?
-					)
-				)
-			) OR (scope = 'individual' AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			)) OR (team_id IS NULL AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))) AND `+statusCondition,
-			user.ID, user.ID, user.ID, statusArgs,
-		)
+		// Org-wide: simple org_id lookup
+		query = database.DB.Where("org_id = ? AND "+statusCondition, user.OrgID, statusArgs)
 	} else {
-		query = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND "+statusCondition, teamFilter, user.ID, user.ID, statusArgs)
+		// Single-team view
+		query = database.DB.Where(
+			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
+			OR (scope = 'organization' AND org_id = ?)) AND `+statusCondition,
+			teamFilter, user.OrgID, statusArgs,
+		)
 	}
 
 	var subscriptions []models.Subscription
@@ -219,30 +204,15 @@ func GetDepartmentSpendHistory(c *gin.Context) {
 
 	var query *gorm.DB
 	if isAllTeams {
-		query = database.DB.Where(
-			`(team_id IN (
-				SELECT DISTINCT tm2.team_id FROM team_members tm2
-				WHERE tm2.user_id IN (
-					SELECT DISTINCT tm1.user_id FROM team_members tm1
-					WHERE tm1.team_id IN (
-						SELECT team_id FROM team_members WHERE user_id = ?
-					)
-				)
-			) OR (scope = 'individual' AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			)) OR (team_id IS NULL AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))) AND `+statusCondition,
-			user.ID, user.ID, user.ID, statusArgs,
-		)
+		// Org-wide: simple org_id lookup
+		query = database.DB.Where("org_id = ? AND "+statusCondition, user.OrgID, statusArgs)
 	} else {
-		query = database.DB.Where("(team_id = ? OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?) AND "+statusCondition, teamFilter, user.ID, user.ID, statusArgs)
+		// Single-team view
+		query = database.DB.Where(
+			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
+			OR (scope = 'organization' AND org_id = ?)) AND `+statusCondition,
+			teamFilter, user.OrgID, statusArgs,
+		)
 	}
 
 	var subscriptions []models.Subscription

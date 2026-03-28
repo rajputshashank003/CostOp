@@ -12,6 +12,7 @@ type User struct {
 	Name          string         `json:"name"`
 	AvatarURL     string         `json:"avatar_url"`
 	GoogleID      string         `gorm:"uniqueIndex" json:"google_id"`
+	OrgID         uint           `gorm:"index" json:"org_id"`
 	DefaultTeamID uint           `json:"default_team_id"`
 	IsOnboarded   bool           `gorm:"default:false" json:"is_onboarded"`
 	CreatedAt     time.Time      `json:"created_at"`

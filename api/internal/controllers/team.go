@@ -30,22 +30,16 @@ func generateToken(length int) (string, error) {
 func GetMyTeams(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
-	// Find one membership to resolve the workspace owner
-	var callerMembership models.TeamMember
-	if err := database.DB.Where("user_id = ?", userID).First(&callerMembership).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team membership"})
+	// Find the caller's user to get org_id
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
 		return
 	}
 
-	var callerTeam models.Team
-	if err := database.DB.First(&callerTeam, callerMembership.TeamID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team"})
-		return
-	}
-
-	// Get ALL teams in this workspace (same OwnerID)
+	// Get ALL teams in this organization using org_id
 	var orgTeams []models.Team
-	if err := database.DB.Where("owner_id = ?", callerTeam.OwnerID).Find(&orgTeams).Error; err != nil {
+	if err := database.DB.Where("org_id = ?", user.OrgID).Find(&orgTeams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch workspace teams"})
 		return
 	}
@@ -283,22 +277,16 @@ func GetTeamMembers(c *gin.Context) {
 	search := c.Query("search")
 	subscriptionFilter := c.Query("subscription")
 
-	// Resolve the caller's team to find the workspace owner
-	var callerMembership models.TeamMember
-	if err := database.DB.Where("user_id = ?", userID).First(&callerMembership).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team membership"})
+	// Find the caller's user to get org_id
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
 		return
 	}
 
-	var callerTeam models.Team
-	if err := database.DB.First(&callerTeam, callerMembership.TeamID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team"})
-		return
-	}
-
-	// Get ALL team IDs in this workspace (all teams sharing the same OwnerID)
+	// Get ALL team IDs in this organization using org_id
 	var orgTeamIDs []uint
-	if err := database.DB.Model(&models.Team{}).Where("owner_id = ?", callerTeam.OwnerID).Pluck("id", &orgTeamIDs).Error; err != nil {
+	if err := database.DB.Model(&models.Team{}).Where("org_id = ?", user.OrgID).Pluck("id", &orgTeamIDs).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch workspace teams"})
 		return
 	}
@@ -479,9 +467,14 @@ func CreateTeam(c *gin.Context) {
 		return
 	}
 
+	// Set org_id from the caller's org
+	var user models.User
+	database.DB.First(&user, userID)
+
 	team := models.Team{
 		Name:    input.Name,
 		OwnerID: userID,
+		OrgID:   user.OrgID,
 	}
 	if err := database.DB.Create(&team).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create team"})

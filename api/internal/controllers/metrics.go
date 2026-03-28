@@ -51,34 +51,14 @@ func GetMetrics(c *gin.Context) {
 
 	var subsQuery *gorm.DB
 	if isAllTeams {
-		// Org-wide: same workspace-network subquery as GetSubscriptions
-		subsQuery = database.DB.Where(
-			`(team_id IN (
-				SELECT DISTINCT tm2.team_id FROM team_members tm2
-				WHERE tm2.user_id IN (
-					SELECT DISTINCT tm1.user_id FROM team_members tm1
-					WHERE tm1.team_id IN (
-						SELECT team_id FROM team_members WHERE user_id = ?
-					)
-				)
-			) OR (scope = 'individual' AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			)) OR (team_id IS NULL AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))) AND status = ?`,
-			user.ID, user.ID, user.ID, "active",
-		)
+		// Org-wide: simple org_id lookup
+		subsQuery = orgSubscriptionQuery(user.OrgID, "active")
 	} else {
 		// Single-team view
 		subsQuery = database.DB.Where(
-			"(team_id = ? OR (scope = 'individual' AND user_id = ?) OR owner_id = ? OR (scope = 'organization' AND owner_id IN (SELECT user_id FROM team_members WHERE team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))) AND status = ?",
-			teamFilter, user.ID, user.ID, user.ID, "active",
+			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
+			OR (scope = 'organization' AND org_id = ?)) AND status = ?`,
+			teamFilter, user.OrgID, "active",
 		)
 	}
 
@@ -146,17 +126,8 @@ func GetMetrics(c *gin.Context) {
 	thirtyDaysFromNow := now.AddDate(0, 0, 31)
 
 	renewalQuery := database.DB.Where(
-		`(team_id IN (
-			SELECT DISTINCT tm2.team_id FROM team_members tm2
-			WHERE tm2.user_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)
-			)
-		) OR team_id IS NULL AND owner_id IN (
-			SELECT DISTINCT tm1.user_id FROM team_members tm1
-			WHERE tm1.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)
-		)) AND status = ? AND is_auto_pay = ? AND next_billing_date BETWEEN ? AND ?`,
-		user.ID, user.ID, "active", true, now.AddDate(0, 0, -1), thirtyDaysFromNow,
+		"org_id = ? AND status = ? AND is_auto_pay = ? AND next_billing_date BETWEEN ? AND ?",
+		user.OrgID, "active", true, now.AddDate(0, 0, -1), thirtyDaysFromNow,
 	).Order("next_billing_date ASC")
 
 	// Apply the same filters to renewals

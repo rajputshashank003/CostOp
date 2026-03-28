@@ -11,8 +11,9 @@ import (
 // On approval, a new Subscription is automatically created from the request fields.
 type SubscriptionRequest struct {
 	ID            uint    `gorm:"primaryKey" json:"id"`
-	RequesterID   uint    `gorm:"index;not null" json:"requester_id"` // FK → users
-	TeamID        uint    `gorm:"index;not null" json:"team_id"`      // FK → teams
+	RequesterID   uint    `gorm:"index;not null" json:"requester_id"`     // FK → users
+	OrgID         uint    `gorm:"index;not null;default:0" json:"org_id"` // FK → organizations
+	TeamID        uint    `gorm:"index;not null" json:"team_id"`          // FK → teams
 	Name          string  `gorm:"not null" json:"name"`
 	Category      string  `json:"category"`
 	PlanType      string  `json:"plan_type"`                            // "Individual" | "Team"

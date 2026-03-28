@@ -10,6 +10,7 @@ type Team struct {
 	ID                 uint           `gorm:"primaryKey" json:"id"`
 	Name               string         `gorm:"not null" json:"name"`
 	OwnerID            uint           `gorm:"not null" json:"owner_id"`
+	OrgID              uint           `gorm:"index" json:"org_id"`
 	AllowMemberInvites bool           `gorm:"default:true" json:"allow_member_invites"`
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`

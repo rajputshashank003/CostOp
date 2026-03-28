@@ -18,10 +18,11 @@ import (
 // SeatCount: total purchased seats; enforced via subscription_assignments count.
 type Subscription struct {
 	ID              uint       `gorm:"primaryKey" json:"id"`
-	UserID          uint       `gorm:"index;not null" json:"user_id"`        // who added it to the system
-	OwnerID         uint       `gorm:"index;not null" json:"owner_id"`       // who actually pays for it
-	TeamID          *uint      `gorm:"index" json:"team_id"`                 // DEPRECATED: use subscription_teams
-	Scope           string     `gorm:"not null;default:'team'" json:"scope"` // UI hint: "team" | "individual" | "organization"
+	UserID          uint       `gorm:"index;not null" json:"user_id"`          // who added it to the system
+	OrgID           uint       `gorm:"index;not null;default:0" json:"org_id"` // organization this belongs to
+	OwnerID         uint       `gorm:"index;not null" json:"owner_id"`         // who actually pays for it
+	TeamID          *uint      `gorm:"index" json:"team_id"`                   // DEPRECATED: use subscription_teams
+	Scope           string     `gorm:"not null;default:'team'" json:"scope"`   // UI hint: "team" | "individual" | "organization"
 	Name            string     `gorm:"not null" json:"name"`
 	Category        string     `json:"category"`
 	PlanType        string     `json:"plan_type"`     // "Individual" or "Team"

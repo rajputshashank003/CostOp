@@ -36,10 +36,10 @@ func VerifyGoogleToken(c *gin.Context) {
 	}
 
 	// Extract user details
-	email 		:= payload.Claims["email"].(string)
-	name 		:= payload.Claims["name"].(string)
-	googleID 	:= payload.Claims["sub"].(string)
-	avatarURL 	:= ""
+	email := payload.Claims["email"].(string)
+	name := payload.Claims["name"].(string)
+	googleID := payload.Claims["sub"].(string)
+	avatarURL := ""
 	if pict, ok := payload.Claims["picture"].(string); ok {
 		avatarURL = pict
 	}
@@ -85,18 +85,25 @@ func VerifyGoogleToken(c *gin.Context) {
 		}
 
 		if hasInvite {
-			// Invited → joins as member of an existing team
+			// Invited → joins as member of an existing team; inherit org_id from the team
+			var inviteTeam models.Team
+			database.DB.First(&inviteTeam, invite.TeamID)
+			user.OrgID = inviteTeam.OrgID
+			database.DB.Save(&user)
 			database.DB.Create(&models.TeamMember{TeamID: invite.TeamID, UserID: user.ID, Role: "member", Designation: invite.Designation})
 			database.DB.Model(&invite).Update("status", "accepted")
 			user.IsOnboarded = true
 			database.DB.Save(&user)
 			isAdmin = false
 		} else {
-			// Organic signup → create personal workspace and become owner
-			newTeam := models.Team{Name: user.Name + "'s Workspace", OwnerID: user.ID}
+			// Organic signup → create org + personal workspace and become owner
+			newOrg := models.Organization{Name: user.Name + "'s Organization", OwnerID: user.ID}
+			database.DB.Create(&newOrg)
+			newTeam := models.Team{Name: user.Name + "'s Workspace", OwnerID: user.ID, OrgID: newOrg.ID}
 			database.DB.Create(&newTeam)
 			database.DB.Create(&models.TeamMember{TeamID: newTeam.ID, UserID: user.ID, Role: "owner"})
 			user.DefaultTeamID = newTeam.ID
+			user.OrgID = newOrg.ID
 			database.DB.Save(&user)
 			isAdmin = true
 		}
@@ -104,6 +111,12 @@ func VerifyGoogleToken(c *gin.Context) {
 		if hasInvite && user.DefaultTeamID != invite.TeamID {
 			// Accepted invite to a different team
 			user.DefaultTeamID = invite.TeamID
+			// Inherit org_id from the invited team
+			var inviteTeam models.Team
+			database.DB.First(&inviteTeam, invite.TeamID)
+			if user.OrgID == 0 {
+				user.OrgID = inviteTeam.OrgID
+			}
 			var exists int64
 			database.DB.Model(&models.TeamMember{}).Where("team_id = ? AND user_id = ?", invite.TeamID, user.ID).Count(&exists)
 			if exists == 0 {

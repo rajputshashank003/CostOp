@@ -54,6 +54,7 @@ func CreateRequest(c *gin.Context) {
 
 	req := models.SubscriptionRequest{
 		RequesterID:   requesterID,
+		OrgID:         user.OrgID,
 		TeamID:        user.DefaultTeamID,
 		Name:          input.Name,
 		Category:      input.Category,
@@ -167,6 +168,7 @@ func ApproveRequest(c *gin.Context) {
 	teamID := req.TeamID
 	sub := models.Subscription{
 		UserID:          reviewerID, // admin who approved it, administrative entry
+		OrgID:           reviewer.OrgID,
 		OwnerID:         req.RequesterID,
 		TeamID:          &teamID,
 		Scope:           req.Scope,
