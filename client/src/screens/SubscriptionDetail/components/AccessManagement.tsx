@@ -11,6 +11,7 @@ import includes from 'lodash/includes';
 import filter from 'lodash/filter';
 import upperCase from 'lodash/upperCase';
 import find from 'lodash/find';
+import lowerCase from 'lodash/lowerCase';
 
 const AccessManagement = () => {
     const { data, refreshData } = useContext(SubscriptionDetailContext);
@@ -115,10 +116,10 @@ const AccessManagement = () => {
     if (!isAdmin) return null;
 
     const filteredTeams = filter(teams, 
-        (t: any) => !includes(grantedTeamIds, t.id) && toLowerCase(t.name).includes(teamSearch.toLowerCase())
+        (t: any) => !includes(grantedTeamIds, t.id) && lowerCase(t.name).includes(teamSearch.toLowerCase())
     );
     const filteredMembers = filter(teamMembers, 
-        (m: any) => !includes(assignedUserIds, m.user_id) && (toLowerCase(m.name).includes(userSearch.toLowerCase()) || toLowerCase(m.email).includes(userSearch.toLowerCase()))
+        (m: any) => !includes(assignedUserIds, m.user_id) && (lowerCase(m.name).includes(userSearch.toLowerCase()) || lowerCase(m.email).includes(userSearch.toLowerCase()))
     );
 
     return (
