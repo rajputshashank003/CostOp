@@ -8,7 +8,8 @@ const useMembers = () => {
     const { user, isLoading: isAuthLoading } = useUser();
 
     // Team state — null means "All Teams"
-    const [teams, setTeams] = useState<any[]>([]);
+    const [teams, setTeams] = useState<any[]>([]);       // user's own teams (for filter tabs)
+    const [allTeams, setAllTeams] = useState<any[]>([]);  // all workspace teams (for move target dropdown)
     const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
     // Filtering state
@@ -73,14 +74,28 @@ const useMembers = () => {
         }
     };
 
-    const handleMoveToTeam = async (userId: number, newTeamId: number) => {
-        if (!selectedTeamId) return;
+    const handleMoveToTeam = async (userId: number, currentTeamId: number, newTeamId: number) => {
         try {
-            await membersApi.update_member_team(selectedTeamId, userId, newTeamId);
+            await membersApi.update_member_team(currentTeamId, userId, newTeamId);
             toast.success("Member moved to new team");
             fetchRoster();
         } catch (err: any) {
             toast.error(err.response?.data?.error || "Failed to move member.");
+        }
+    };
+
+    const handleCreateTeam = async (name: string) => {
+        try {
+            await teamsApi.create(name);
+            // Refresh all workspace teams so the new one appears in move dropdowns
+            const allData = await teamsApi.get_all();
+            setAllTeams(allData || []);
+            // Also refresh user's own teams list
+            const myData = await membersApi.get_teams();
+            setTeams(myData || []);
+            toast.success(`Team "${name}" created`);
+        } catch (err: any) {
+            toast.error(err.response?.data?.error || "Failed to create team.");
         }
     };
 
@@ -102,6 +117,9 @@ const useMembers = () => {
                 const data = await membersApi.get_teams();
                 const teamList = data || [];
                 setTeams(teamList);
+                // Load ALL workspace teams for the move-to dropdown
+                const allData = await teamsApi.get_all();
+                setAllTeams(allData || []);
                 // On initial load (no team selected), use the first team to get workspace-level invite setting
                 if (!selectedTeamId && teamList.length > 0) {
                     const team = await teamsApi.get_by_id(teamList[0].id);
@@ -131,6 +149,7 @@ const useMembers = () => {
 
     return {
         teams,
+        allTeams,
         selectedTeamId,
         setSelectedTeamId,
         members,
@@ -146,6 +165,7 @@ const useMembers = () => {
         handleInvite,
         handleRevoke,
         handleMoveToTeam,
+        handleCreateTeam,
         fetchRoster,
         searchQuery, setSearchQuery,
         subscriptionFilter, setSubscriptionFilter

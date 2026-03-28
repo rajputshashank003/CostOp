@@ -1,12 +1,13 @@
 import { useContext } from "react";
-import { Users, Clock, Mail, ArrowRightLeft } from "lucide-react";
+import { Users, Clock, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import size from "lodash/size";
 import map from "lodash/map";
 import MembersContext from "../context";
+import MoveTeamDropdown from "./MoveTeamDropdown";
 
 export default function MembersRoster() {
-    const { members, invites, handleRevoke, handleMoveToTeam, teams, selectedTeamId, isLoading } = useContext(MembersContext);
+    const { members, invites, handleRevoke, teams, isLoading } = useContext(MembersContext);
 
     return (
         <div className="grid grid-cols-1 space-y-4">
@@ -25,9 +26,7 @@ export default function MembersRoster() {
 
                     <AnimatePresence>
                         {map(members, (m: any) => {
-                            const currentTeamRole = teams.find((t: any) => t.id === selectedTeamId)?.role;
-                            const isAdmin = currentTeamRole === "owner";
-                            const otherTeams = teams.filter((t: any) => t.id !== selectedTeamId);
+                            const isAdmin = teams.some((t: any) => t.role === "owner");
 
                             return (
                                 <motion.div
@@ -38,7 +37,7 @@ export default function MembersRoster() {
                                     key={m.user.id}
                                     className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                                 >
-                                    {/* Row 1 (mobile) / Left side (desktop): Avatar + Name + Email */}
+                                    {/* Left: Avatar + Name + Email */}
                                     <div className="flex items-center gap-3 min-w-0">
                                         <img
                                             src={m.user.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(m.user.name || "U")}
@@ -59,7 +58,7 @@ export default function MembersRoster() {
                                         </div>
                                     </div>
 
-                                    {/* Row 2 (mobile) / Right side (desktop): Badges + Role + Actions */}
+                                    {/* Right: Badges + Role + Move */}
                                     <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0 pl-14 sm:pl-0">
                                         {m.designation && (
                                             <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-600 tracking-wide capitalize">
@@ -71,24 +70,8 @@ export default function MembersRoster() {
                                         </span>
 
                                         {/* Admin: Move to Team dropdown */}
-                                        {isAdmin && m.role !== "owner" && otherTeams.length > 0 && (
-                                            <div className="relative group">
-                                                <button className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200 cursor-pointer">
-                                                    <ArrowRightLeft size={13} />
-                                                    <span className="hidden sm:inline">Move</span>
-                                                </button>
-                                                <div className="absolute left-0 sm:right-0 sm:left-auto top-8 z-20 hidden group-hover:block bg-white border border-slate-200 rounded-xl shadow-lg py-1 min-w-[160px]">
-                                                    {otherTeams.map((t: any) => (
-                                                        <button
-                                                            key={t.id}
-                                                            onClick={() => handleMoveToTeam(m.user.id, t.id)}
-                                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
-                                                        >
-                                                            {t.name}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                        {isAdmin && m.role !== "owner" && (
+                                            <MoveTeamDropdown userId={m.user.id} currentTeamId={m.team_id} />
                                         )}
                                     </div>
                                 </motion.div>

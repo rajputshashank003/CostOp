@@ -3,6 +3,7 @@ package controllers
 import (
 	"costop/internal/database"
 	"costop/internal/models"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -50,10 +51,28 @@ func GetMetrics(c *gin.Context) {
 
 	var subsQuery *gorm.DB
 	if isAllTeams {
-		// Fetch all subscriptions belonging to any team the user is a member of, plus their individual ones
+		// Org-wide: same workspace-network subquery as GetSubscriptions
 		subsQuery = database.DB.Where(
-			"(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR (scope = 'individual' AND user_id = ?) OR owner_id = ? OR (scope = 'organization' AND owner_id IN (SELECT user_id FROM team_members WHERE team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))) AND status = ?",
-			user.ID, user.ID, user.ID, user.ID, "active",
+			`(team_id IN (
+				SELECT DISTINCT tm2.team_id FROM team_members tm2
+				WHERE tm2.user_id IN (
+					SELECT DISTINCT tm1.user_id FROM team_members tm1
+					WHERE tm1.team_id IN (
+						SELECT team_id FROM team_members WHERE user_id = ?
+					)
+				)
+			) OR (scope = 'individual' AND owner_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (
+					SELECT team_id FROM team_members WHERE user_id = ?
+				)
+			)) OR (team_id IS NULL AND owner_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (
+					SELECT team_id FROM team_members WHERE user_id = ?
+				)
+			))) AND status = ?`,
+			user.ID, user.ID, user.ID, "active",
 		)
 	} else {
 		// Single-team view
@@ -88,6 +107,7 @@ func GetMetrics(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscriptions for metrics"})
 		return
 	}
+	log.Printf("[METRICS DEBUG] userID=%d isAllTeams=%v teamFilter=%d team_id_param=%q found=%d", user.ID, isAllTeams, teamFilter, c.Query("team_id"), len(subscriptions))
 
 	var totalMonthlySpend float64 = 0
 	deptMap := make(map[string]float64)
@@ -126,8 +146,17 @@ func GetMetrics(c *gin.Context) {
 	thirtyDaysFromNow := now.AddDate(0, 0, 31)
 
 	renewalQuery := database.DB.Where(
-		"(team_id = ? OR scope = 'organization') AND status = ? AND is_auto_pay = ? AND next_billing_date BETWEEN ? AND ?",
-		user.DefaultTeamID, "active", true, now.AddDate(0, 0, -1), thirtyDaysFromNow,
+		`(team_id IN (
+			SELECT DISTINCT tm2.team_id FROM team_members tm2
+			WHERE tm2.user_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)
+			)
+		) OR team_id IS NULL AND owner_id IN (
+			SELECT DISTINCT tm1.user_id FROM team_members tm1
+			WHERE tm1.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)
+		)) AND status = ? AND is_auto_pay = ? AND next_billing_date BETWEEN ? AND ?`,
+		user.ID, user.ID, "active", true, now.AddDate(0, 0, -1), thirtyDaysFromNow,
 	).Order("next_billing_date ASC")
 
 	// Apply the same filters to renewals

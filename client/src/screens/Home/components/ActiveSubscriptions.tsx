@@ -10,25 +10,27 @@ import HomeContext from "../context";
 
 export default function ActiveSubscriptions() {
     const {
-        subscriptions, 
-        filterCategory, 
-        setFilterCategory, 
-        filterCycle, 
+        subscriptions,
+        filterCategory,
+        setFilterCategory,
+        filterCycle,
         setFilterCycle,
-        dateStart, 
-        setDateStart, 
-        dateEnd, 
+        dateStart,
+        setDateStart,
+        dateEnd,
         setDateEnd,
-        filterTeam, 
+        filterTeam,
         setFilterTeam,
-        localSearch, 
+        localSearch,
         setLocalSearch,
         availableCategories,
         availableTeams,
-        setSubToArchive
+        setSubToArchive,
+        showMine,
+        setShowMine,
     } = useContext(HomeContext);
 
-    const hasActiveFilters = localSearch || filterCategory !== "All Categories" || filterCycle !== "All Cycles" || dateStart || dateEnd || (filterTeam && filterTeam !== "all");
+    const hasActiveFilters = localSearch || filterCategory !== "All Categories" || filterCycle !== "All Cycles" || dateStart || dateEnd || (filterTeam && filterTeam !== "all") || showMine;
 
     const clearFilters = () => {
         setLocalSearch("");
@@ -37,6 +39,7 @@ export default function ActiveSubscriptions() {
         setFilterTeam("all");
         setDateStart("");
         setDateEnd("");
+        setShowMine(false);
     };
 
     return (
@@ -88,6 +91,17 @@ export default function ActiveSubscriptions() {
                                 align="left"
                             />
                         </div>
+                        {/* Mine toggle */}
+                        <button
+                            onClick={() => setShowMine((v: boolean) => !v)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${showMine
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600"
+                                }`}
+                        >
+                            <Users size={13} />
+                            Mine
+                        </button>
                     </div>
                 </div>
             </div>

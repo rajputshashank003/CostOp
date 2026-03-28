@@ -111,7 +111,7 @@ const useHistory = () => {
                     spendsMonths,
                     spendsCustomStart,
                     spendsCustomEnd,
-                    filterTeam === "all" ? undefined : filterTeam,
+                    filterTeam,
                     historyMode === "all" ? undefined : "archived"
                 );
                 setSpendData(res || []);
@@ -130,7 +130,7 @@ const useHistory = () => {
             setIsLoadingDeptSpends(true);
             try {
                 const res = await historyApi.get_department_spends(
-                    filterTeam === "all" ? undefined : filterTeam,
+                    filterTeam,
                     historyMode === "all" ? undefined : "archived"
                 );
                 setDeptSpendData(res || []);
@@ -152,33 +152,33 @@ const useHistory = () => {
         archived,
         isLoading: isInitialLoading,
         isRefetching,
-        historyMode, 
+        historyMode,
         setHistoryMode,
-        searchQuery, 
+        searchQuery,
         setSearchQuery,
-        filterCategory, 
+        filterCategory,
         setFilterCategory,
-        filterCycle, 
+        filterCycle,
         setFilterCycle,
-        dateStart, 
+        dateStart,
         setDateStart,
-        dateEnd, 
+        dateEnd,
         setDateEnd,
-        localSearch, 
+        localSearch,
         setLocalSearch,
-        filterTeam, 
+        filterTeam,
         setFilterTeam,
         availableCategories,
         availableTeams,
-        spendData, 
+        spendData,
         isLoadingSpends,
-        spendsMonths, 
+        spendsMonths,
         setSpendsMonths,
-        spendsCustomStart, 
+        spendsCustomStart,
         setSpendsCustomStart,
-        spendsCustomEnd, 
+        spendsCustomEnd,
         setSpendsCustomEnd,
-        deptSpendData, 
+        deptSpendData,
         isLoadingDeptSpends,
         refreshArchived: fetchArchived
     };

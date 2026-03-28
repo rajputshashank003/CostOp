@@ -31,6 +31,7 @@ const useHome = () => {
     const { user, isLoading: isAuthLoading } = useUser();
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [isLoadingSubs, setIsLoadingSubs] = useState(true);
+    const [showMine, setShowMine] = useState(false);
     const [metrics, setMetrics] = useState<any>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
 
@@ -161,38 +162,46 @@ const useHome = () => {
         fetchHistorical();
     }, [spendTimeframe, customStart, customEnd]);
 
+    const filteredSubscriptions = showMine
+        ? subscriptions.filter((s: any) =>
+            s.owner_id === user?.id ||
+            (s.assigned_users && s.assigned_users.some((a: any) => a.user_id === user?.id))
+        )
+        : subscriptions;
+
     return {
         user,
-        subscriptions,
+        subscriptions: filteredSubscriptions,
         isLoadingSubs,
+        showMine, setShowMine,
         metrics,
         isLoadingMetrics,
-        localSearch, 
+        localSearch,
         setLocalSearch,
         searchQuery,
-        filterCategory, 
+        filterCategory,
         setFilterCategory,
-        filterCycle, 
+        filterCycle,
         setFilterCycle,
-        filterTeam, 
+        filterTeam,
         setFilterTeam,
         availableCategories,
         availableTeams,
-        spendTimeframe, 
+        spendTimeframe,
         setSpendTimeframe,
-        customStart, 
+        customStart,
         setCustomStart,
-        customEnd, 
+        customEnd,
         setCustomEnd,
-        dateStart, 
+        dateStart,
         setDateStart,
-        dateEnd, 
+        dateEnd,
         setDateEnd,
         historicalSpendTotal,
         isLoadingHistorical,
-        subToArchive, 
+        subToArchive,
         setSubToArchive,
-        isRenewalsModalOpen, 
+        isRenewalsModalOpen,
         setIsRenewalsModalOpen,
         refreshSubscriptions: () => { fetchSubscriptions(); fetchMetrics(); }
     };

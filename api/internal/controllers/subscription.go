@@ -64,9 +64,30 @@ func GetSubscriptions(c *gin.Context) {
 	// Include team-scoped subs for the selected team(s) + individual subs for the user
 	var query *gorm.DB
 	if isAllTeams {
+		// Org-wide view: return every subscription that belongs to the same workspace.
+		// "Same workspace" = any team that contains a user who shares a team with the current user.
+		// This prevents leaking subscriptions from other organisations in the same DB.
 		query = database.DB.Where(
-			"(team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR (scope = 'individual' AND user_id = ?) OR owner_id = ? OR (scope = 'organization' AND owner_id IN (SELECT user_id FROM team_members WHERE team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))) AND status = ?",
-			user.ID, user.ID, user.ID, user.ID, status,
+			`(team_id IN (
+				SELECT DISTINCT tm2.team_id FROM team_members tm2
+				WHERE tm2.user_id IN (
+					SELECT DISTINCT tm1.user_id FROM team_members tm1
+					WHERE tm1.team_id IN (
+						SELECT team_id FROM team_members WHERE user_id = ?
+					)
+				)
+			) OR (scope = 'individual' AND owner_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (
+					SELECT team_id FROM team_members WHERE user_id = ?
+				)
+			)) OR (team_id IS NULL AND owner_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (
+					SELECT team_id FROM team_members WHERE user_id = ?
+				)
+			))) AND status = ?`,
+			user.ID, user.ID, user.ID, status,
 		)
 	} else {
 		query = database.DB.Where(

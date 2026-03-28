@@ -120,7 +120,9 @@ func GetMembersByTeam(c *gin.Context) {
 	memberQuery.Find(&members)
 
 	type MemberResponse struct {
+		TeamID          uint        `json:"team_id"`
 		Role            string      `json:"role"`
+		Designation     string      `json:"designation"`
 		User            models.User `json:"user"`
 		HasSubscription bool        `json:"has_subscription"`
 	}
@@ -132,7 +134,9 @@ func GetMembersByTeam(c *gin.Context) {
 			database.DB.Model(&models.SubscriptionAssignment{}).Where("user_id = ?", m.UserID).Count(&assignCount)
 
 			enrichedMembers = append(enrichedMembers, MemberResponse{
+				TeamID:          m.TeamID,
 				Role:            m.Role,
+				Designation:     m.Designation,
 				User:            u,
 				HasSubscription: assignCount > 0,
 			})
@@ -222,6 +226,7 @@ func GetTeamMembers(c *gin.Context) {
 	}
 
 	type MemberResponse struct {
+		TeamID          uint        `json:"team_id"`
 		Role            string      `json:"role"`
 		Designation     string      `json:"designation"`
 		User            models.User `json:"user"`
@@ -263,7 +268,7 @@ func GetTeamMembers(c *gin.Context) {
 			var hasSub int64
 			database.DB.Model(&models.SubscriptionAssignment{}).Where("user_id = ?", m.UserID).Count(&hasSub)
 			allMembers = append(allMembers, MemberResponse{
-				Role: m.Role, Designation: m.Designation, User: u, HasSubscription: hasSub > 0,
+				TeamID: m.TeamID, Role: m.Role, Designation: m.Designation, User: u, HasSubscription: hasSub > 0,
 			})
 		}
 
