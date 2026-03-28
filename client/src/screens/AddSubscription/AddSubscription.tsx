@@ -25,6 +25,7 @@ const AddSubscriptionComp = () => {
         setIsAddingTeam,
         newTeamName,
         setNewTeamName,
+        availableMembers,
         filteredMembers,
         designationFilter,
         setDesignationFilter,
@@ -93,12 +94,20 @@ const AddSubscriptionComp = () => {
                 {/* BOTTOM ACTIONS */}
                 <div className="flex justify-end gap-3 pt-4">
                     <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">Cancel</button>
-                    <button type="submit" disabled={isLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center min-w-[180px]">
-                        {isLoading
-                            ? <span className="w-5 h-5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
-                            : isRequestMode ? "Submit Request" : "Track Subscription"
-                        }
-                    </button>
+                    {formData.pricing_model === "per_seat" &&
+                        formData.access_type === "all_members" &&
+                        availableMembers.length > formData.seat_count && !isRequestMode ? (
+                        <button type="button" disabled className="px-8 py-3 bg-slate-200 text-slate-400 cursor-not-allowed font-bold rounded-xl flex items-center justify-center min-w-[180px]">
+                            Not Enough Seats
+                        </button>
+                    ) : (
+                        <button type="submit" disabled={isLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center min-w-[180px]">
+                            {isLoading
+                                ? <span className="w-5 h-5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
+                                : isRequestMode ? "Submit Request" : "Track Subscription"
+                            }
+                        </button>
+                    )}
                 </div>
             </form>
         </div>

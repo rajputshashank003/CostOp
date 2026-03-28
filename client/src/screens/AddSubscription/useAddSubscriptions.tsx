@@ -117,6 +117,12 @@ const useAddSubscriptions = () => {
         if (!formData.name || (!isRequestMode && !formData.cost) || (formData.pricing_model === "per_seat" && formData.seat_count < 1)) {
             toast.error("Please fill in all required fields!"); return;
         }
+        // Block submit if "Everyone in Scope" but seats < team members
+        if (!isRequestMode && formData.pricing_model === "per_seat" && formData.access_type === "all_members" && availableMembers.length > formData.seat_count) {
+            toast.error(`Not enough seats (${formData.seat_count}) for all ${availableMembers.length} members. Please select specific members.`);
+            setFormData(p => ({ ...p, access_type: "selected_members" }));
+            return;
+        }
         setIsLoading(true);
         try {
             if (isRequestMode) {
@@ -153,7 +159,7 @@ const useAddSubscriptions = () => {
                 }
 
                 if (formData.plan_type === "Organization") { payload.scope = "organization"; }
-                else if (formData.plan_type === "Team" && formData.team_id) { payload.scope = "team"; payload.team_id = formData.team_id; }
+                else if (formData.plan_type === "Team" && formData.team_id) { payload.scope = "team"; payload.team_ids = [formData.team_id]; }
                 else { payload.scope = "individual"; }
 
                 await subscriptionsApi.create(payload);
@@ -221,6 +227,18 @@ const useAddSubscriptions = () => {
             setFormData(p => ({ ...p, access_type: "all_members" }));
         }
     }, [formData.pricing_model]);
+
+    // Auto-switch to "Selected Members" when seats are fewer than available members
+    useEffect(() => {
+        if (
+            formData.pricing_model === "per_seat" &&
+            formData.access_type === "all_members" &&
+            availableMembers.length > formData.seat_count
+        ) {
+            setFormData(p => ({ ...p, access_type: "selected_members" }));
+            toast.error(`Only ${formData.seat_count} seat(s) for ${availableMembers.length} members — please select who gets access.`);
+        }
+    }, [formData.seat_count, formData.pricing_model, availableMembers.length]);
 
     return {
         navigate,

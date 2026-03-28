@@ -105,19 +105,15 @@ func GetSubscriptions(c *gin.Context) {
 			user.ID, user.ID, user.ID, user.ID, user.ID, user.ID, status,
 		)
 	} else {
-		// Single-team view: subscriptions granted to this team, user's own,
-		// or org-scoped subs from the workspace
+		// Single-team view: only subscriptions explicitly granted to this team,
+		// or org-scoped subs from the workspace owner
+		var selectedTeam models.Team
+		database.DB.First(&selectedTeam, teamFilter)
+
 		query = database.DB.Where(
 			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR id IN (SELECT subscription_id FROM subscription_assignments WHERE user_id = ?)
-			OR (scope = 'organization' AND owner_id IN (
-				SELECT DISTINCT tm1.user_id FROM team_members tm1
-				WHERE tm1.team_id IN (
-					SELECT team_id FROM team_members WHERE user_id = ?
-				)
-			))
-			OR owner_id = ?) AND status = ?`,
-			teamFilter, user.ID, user.ID, user.ID, status,
+			OR (scope = 'organization' AND owner_id = ?)) AND status = ?`,
+			teamFilter, selectedTeam.OwnerID, status,
 		)
 	}
 
