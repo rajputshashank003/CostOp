@@ -7,7 +7,8 @@ import (
 	"costop/internal/config"
 	"costop/internal/database"
 	"costop/internal/routes"
-	"costop/internal/services"
+
+	// "costop/internal/services"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ func main() {
 	routes.SetupRoutes(r)
 
 	// Start Cron Schedulers
-	services.StartCronJobs()
+	// services.StartCronJobs()
 
 	// Start server natively
 	log.Printf("Server is running on port %s\n", config.Port)

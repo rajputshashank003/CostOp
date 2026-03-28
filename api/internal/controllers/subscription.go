@@ -3,6 +3,7 @@ package controllers
 import (
 	"costop/internal/database"
 	"costop/internal/models"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -61,37 +62,61 @@ func GetSubscriptions(c *gin.Context) {
 		}
 	}
 
-	// Include team-scoped subs for the selected team(s) + individual subs for the user
+	// Build query based on team filter
+	// Access is resolved from subscription_assignments (materialized access table)
+	// and subscription_teams (team-level grants)
 	var query *gorm.DB
 	if isAllTeams {
-		// Org-wide view: return every subscription that belongs to the same workspace.
-		// "Same workspace" = any team that contains a user who shares a team with the current user.
-		// This prevents leaking subscriptions from other organisations in the same DB.
+		// Org-wide: find subscriptions where the user has a materialized assignment,
+		// or via the org-network team graph, or individual/org-scoped subs.
 		query = database.DB.Where(
-			`(team_id IN (
-				SELECT DISTINCT tm2.team_id FROM team_members tm2
-				WHERE tm2.user_id IN (
-					SELECT DISTINCT tm1.user_id FROM team_members tm1
-					WHERE tm1.team_id IN (
-						SELECT team_id FROM team_members WHERE user_id = ?
+			`(id IN (SELECT subscription_id FROM subscription_assignments WHERE user_id = ?)
+			OR id IN (
+				SELECT st.subscription_id FROM subscription_teams st
+				WHERE st.team_id IN (
+					SELECT DISTINCT tm2.team_id FROM team_members tm2
+					WHERE tm2.user_id IN (
+						SELECT DISTINCT tm1.user_id FROM team_members tm1
+						WHERE tm1.team_id IN (
+							SELECT team_id FROM team_members WHERE user_id = ?
+						)
 					)
 				)
-			) OR (scope = 'individual' AND owner_id IN (
+			)
+			OR (scope = 'individual' AND owner_id IN (
 				SELECT DISTINCT tm1.user_id FROM team_members tm1
 				WHERE tm1.team_id IN (
 					SELECT team_id FROM team_members WHERE user_id = ?
 				)
-			)) OR (team_id IS NULL AND owner_id IN (
+			))
+			OR (scope = 'organization' AND owner_id IN (
 				SELECT DISTINCT tm1.user_id FROM team_members tm1
 				WHERE tm1.team_id IN (
 					SELECT team_id FROM team_members WHERE user_id = ?
 				)
-			))) AND status = ?`,
-			user.ID, user.ID, user.ID, status,
+			))
+			OR (team_id IS NULL AND owner_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (
+					SELECT team_id FROM team_members WHERE user_id = ?
+				)
+			))
+			OR owner_id = ?) AND status = ?`,
+			user.ID, user.ID, user.ID, user.ID, user.ID, user.ID, status,
 		)
 	} else {
+		// Single-team view: subscriptions granted to this team, user's own,
+		// or org-scoped subs from the workspace
 		query = database.DB.Where(
-			"(team_id = ? OR (scope = 'individual' AND user_id = ?) OR owner_id = ? OR (scope = 'organization' AND owner_id IN (SELECT user_id FROM team_members WHERE team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))) AND status = ?",
+			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
+			OR id IN (SELECT subscription_id FROM subscription_assignments WHERE user_id = ?)
+			OR (scope = 'organization' AND owner_id IN (
+				SELECT DISTINCT tm1.user_id FROM team_members tm1
+				WHERE tm1.team_id IN (
+					SELECT team_id FROM team_members WHERE user_id = ?
+				)
+			))
+			OR owner_id = ?) AND status = ?`,
 			teamFilter, user.ID, user.ID, user.ID, status,
 		)
 	}
@@ -124,12 +149,15 @@ func GetSubscriptions(c *gin.Context) {
 	c.JSON(http.StatusOK, enrichSubscriptions(subscriptions))
 }
 
-// AddSubscription creates a new manual subscription entry (admin-only).
+// AddSubscription creates a new subscription entry (admin-only).
+// Accepts team_ids[] for M:N team grants with seat validation.
+// POST /api/subscriptions
 func AddSubscription(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
 	var req struct {
 		models.Subscription
+		TeamIDs         []uint `json:"team_ids"`
 		AssignedUserIDs []uint `json:"assigned_user_ids"`
 		OriginRequestID *uint  `json:"origin_request_id"`
 	}
@@ -171,9 +199,29 @@ func AddSubscription(c *gin.Context) {
 	if input.SeatCount < 1 {
 		input.SeatCount = 1
 	}
-	if input.Scope != "organization" && input.TeamID == nil {
-		teamID := user.DefaultTeamID
-		input.TeamID = &teamID
+
+	// Default team_ids to user's default team if none provided and not individual/org
+	if len(req.TeamIDs) == 0 && input.Scope != "individual" {
+		req.TeamIDs = []uint{user.DefaultTeamID}
+	}
+
+	// Seat validation: if granting to teams and no individual picks, check seat capacity
+	if len(req.TeamIDs) > 0 && len(req.AssignedUserIDs) == 0 {
+		var totalMembers int64
+		database.DB.Model(&models.TeamMember{}).Where("team_id IN ?", req.TeamIDs).Count(&totalMembers)
+		if int(totalMembers) > input.SeatCount {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":             "Not enough seats for all team members. Select specific members instead.",
+				"seat_count":        input.SeatCount,
+				"team_member_count": totalMembers,
+			})
+			return
+		}
+	}
+
+	// Keep legacy TeamID for backward compat (first team in list)
+	if len(req.TeamIDs) > 0 {
+		input.TeamID = &req.TeamIDs[0]
 	}
 
 	err := database.DB.Transaction(func(tx *gorm.DB) error {
@@ -191,19 +239,53 @@ func AddSubscription(c *gin.Context) {
 			}
 		}
 
-		// Create seat assignments immediately
-		var assignedCount int = 0
-		for _, uid := range req.AssignedUserIDs {
-			if assignedCount >= input.SeatCount {
-				break
+		// Create SubscriptionTeam grants and materialize assignments
+		if len(req.AssignedUserIDs) > 0 {
+			// Individual assignment mode: create team grants but assign specific users
+			for _, tid := range req.TeamIDs {
+				tx.Create(&models.SubscriptionTeam{
+					SubscriptionID: input.ID,
+					TeamID:         tid,
+					GrantedAt:      time.Now(),
+					GrantedBy:      userID,
+				})
 			}
-			assign := models.SubscriptionAssignment{
-				SubscriptionID: input.ID,
-				UserID:         uid,
-				AssignedAt:     time.Now(),
+			assignedCount := 0
+			for _, uid := range req.AssignedUserIDs {
+				if assignedCount >= input.SeatCount {
+					break
+				}
+				assign := models.SubscriptionAssignment{
+					SubscriptionID: input.ID,
+					UserID:         uid,
+					Source:         "individual",
+					AssignedAt:     time.Now(),
+				}
+				if err := tx.Create(&assign).Error; err == nil {
+					assignedCount++
+				}
 			}
-			if err := tx.Create(&assign).Error; err == nil {
-				assignedCount++
+		} else {
+			// Team-wide mode: grant teams and auto-assign all members
+			for _, tid := range req.TeamIDs {
+				tx.Create(&models.SubscriptionTeam{
+					SubscriptionID: input.ID,
+					TeamID:         tid,
+					GrantedAt:      time.Now(),
+					GrantedBy:      userID,
+				})
+
+				var members []models.TeamMember
+				tx.Where("team_id = ?", tid).Find(&members)
+				for _, m := range members {
+					tx.Create(&models.SubscriptionAssignment{
+						SubscriptionID: input.ID,
+						UserID:         m.UserID,
+						Source:         "team",
+						SourceTeamID:   &tid,
+						AssignedAt:     time.Now(),
+					})
+				}
 			}
 		}
 
@@ -211,7 +293,7 @@ func AddSubscription(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create subscription and process request"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create subscription"})
 		return
 	}
 
@@ -322,7 +404,7 @@ func RestoreSubscription(c *gin.Context) {
 }
 
 // GetSubscriptionByID returns detailed info for a single subscription.
-// Includes: subscription fields, seat assignments, owner details, and originating request (if any).
+// Includes: granted teams, assigned users (grouped by source), owner, and seat utilization.
 // GET /api/subscriptions/:id
 func GetSubscriptionByID(c *gin.Context) {
 	callerID := c.MustGet("userID").(uint)
@@ -338,8 +420,24 @@ func GetSubscriptionByID(c *gin.Context) {
 		return
 	}
 
+	// Access check: same org-network scope as GetSubscriptions
+	// User can view if: they have an assignment, are in a granted team,
+	// are the owner, or the sub belongs to a team in their workspace network.
 	var sub models.Subscription
-	if err := database.DB.Where("id = ? AND (team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR scope = 'organization' OR (scope = 'individual' AND user_id = ?) OR owner_id = ?)", uint(subID), caller.ID, caller.ID, caller.ID).First(&sub).Error; err != nil {
+	if err := database.DB.Where(
+		`id = ? AND (
+			id IN (SELECT subscription_id FROM subscription_assignments WHERE user_id = ?)
+			OR id IN (SELECT subscription_id FROM subscription_teams WHERE team_id IN (
+				SELECT DISTINCT tm2.team_id FROM team_members tm2
+				WHERE tm2.user_id IN (
+					SELECT DISTINCT tm1.user_id FROM team_members tm1
+					WHERE tm1.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?)
+				)
+			))
+			OR owner_id = ?
+		)`,
+		uint(subID), caller.ID, caller.ID, caller.ID,
+	).First(&sub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
 	}
@@ -347,9 +445,10 @@ func GetSubscriptionByID(c *gin.Context) {
 	// Enrich the subscription
 	enriched := enrichSubscriptions([]models.Subscription{sub})[0]
 
-	// Seat assignments
+	// Seat assignments grouped by source
 	var assignments []models.SubscriptionAssignment
 	database.DB.Where("subscription_id = ?", sub.ID).Find(&assignments)
+	fmt.Printf("[DEBUG] GetSubscriptionByID: sub.ID=%d, found %d assignments\n", sub.ID, len(assignments))
 
 	type AssignedUser struct {
 		AssignmentID uint      `json:"assignment_id"`
@@ -357,6 +456,8 @@ func GetSubscriptionByID(c *gin.Context) {
 		Name         string    `json:"name"`
 		Email        string    `json:"email"`
 		AvatarURL    string    `json:"avatar_url"`
+		Source       string    `json:"source"`
+		SourceTeamID *uint     `json:"source_team_id"`
 		AssignedAt   time.Time `json:"assigned_at"`
 	}
 	assignedUsers := make([]AssignedUser, 0, len(assignments))
@@ -369,9 +470,53 @@ func GetSubscriptionByID(c *gin.Context) {
 				Name:         u.Name,
 				Email:        u.Email,
 				AvatarURL:    u.AvatarURL,
+				Source:       a.Source,
+				SourceTeamID: a.SourceTeamID,
 				AssignedAt:   a.AssignedAt,
 			})
 		}
+	}
+
+	// Granted teams with member info
+	var subTeams []models.SubscriptionTeam
+	database.DB.Where("subscription_id = ?", sub.ID).Find(&subTeams)
+
+	type GrantedTeamMember struct {
+		UserID    uint   `json:"user_id"`
+		Name      string `json:"name"`
+		Email     string `json:"email"`
+		AvatarURL string `json:"avatar_url"`
+	}
+	type GrantedTeam struct {
+		ID          uint                `json:"id"`
+		TeamID      uint                `json:"team_id"`
+		TeamName    string              `json:"team_name"`
+		MemberCount int64               `json:"member_count"`
+		Members     []GrantedTeamMember `json:"members"`
+		GrantedAt   time.Time           `json:"granted_at"`
+	}
+	grantedTeams := make([]GrantedTeam, 0, len(subTeams))
+	for _, st := range subTeams {
+		var team models.Team
+		if database.DB.First(&team, st.TeamID).Error != nil {
+			continue
+		}
+		var members []models.TeamMember
+		database.DB.Where("team_id = ?", st.TeamID).Find(&members)
+
+		teamMembers := make([]GrantedTeamMember, 0, len(members))
+		for _, m := range members {
+			var u models.User
+			if database.DB.First(&u, m.UserID).Error == nil {
+				teamMembers = append(teamMembers, GrantedTeamMember{
+					UserID: u.ID, Name: u.Name, Email: u.Email, AvatarURL: u.AvatarURL,
+				})
+			}
+		}
+		grantedTeams = append(grantedTeams, GrantedTeam{
+			ID: st.ID, TeamID: st.TeamID, TeamName: team.Name,
+			MemberCount: int64(len(members)), Members: teamMembers, GrantedAt: st.GrantedAt,
+		})
 	}
 
 	// Owner details
@@ -388,18 +533,7 @@ func GetSubscriptionByID(c *gin.Context) {
 		addedByData = gin.H{"id": addedBy.ID, "name": addedBy.Name, "email": addedBy.Email, "avatar_url": addedBy.AvatarURL}
 	}
 
-	// Team info (if team subscription)
-	var teamData gin.H
-	if sub.TeamID != nil {
-		var team models.Team
-		if database.DB.First(&team, *sub.TeamID).Error == nil {
-			var memberCount int64
-			database.DB.Model(&models.TeamMember{}).Where("team_id = ?", team.ID).Count(&memberCount)
-			teamData = gin.H{"id": team.ID, "name": team.Name, "member_count": memberCount}
-		}
-	}
-
-	// Check if this subscription originated from a request (only possible for team-scoped subs)
+	// Origin request (if any)
 	var originRequest *models.SubscriptionRequest
 	if sub.TeamID != nil {
 		database.DB.Where("name = ? AND team_id = ? AND status = ?", sub.Name, *sub.TeamID, "approved").Order("created_at DESC").First(&originRequest)
@@ -419,15 +553,17 @@ func GetSubscriptionByID(c *gin.Context) {
 		}
 	}
 
+	occupiedSeats := len(assignments)
+
 	c.JSON(http.StatusOK, gin.H{
 		"subscription":    enriched,
 		"seat_count":      sub.SeatCount,
-		"assigned_count":  len(assignedUsers),
-		"available_seats": sub.SeatCount - len(assignedUsers),
+		"occupied_seats":  occupiedSeats,
+		"available_seats": sub.SeatCount - occupiedSeats,
 		"assigned_users":  assignedUsers,
+		"granted_teams":   grantedTeams,
 		"owner":           ownerData,
 		"added_by":        addedByData,
-		"team":            teamData,
 		"origin_request":  requestData,
 	})
 }
@@ -464,7 +600,7 @@ func AssignSeat(c *gin.Context) {
 	}
 
 	var sub models.Subscription
-	if err := database.DB.Where("id = ? AND team_id = ?", uint(subID), caller.DefaultTeamID).First(&sub).Error; err != nil {
+	if err := database.DB.First(&sub, uint(subID)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
 	}
@@ -488,6 +624,7 @@ func AssignSeat(c *gin.Context) {
 	assignment := models.SubscriptionAssignment{
 		SubscriptionID: sub.ID,
 		UserID:         input.UserID,
+		Source:         "individual",
 		AssignedAt:     time.Now(),
 	}
 	if err := database.DB.Create(&assignment).Error; err != nil {
@@ -543,7 +680,7 @@ func GetSeats(c *gin.Context) {
 	}
 
 	var sub models.Subscription
-	if err := database.DB.Where("id = ? AND team_id = ?", uint(subID), caller.DefaultTeamID).First(&sub).Error; err != nil {
+	if err := database.DB.First(&sub, uint(subID)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
 	}
@@ -590,4 +727,167 @@ func autoArchiveExpired(teamID uint) {
 	database.DB.Model(&models.Subscription{}).
 		Where("team_id = ? AND status = ? AND next_billing_date < NOW()", teamID, "active").
 		UpdateColumn("status", "archived")
+}
+
+// GrantTeamAccess grants a team access to a subscription.
+// Creates SubscriptionTeam policy row + materialized SubscriptionAssignment rows.
+// POST /api/subscriptions/:id/teams  { team_id: uint }
+func GrantTeamAccess(c *gin.Context) {
+	callerID := c.MustGet("userID").(uint)
+	subID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid subscription ID"})
+		return
+	}
+
+	var input struct {
+		TeamID uint `json:"team_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "team_id is required"})
+		return
+	}
+
+	var caller models.User
+	if err := database.DB.First(&caller, callerID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Admin check
+	var member models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", caller.DefaultTeamID, callerID).First(&member).Error; err != nil || member.Role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can grant team access"})
+		return
+	}
+
+	var sub models.Subscription
+	if err := database.DB.First(&sub, uint(subID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
+		return
+	}
+
+	// Check for duplicate grant
+	var existingGrant int64
+	database.DB.Model(&models.SubscriptionTeam{}).Where("subscription_id = ? AND team_id = ?", sub.ID, input.TeamID).Count(&existingGrant)
+	if existingGrant > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Team already has access to this subscription"})
+		return
+	}
+
+	// Seat validation: count current occupied + new team members
+	var occupiedSeats int64
+	database.DB.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ?", sub.ID).Count(&occupiedSeats)
+
+	var newTeamMembers int64
+	database.DB.Model(&models.TeamMember{}).Where("team_id = ?", input.TeamID).Count(&newTeamMembers)
+
+	// Count members who already have an assignment (avoid double-counting)
+	var alreadyAssigned int64
+	database.DB.Model(&models.SubscriptionAssignment{}).
+		Where("subscription_id = ? AND user_id IN (SELECT user_id FROM team_members WHERE team_id = ?)", sub.ID, input.TeamID).
+		Count(&alreadyAssigned)
+
+	netNew := newTeamMembers - alreadyAssigned
+	if int(occupiedSeats)+int(netNew) > sub.SeatCount {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":             "Not enough seats to grant team access",
+			"seat_count":        sub.SeatCount,
+			"occupied_seats":    occupiedSeats,
+			"team_member_count": newTeamMembers,
+			"net_new_seats":     netNew,
+		})
+		return
+	}
+
+	// Transaction: create grant + materialize assignments
+	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&models.SubscriptionTeam{
+			SubscriptionID: sub.ID,
+			TeamID:         input.TeamID,
+			GrantedAt:      time.Now(),
+			GrantedBy:      callerID,
+		}).Error; err != nil {
+			return err
+		}
+
+		// Materialize assignments for team members who don't already have one
+		var members []models.TeamMember
+		tx.Where("team_id = ?", input.TeamID).Find(&members)
+		for _, m := range members {
+			var existing int64
+			tx.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ? AND user_id = ?", sub.ID, m.UserID).Count(&existing)
+			if existing == 0 {
+				tx.Create(&models.SubscriptionAssignment{
+					SubscriptionID: sub.ID,
+					UserID:         m.UserID,
+					Source:         "team",
+					SourceTeamID:   &input.TeamID,
+					AssignedAt:     time.Now(),
+				})
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to grant team access"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Team access granted successfully"})
+}
+
+// RevokeTeamAccess removes a team's access to a subscription.
+// Cascades: removes team-sourced SubscriptionAssignment rows.
+// DELETE /api/subscriptions/:id/teams/:tid
+func RevokeTeamAccess(c *gin.Context) {
+	callerID := c.MustGet("userID").(uint)
+	subID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid subscription ID"})
+		return
+	}
+	teamID, err := strconv.Atoi(c.Param("tid"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
+		return
+	}
+
+	var caller models.User
+	if err := database.DB.First(&caller, callerID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Admin check
+	var member models.TeamMember
+	if err := database.DB.Where("team_id = ? AND user_id = ?", caller.DefaultTeamID, callerID).First(&member).Error; err != nil || member.Role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can revoke team access"})
+		return
+	}
+
+	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		// Remove team-sourced assignments (preserves individual grants)
+		tid := uint(teamID)
+		if err := tx.Where("subscription_id = ? AND source_team_id = ?", uint(subID), tid).
+			Delete(&models.SubscriptionAssignment{}).Error; err != nil {
+			return err
+		}
+
+		// Remove the grant itself
+		if err := tx.Where("subscription_id = ? AND team_id = ?", uint(subID), tid).
+			Delete(&models.SubscriptionTeam{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to revoke team access"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Team access revoked successfully"})
 }

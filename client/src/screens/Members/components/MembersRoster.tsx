@@ -7,7 +7,13 @@ import MembersContext from "../context";
 import MoveTeamDropdown from "./MoveTeamDropdown";
 
 export default function MembersRoster() {
-    const { members, invites, handleRevoke, teams, isLoading } = useContext(MembersContext);
+    const { members, invites, handleRevoke, teams, allTeams, isLoading } = useContext(MembersContext);
+
+    // Build team name lookup from allTeams
+    const teamNameMap: Record<number, string> = {};
+    for (const t of (allTeams || [])) {
+        teamNameMap[t.id] = t.name;
+    }
 
     return (
         <div className="grid grid-cols-1 space-y-4">
@@ -27,6 +33,7 @@ export default function MembersRoster() {
                     <AnimatePresence>
                         {map(members, (m: any) => {
                             const isAdmin = teams.some((t: any) => t.role === "owner");
+                            const teamName = teamNameMap[m.team_id];
 
                             return (
                                 <motion.div
@@ -37,7 +44,7 @@ export default function MembersRoster() {
                                     key={m.user.id}
                                     className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                                 >
-                                    {/* Left: Avatar + Name + Email */}
+                                    {/* Left: Avatar + Name + Email + Team */}
                                     <div className="flex items-center gap-3 min-w-0">
                                         <img
                                             src={m.user.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(m.user.name || "U")}
@@ -55,6 +62,9 @@ export default function MembersRoster() {
                                                 )}
                                             </div>
                                             <p className="text-[12px] font-semibold text-slate-400">{m.user.email}</p>
+                                            {teamName && (
+                                                <p className="text-[11px] font-semibold text-indigo-500 mt-0.5">📍 {teamName}</p>
+                                            )}
                                         </div>
                                     </div>
 

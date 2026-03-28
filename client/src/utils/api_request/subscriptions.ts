@@ -48,5 +48,31 @@ export const subscriptionsApi = {
             url: `/subscriptions/${id}/restore`,
             method: METHODS.PATCH,
         });
-    }
+    },
+    grantTeam: (subId: number, teamId: number) => {
+        return utils.request({
+            url: `/subscriptions/${subId}/teams`,
+            method: METHODS.POST,
+            data: { team_id: teamId },
+        });
+    },
+    revokeTeam: (subId: number, teamId: number) => {
+        return utils.request({
+            url: `/subscriptions/${subId}/teams/${teamId}`,
+            method: METHODS.DELETE,
+        });
+    },
+    assignUser: (subId: number, userId: number) => {
+        return utils.request({
+            url: `/subscriptions/${subId}/assign`,
+            method: METHODS.POST,
+            data: { user_id: userId },
+        });
+    },
+    unassignUser: (subId: number, userId: number) => {
+        return utils.request({
+            url: `/subscriptions/${subId}/assign/${userId}`,
+            method: METHODS.DELETE,
+        });
+    },
 };

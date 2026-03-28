@@ -2,6 +2,8 @@ import React, { useContext } from "react";
 import { Users, User, Crown, Clock, MessageSquare, Briefcase } from "lucide-react";
 import SubscriptionDetailContext from "../context";
 import { InfoCard, PersonRow, DetailRow } from "./Primitives";
+import size from 'lodash/size';
+import map from 'lodash/map';
 
 const SubscriptionSidebar = () => {
     const { data, sub } = useContext(SubscriptionDetailContext);
@@ -20,11 +22,15 @@ const SubscriptionSidebar = () => {
                 </InfoCard>
             )}
 
-            {data.team?.name && (
-                <InfoCard title="Team" icon={<Users size={14} className="text-indigo-500" />}>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-800">{data.team.name}</span>
-                        <span className="text-xs text-slate-500">({data.team.member_count} members)</span>
+            {size(data.granted_teams) > 0 && (
+                <InfoCard title={`Teams (${data.granted_teams.length})`} icon={<Users size={14} className="text-indigo-500" />}>
+                    <div className="space-y-2">
+                        {map(data.granted_teams, (t: any) => (
+                            <div key={t.id} className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-slate-800">{t.team_name}</span>
+                                <span className="text-xs text-slate-500">({t.member_count} members)</span>
+                            </div>
+                        ))}
                     </div>
                 </InfoCard>
             )}

@@ -58,6 +58,9 @@ func SetupRoutes(r *gin.Engine) {
 			subscriptions.GET("/:id/seats", controllers.GetSeats)
 			subscriptions.POST("/:id/assign", controllers.AssignSeat)
 			subscriptions.DELETE("/:id/assign/:uid", controllers.UnassignSeat)
+			// Team access management
+			subscriptions.POST("/:id/teams", controllers.GrantTeamAccess)
+			subscriptions.DELETE("/:id/teams/:tid", controllers.RevokeTeamAccess)
 		}
 
 		// ── Users (Profile) ───────────────────────────────────────────────────

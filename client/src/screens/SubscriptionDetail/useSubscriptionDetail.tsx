@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 import toUpper from "lodash/toUpper";
@@ -14,7 +14,7 @@ const useSubscriptionDetail = () => {
 
     const sub = data?.subscription;
     const initial = sub?.name ? toUpper(head(sub.name) as string) : "?";
-    const seatPercent = data?.seat_count > 0 ? Math.round((data.assigned_count / data.seat_count) * 100) : 0;
+    const seatPercent = data?.seat_count > 0 ? Math.round((data.occupied_seats / data.seat_count) * 100) : 0;
 
     let nextBilling = "TBD";
     if (sub?.is_auto_pay === false) {
@@ -39,6 +39,14 @@ const useSubscriptionDetail = () => {
         fetchDetail();
     }, [id, navigate]);
 
+    const refreshData = useCallback(async () => {
+        if (!id) return;
+        try {
+            const res = await subscriptionsApi.get_by_id(id);
+            setData(res);
+        } catch { }
+    }, [id]);
+
     return {
         data,
         isLoading,
@@ -50,6 +58,7 @@ const useSubscriptionDetail = () => {
         seatPercent,
         nextBilling,
         navigate,
+        refreshData,
     };
 };
 

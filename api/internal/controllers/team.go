@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"time"
 
 	"costop/internal/config"
 
@@ -23,15 +24,38 @@ func generateToken(length int) (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// GetMyTeams returns all teams the authenticated user belongs to, with their role in each.
+// GetMyTeams returns all teams in the workspace so members can filter/search across the org.
+// The caller's role is included for teams they belong to; empty otherwise.
 // GET /api/teams
 func GetMyTeams(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
-	var memberships []models.TeamMember
-	if err := database.DB.Where("user_id = ?", userID).Find(&memberships).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team memberships"})
+	// Find one membership to resolve the workspace owner
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("user_id = ?", userID).First(&callerMembership).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team membership"})
 		return
+	}
+
+	var callerTeam models.Team
+	if err := database.DB.First(&callerTeam, callerMembership.TeamID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team"})
+		return
+	}
+
+	// Get ALL teams in this workspace (same OwnerID)
+	var orgTeams []models.Team
+	if err := database.DB.Where("owner_id = ?", callerTeam.OwnerID).Find(&orgTeams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch workspace teams"})
+		return
+	}
+
+	// Build a lookup of the caller's memberships for role info
+	var allMemberships []models.TeamMember
+	database.DB.Where("user_id = ?", userID).Find(&allMemberships)
+	roleMap := make(map[uint]string)
+	for _, m := range allMemberships {
+		roleMap[m.TeamID] = m.Role
 	}
 
 	type TeamWithRole struct {
@@ -40,16 +64,13 @@ func GetMyTeams(c *gin.Context) {
 		Role string `json:"role"`
 	}
 
-	result := make([]TeamWithRole, 0, len(memberships))
-	for _, m := range memberships {
-		var team models.Team
-		if database.DB.First(&team, m.TeamID).Error == nil {
-			result = append(result, TeamWithRole{
-				ID:   team.ID,
-				Name: team.Name,
-				Role: m.Role,
-			})
-		}
+	result := make([]TeamWithRole, 0, len(orgTeams))
+	for _, team := range orgTeams {
+		result = append(result, TeamWithRole{
+			ID:   team.ID,
+			Name: team.Name,
+			Role: roleMap[team.ID],
+		})
 	}
 
 	c.JSON(http.StatusOK, result)
@@ -207,21 +228,78 @@ func UpdateMemberTeam(c *gin.Context) {
 	// Also update their DefaultTeamID so the UI context switches immediately
 	database.DB.Model(&models.User{}).Where("id = ?", membership.UserID).Update("default_team_id", input.NewTeamID)
 
+	// Hook: Sync subscription assignments on team change
+	// 1. Remove team-sourced assignments from the old team
+	oldTeamID := teamIDParam
+	database.DB.Where(
+		"user_id = ? AND source = 'team' AND source_team_id = ?",
+		membership.UserID, oldTeamID,
+	).Delete(&models.SubscriptionAssignment{})
+
+	// 2. Create assignments for new team's granted subscriptions (if seats available)
+	var newTeamGrants []models.SubscriptionTeam
+	database.DB.Where("team_id = ?", input.NewTeamID).Find(&newTeamGrants)
+	for _, grant := range newTeamGrants {
+		// Skip if user already has an assignment for this subscription
+		var existing int64
+		database.DB.Model(&models.SubscriptionAssignment{}).
+			Where("subscription_id = ? AND user_id = ?", grant.SubscriptionID, membership.UserID).
+			Count(&existing)
+		if existing > 0 {
+			continue
+		}
+
+		// Check seat availability
+		var sub models.Subscription
+		if database.DB.First(&sub, grant.SubscriptionID).Error != nil {
+			continue
+		}
+		var occupied int64
+		database.DB.Model(&models.SubscriptionAssignment{}).
+			Where("subscription_id = ?", sub.ID).Count(&occupied)
+		if int(occupied) >= sub.SeatCount {
+			continue // seats full — skip silently
+		}
+
+		newTID := input.NewTeamID
+		database.DB.Create(&models.SubscriptionAssignment{
+			SubscriptionID: grant.SubscriptionID,
+			UserID:         membership.UserID,
+			Source:         "team",
+			SourceTeamID:   &newTID,
+			AssignedAt:     time.Now(),
+		})
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Member moved to new team successfully"})
 }
 
-// GetTeamMembers fetches members and invites across ALL teams the caller belongs to.
+// GetTeamMembers fetches members and invites across ALL teams in the workspace.
 // Used by the frontend "All Teams" filter on the /members route.
+// A member can see every person in their organization, not just their own team.
 // GET /api/members
 func GetTeamMembers(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 	search := c.Query("search")
 	subscriptionFilter := c.Query("subscription")
 
-	// Find all teams the user belongs to
-	var memberships []models.TeamMember
-	if err := database.DB.Where("user_id = ?", userID).Find(&memberships).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team memberships"})
+	// Resolve the caller's team to find the workspace owner
+	var callerMembership models.TeamMember
+	if err := database.DB.Where("user_id = ?", userID).First(&callerMembership).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team membership"})
+		return
+	}
+
+	var callerTeam models.Team
+	if err := database.DB.First(&callerTeam, callerMembership.TeamID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch team"})
+		return
+	}
+
+	// Get ALL team IDs in this workspace (all teams sharing the same OwnerID)
+	var orgTeamIDs []uint
+	if err := database.DB.Model(&models.Team{}).Where("owner_id = ?", callerTeam.OwnerID).Pluck("id", &orgTeamIDs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch workspace teams"})
 		return
 	}
 
@@ -237,9 +315,9 @@ func GetTeamMembers(c *gin.Context) {
 	allMembers := make([]MemberResponse, 0)
 	allInvites := make([]models.TeamInvite, 0)
 
-	for _, ms := range memberships {
+	for _, teamID := range orgTeamIDs {
 		// Base query for members of this team
-		memberQuery := database.DB.Model(&models.TeamMember{}).Where("team_members.team_id = ?", ms.TeamID)
+		memberQuery := database.DB.Model(&models.TeamMember{}).Where("team_members.team_id = ?", teamID)
 
 		if search != "" {
 			searchTerm := "%" + search + "%"
@@ -272,7 +350,7 @@ func GetTeamMembers(c *gin.Context) {
 			})
 		}
 
-		inviteQuery := database.DB.Model(&models.TeamInvite{}).Where("team_id = ? AND status = ?", ms.TeamID, "pending")
+		inviteQuery := database.DB.Model(&models.TeamInvite{}).Where("team_id = ? AND status = ?", teamID, "pending")
 		if search != "" {
 			searchTerm := "%" + search + "%"
 			inviteQuery = inviteQuery.Where("email ILIKE ? OR designation ILIKE ?", searchTerm, searchTerm)

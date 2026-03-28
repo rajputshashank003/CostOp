@@ -6,6 +6,7 @@ import SubscriptionDetailHeader from "./components/SubscriptionDetailHeader";
 import MetricsRow from "./components/MetricsRow";
 import AssignedMembers from "./components/AssignedMembers";
 import SubscriptionSidebar from "./components/SubscriptionSidebar";
+import AccessManagement from "./components/AccessManagement";
 
 const SubscriptionDetailComp = () => {
     const { data, isLoading } = useContext(SubscriptionDetailContext);
@@ -33,6 +34,7 @@ const SubscriptionDetailComp = () => {
                             <AssignedMembers />
                             <SubscriptionSidebar />
                         </div>
+                        <AccessManagement />
                     </div>
                 </div>
             </main>

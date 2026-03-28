@@ -12,7 +12,7 @@ const MetricsRow = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MetricCard icon={<CreditCard size={18} />} label={sub.billing_cycle} value={formatter.format(sub.cost)} accent="emerald" />
                 <MetricCard icon={<Calendar size={18} />} label="Next Bill" value={nextBilling} accent="blue" />
-                <MetricCard icon={<Users size={18} />} label="Seats Used" value={`${data.assigned_count} / ${data.seat_count}`} accent="violet" />
+                <MetricCard icon={<Users size={18} />} label="Seats Used" value={`${data.occupied_seats} / ${data.seat_count}`} accent="violet" />
                 <MetricCard icon={<Users size={18} />} label="Available" value={`${data.available_seats} seats`} accent="amber" />
             </div>
 
@@ -26,7 +26,7 @@ const MetricsRow = () => {
                         className={`h-full rounded-full ${seatPercent >= 90 ? 'bg-red-500' : seatPercent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                     />
                 </div>
-                <p className="text-xs text-slate-500 mt-2 font-medium">{seatPercent}% utilised — {data.assigned_count} of {data.seat_count} seats assigned</p>
+                <p className="text-xs text-slate-500 mt-2 font-medium">{seatPercent}% utilised — {data.occupied_seats} of {data.seat_count} seats assigned</p>
             </div>
         </>
     );
