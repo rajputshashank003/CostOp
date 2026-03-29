@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layers, UserMinus, ChevronRight, Sparkles } from "lucide-react";
-import { insightsApi } from "../../../utils/api_request/insights";
-import DuplicateToolsModal from "../../../components/DuplicateToolsModal/DuplicateToolsModal";
-import UnusedSeatsModal from "../../../components/UnusedSeatsModal/UnusedSeatsModal";
-import { getLogoUrl } from "../../../services/logoService";
+import { insightsApi } from "@/utils/api_request/insights";
+import DuplicateToolsModal from "@/components/DuplicateToolsModal/DuplicateToolsModal";
+import UnusedSeatsModal from "@/components/UnusedSeatsModal/UnusedSeatsModal";
+import { getLogoUrl } from "@/services/logoService";
 
 export default function CostInsights() {
     const [duplicates, setDuplicates] = useState<any[]>([]);
