@@ -1,4 +1,4 @@
-import {useContext } from "react";
+import { useContext } from "react";
 import { DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
@@ -18,11 +18,11 @@ export default function SpendsChart() {
     const {
         spendData,
         isLoadingSpends: isLoading,
-        spendsMonths: months, 
+        spendsMonths: months,
         setSpendsMonths: setMonths,
-        spendsCustomStart: customStart, 
+        spendsCustomStart: customStart,
         setSpendsCustomStart: setCustomStart,
-        spendsCustomEnd: customEnd, 
+        spendsCustomEnd: customEnd,
         setSpendsCustomEnd: setCustomEnd
     } = useContext(HistoryContext);
 
@@ -124,7 +124,7 @@ export default function SpendsChart() {
                                     <div className="w-full h-full flex items-end justify-center">
                                         <div
                                             className={`w-full max-w-[44px] transition-all duration-500 ease-out cursor-crosshair
-                                                ${isCurrentMonth ? 'bg-emerald-500 group-hover:bg-emerald-400' : 'bg-slate-200 group-hover:bg-emerald-300'}
+                                                ${isCurrentMonth ? 'bg-gradient-to-t from-emerald-400 to-emerald-600 group-hover:from-emerald-300 group-hover:to-emerald-500' : 'bg-slate-200 group-hover:bg-emerald-300'}
                                                 ${heightPercent > 3 ? 'rounded-t-md' : 'rounded-t-sm'}
                                             `}
                                             style={{ height: `max(${heightPercent}%, 4px)` }}

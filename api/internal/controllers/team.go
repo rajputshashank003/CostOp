@@ -192,11 +192,18 @@ func UpdateMemberTeam(c *gin.Context) {
 		return
 	}
 
-	// Caller must be owner of the source team
+	// Caller must be an admin (owner of any team in the workspace) or the owner of the source team
 	var callerMembership models.TeamMember
-	if err := database.DB.Where("team_id = ? AND user_id = ?", teamIDParam, callerID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only team owners can reassign members"})
-		return
+	isAdmin := false
+	if err := database.DB.Where("user_id = ? AND role = 'owner'", callerID).First(&models.TeamMember{}).Error; err == nil {
+		isAdmin = true
+	}
+
+	if !isAdmin {
+		if err := database.DB.Where("team_id = ? AND user_id = ?", teamIDParam, callerID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Only admins or team owners can reassign members"})
+			return
+		}
 	}
 
 	// Verify the target team exists
@@ -497,8 +504,16 @@ func CreateTeam(c *gin.Context) {
 // Distinct from GetMyTeams which returns only teams the user belongs to.
 // GET /api/teams/all
 func GetAllTeams(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	var user models.User
+	if err := database.DB.Select("org_id").First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
 	var teams []models.Team
-	if err := database.DB.Find(&teams).Error; err != nil {
+	if err := database.DB.Where("org_id = ?", user.OrgID).Find(&teams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
 	}

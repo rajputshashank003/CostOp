@@ -4,12 +4,14 @@ import Sidebar from "@/components/Sidebar/Sidebar";
 import Header from "@/components/Header/Header";
 import ProfileContext from "./context";
 import useProfile from "./useProfile";
+import { useUser } from "@/hooks/useUser";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileToolsList from "./components/ProfileToolsList";
 import { ArrowLeft } from "lucide-react";
 
 const ProfileComp = () => {
-    const { user, teams, isOwnProfile, isAuthLoading, subscriptions, isLoading, totalCost, formatter } = useContext(ProfileContext);
+    const { user, teams, isOwnProfile, isAuthLoading, subscriptions, isLoading, totalCost, formatter, allTeams, handleMoveToTeam, handleCreateTeam } = useContext(ProfileContext);
+    const { user: viewer } = useUser();
     const navigate = useNavigate();
 
     if (isAuthLoading || isLoading) {
@@ -45,6 +47,10 @@ const ProfileComp = () => {
                             subscriptionCount={subscriptions.length}
                             formatter={formatter}
                             isOwnProfile={isOwnProfile}
+                            viewerIsAdmin={viewer?.is_admin}
+                            allTeams={allTeams}
+                            onMove={handleMoveToTeam}
+                            onCreate={handleCreateTeam}
                         />
                         <div>
                             <h2 className="text-lg font-extrabold text-slate-800 mb-6 px-2">Assigned Software Stack</h2>

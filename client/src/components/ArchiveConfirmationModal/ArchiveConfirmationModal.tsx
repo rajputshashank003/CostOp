@@ -48,8 +48,8 @@ export default function ArchiveConfirmationModal({ subId, subName, onClose, onSu
                 transition={{ type: "spring", duration: 0.4 }}
                 className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-sm flex flex-col p-6"
             >
-                <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mb-5 border border-amber-100">
-                    <Archive size={28} className="text-amber-500" />
+                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-5 border border-emerald-100">
+                    <Archive size={28} className="text-emerald-500" />
                 </div>
 
                 <h2 className="text-xl font-bold text-slate-900 tracking-tight leading-none mb-2.5">Archive Subscription</h2>
@@ -70,7 +70,7 @@ export default function ArchiveConfirmationModal({ subId, subName, onClose, onSu
                         whileTap={{ scale: 0.95 }}
                         onClick={handleArchive}
                         disabled={isLoading}
-                        className="flex-1 py-3 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-70 transition-all shadow-md hover:shadow-lg text-sm flex justify-center items-center cursor-pointer"
+                        className="flex-1 py-3 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-70 transition-all shadow-md hover:shadow-lg text-sm flex justify-center items-center cursor-pointer"
                     >
                         {isLoading
                             ? <span className="w-5 h-5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />

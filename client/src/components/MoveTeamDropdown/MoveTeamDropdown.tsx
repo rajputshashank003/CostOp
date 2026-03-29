@@ -1,15 +1,15 @@
-import { useState, useRef, useEffect, useContext } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ArrowRightLeft, Search, Plus, Check, Loader2 } from "lucide-react";
-import MembersContext from "../context";
 
 interface Props {
     userId: number;
-    currentTeamId: number;
+    currentTeamId?: number;
+    allTeams: any[];
+    onMove: (userId: number, currentTeamId: number, newTeamId: number) => Promise<void>;
+    onCreate: (name: string) => Promise<void>;
 }
 
-export default function MoveTeamDropdown({ userId, currentTeamId }: Props) {
-    const { allTeams, handleMoveToTeam, handleCreateTeam } = useContext(MembersContext);
-
+export default function MoveTeamDropdown({ userId, currentTeamId, allTeams, onMove, onCreate }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [isCreating, setIsCreating] = useState(false);
@@ -46,7 +46,7 @@ export default function MoveTeamDropdown({ userId, currentTeamId }: Props) {
 
     const handleMove = async (teamId: number) => {
         setMovingToId(teamId);
-        await handleMoveToTeam(userId, currentTeamId, teamId);
+        await onMove(userId, currentTeamId || 0, teamId);
         setMovingToId(null);
         setIsOpen(false);
         setSearch("");
@@ -56,7 +56,7 @@ export default function MoveTeamDropdown({ userId, currentTeamId }: Props) {
         e.preventDefault();
         if (!newTeamName.trim()) return;
         setIsSubmitting(true);
-        await handleCreateTeam(newTeamName.trim());
+        await onCreate(newTeamName.trim());
         setNewTeamName("");
         setIsCreating(false);
         setIsSubmitting(false);

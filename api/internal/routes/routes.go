@@ -111,5 +111,13 @@ func SetupRoutes(r *gin.Engine) {
 			history.GET("/spends", controllers.GetHistoricalSpends)
 			history.GET("/department-spends", controllers.GetDepartmentSpendHistory)
 		}
+
+		// ── Insights (Cost Optimization) ─────────────────────────────────────
+		insights := api.Group("/insights")
+		insights.Use(middleware.RequireAuth())
+		{
+			insights.GET("/duplicates", controllers.GetDuplicateTools)
+			insights.GET("/unused-seats", controllers.GetUnusedSeats)
+		}
 	}
 }

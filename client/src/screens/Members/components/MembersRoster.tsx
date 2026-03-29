@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import size from "lodash/size";
 import map from "lodash/map";
 import MembersContext from "../context";
-import MoveTeamDropdown from "./MoveTeamDropdown";
+import MoveTeamDropdown from "@/components/MoveTeamDropdown/MoveTeamDropdown";
 
 export default function MembersRoster() {
-    const { members, invites, handleRevoke, teams, allTeams, isLoading } = useContext(MembersContext);
+    const { members, invites, handleRevoke, teams, allTeams, handleMoveToTeam, handleCreateTeam, isLoading } = useContext(MembersContext);
     const navigate = useNavigate();
 
     // Build team name lookup from allTeams
@@ -86,7 +86,13 @@ export default function MembersRoster() {
 
                                         {/* Admin: Move to Team dropdown */}
                                         {isAdmin && m.role !== "owner" && (
-                                            <MoveTeamDropdown userId={m.user.id} currentTeamId={m.team_id} />
+                                            <MoveTeamDropdown
+                                                userId={m.user.id}
+                                                currentTeamId={m.team_id}
+                                                allTeams={allTeams}
+                                                onMove={handleMoveToTeam}
+                                                onCreate={handleCreateTeam}
+                                            />
                                         )}
                                     </div>
                                 </motion.div>

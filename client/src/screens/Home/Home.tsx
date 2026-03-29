@@ -11,6 +11,7 @@ import HomeHeader from "./components/HomeHeader";
 import HomeEmptyState from "./components/HomeEmptyState";
 import DashboardMetrics from "./components/DashboardMetrics";
 import ActiveSubscriptions from "./components/ActiveSubscriptions";
+import CostInsights from "./components/CostInsights";
 import { useNavigate } from "react-router-dom";
 
 const HomeComp = () => {
@@ -75,6 +76,8 @@ const HomeComp = () => {
                                 onOpenRenewals={() => setIsRenewalsModalOpen(true)}
                                 onOpenDepartments={() => setIsDeptModalOpen(true)}
                             />
+
+                            <CostInsights />
 
                             <ActiveSubscriptions />
                         </div>

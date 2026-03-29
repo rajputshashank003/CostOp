@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import map from "lodash/map";
 import size from "lodash/size";
 import head from "lodash/head";
@@ -7,6 +8,7 @@ import SubscriptionDetailContext from "../context";
 
 const AssignedMembers = () => {
     const { data } = useContext(SubscriptionDetailContext);
+    const navigate = useNavigate();
 
     // Build team name lookup map from granted_teams
     const teamNameMap: Record<number, string> = {};
@@ -37,7 +39,11 @@ const AssignedMembers = () => {
                             ? teamNameMap[u.source_team_id]
                             : userTeamMap[u.user_id] || null;
                         return (
-                            <div key={u.user_id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/60 border border-slate-100">
+                            <div
+                                key={u.user_id}
+                                onClick={() => navigate(`/profile/${u.user_id}`)}
+                                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/60 border border-slate-100 cursor-pointer hover:bg-slate-100 hover:border-slate-200 transition-colors"
+                            >
                                 {u.avatar_url ? (
                                     <img src={u.avatar_url} alt={u.name} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shrink-0" />
                                 ) : (

@@ -23,10 +23,10 @@ export default function DepartmentSpendHistory() {
     });
 
     return (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 p-4 sm:p-6 mb-8 mt-2 shadow-sm relative overflow-hidden group hover:border-purple-200 transition-colors">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 p-4 sm:p-6 mb-8 mt-2 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 relative z-50">
                 <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                         <PieChart size={20} className="stroke-[2.5]" />
                     </div>
                     <div>
@@ -38,7 +38,7 @@ export default function DepartmentSpendHistory() {
 
             {isLoading ? (
                 <div className="h-48 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
                 </div>
             ) : size(data) === 0 ? (
                 <div className="h-48 flex items-center justify-center text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200 border-dashed">
@@ -59,12 +59,12 @@ export default function DepartmentSpendHistory() {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: `${percent}%` }}
                                         transition={{ duration: 1, delay: idx * 0.05, ease: "easeOut" }}
-                                        className="bg-purple-500 h-full rounded-full"
+                                        className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full rounded-full"
                                     />
                                 </div>
                             </div>
@@ -73,7 +73,7 @@ export default function DepartmentSpendHistory() {
                 </div>
             )}
 
-            <div className="absolute right-0 top-0 w-48 h-48 bg-purple-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+            <div className="absolute right-0 top-0 w-48 h-48 bg-emerald-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
         </div>
     );
 }
