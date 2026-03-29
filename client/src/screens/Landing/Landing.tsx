@@ -1,5 +1,6 @@
 import LandingHeader from "./components/LandingHeader";
 import HeroSection from "./components/HeroSection";
+import CostWorkflow from "./components/CostWorkflow";
 import FeaturesGrid from "./components/FeaturesGrid";
 import LandingFooter from "./components/LandingFooter";
 import LandingContext from "./context";
@@ -12,6 +13,7 @@ const LandingComp = () => {
 
             <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
                 <HeroSection />
+                <CostWorkflow />
                 <FeaturesGrid />
             </main>
 
