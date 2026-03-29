@@ -21,6 +21,7 @@ interface Props {
     isLoadingHistorical: boolean;
     formatter: Intl.NumberFormat;
     onOpenRenewals: () => void;
+    onOpenDepartments: () => void;
 }
 
 export default function DashboardMetrics({
@@ -33,7 +34,8 @@ export default function DashboardMetrics({
     historicalSpendTotal,
     isLoadingHistorical,
     formatter,
-    onOpenRenewals
+    onOpenRenewals,
+    onOpenDepartments
 }: Props) {
     const { metrics, isLoadingMetrics } = useContext(HomeContext);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,12 +107,12 @@ export default function DashboardMetrics({
     );
 
     const RenewalsWidget = (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors h-full min-h-[180px]">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors h-full min-h-[180px]">
             <div className="relative z-10 flex items-center justify-between mb-4">
                 <p className="text-[14px] font-semibold text-slate-500 flex items-center gap-2">
-                    <CalendarClock size={16} className="text-blue-500" />
+                    <CalendarClock size={16} className="text-emerald-500" />
                     Upcoming Renewals
-                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md ml-1 border border-blue-100 shadow-sm leading-none">30 DAYS</span>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md ml-1 border border-emerald-100 shadow-sm leading-none">30 DAYS</span>
                 </p>
             </div>
             <div className="relative z-10">
@@ -124,7 +126,7 @@ export default function DashboardMetrics({
                         {size(metrics.upcoming_renewals) > 2 && (
                             <button
                                 onClick={onOpenRenewals}
-                                className="text-[12px] font-semibold text-slate-400 hover:text-blue-600 transition-colors text-center mt-1 py-1 w-full cursor-pointer"
+                                className="text-[12px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors text-center mt-1 py-1 w-full cursor-pointer"
                             >
                                 + {size(metrics.upcoming_renewals) - 2} more renewals
                             </button>
@@ -136,7 +138,7 @@ export default function DashboardMetrics({
                     </div>
                 )}
             </div>
-            <div className="absolute right-0 top-0 w-32 h-32 bg-blue-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
     );
 
@@ -156,7 +158,7 @@ export default function DashboardMetrics({
                 >
                     <div className="snap-center flex-shrink-0 w-[85vw]">{SpendWidget}</div>
                     <div className="snap-center flex-shrink-0 w-[85vw]">{RenewalsWidget}</div>
-                    <div className="snap-center flex-shrink-0 w-[85vw]"><DepartmentSpend formatter={formatter} /></div>
+                    <div className="snap-center flex-shrink-0 w-[85vw]"><DepartmentSpend formatter={formatter} onOpenDepartments={onOpenDepartments} /></div>
                 </div>
                 {/* Pill dot scroll indicators */}
                 <div className="flex items-center justify-center gap-1.5 mt-3">
@@ -175,14 +177,14 @@ export default function DashboardMetrics({
                     {SpendWidget}
                     {RenewalsWidget}
                 </div>
-                <DepartmentSpend formatter={formatter} />
+                <DepartmentSpend formatter={formatter} onOpenDepartments={onOpenDepartments} />
             </div>
 
             {/* Desktop: 3-col equal grid */}
             <div className="hidden lg:grid grid-cols-3 gap-6">
                 {SpendWidget}
                 {RenewalsWidget}
-                <DepartmentSpend formatter={formatter} />
+                <DepartmentSpend formatter={formatter} onOpenDepartments={onOpenDepartments} />
             </div>
         </motion.div>
     );

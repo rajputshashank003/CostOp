@@ -8,18 +8,19 @@ import HomeContext from "../context";
 
 interface Props {
     formatter: Intl.NumberFormat;
+    onOpenDepartments?: () => void;
 }
 
-export default function DepartmentSpend({ formatter }: Props) {
+export default function DepartmentSpend({ formatter, onOpenDepartments }: Props) {
     const { metrics, isLoadingMetrics } = useContext(HomeContext);
     const deptSpends = metrics?.department_spends || [];
     const totalSpend = sumBy(deptSpends, "spend") || 1;
 
     return (
-        <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm relative overflow-hidden group hover:border-purple-200 transition-colors h-full min-h-[180px] flex flex-col">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors h-full min-h-[180px] flex flex-col">
             <div className="relative z-10 flex items-center justify-between mb-4">
                 <p className="text-[14px] font-semibold text-slate-500 flex items-center gap-2">
-                    <PieChart size={16} className="text-purple-500" />
+                    <PieChart size={16} className="text-emerald-500" />
                     Spend by Department
                 </p>
             </div>
@@ -47,16 +48,19 @@ export default function DepartmentSpend({ formatter }: Props) {
                                             initial={{ width: 0 }}
                                             animate={{ width: `${percent}%` }}
                                             transition={{ duration: 1, delay: idx * 0.1, ease: "easeOut" }}
-                                            className="bg-purple-500 h-full rounded-full"
+                                            className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full rounded-full"
                                         />
                                     </div>
                                 </div>
                             );
                         })}
                         {size(deptSpends) > 4 && (
-                            <p className="text-[11px] font-semibold text-slate-400 text-center mt-1">
+                            <button
+                                onClick={onOpenDepartments}
+                                className="text-[12px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors text-center mt-1 py-1 w-full cursor-pointer"
+                            >
                                 + {size(deptSpends) - 4} more departments
-                            </p>
+                            </button>
                         )}
                     </div>
                 ) : (
@@ -66,7 +70,7 @@ export default function DepartmentSpend({ formatter }: Props) {
                 )}
             </div>
 
-            <div className="absolute right-0 top-0 w-32 h-32 bg-purple-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
     );
 }

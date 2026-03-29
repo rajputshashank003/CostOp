@@ -2,6 +2,7 @@ import { useState } from "react";
 import head from "lodash/head";
 import toUpper from "lodash/toUpper";
 import { getLogoUrl } from "../../../services/logoService";
+import { useNavigate } from "react-router-dom";
 
 interface SmallRenewalItemProps {
     r: any;
@@ -12,9 +13,13 @@ export default function SmallRenewalItem({ r, formatter }: SmallRenewalItemProps
     const [imgError, setImgError] = useState(false);
     const initial = r.name ? toUpper(head(r.name) as string) : "?";
     const logoUrl = !imgError ? getLogoUrl(r.name) : null;
+    const navigate = useNavigate();
 
     return (
-        <div className="flex items-center justify-between bg-slate-50/80 p-3 rounded-xl border border-slate-100 group-hover:bg-white transition-colors">
+        <div
+            onClick={() => navigate(`/subscription/${r.id}`)}
+            className="flex items-center justify-between bg-slate-50/80 p-3 rounded-xl border border-slate-100 group-hover:bg-white transition-colors cursor-pointer"
+        >
             <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-700 shadow-sm overflow-hidden">
                     {logoUrl ? (

@@ -1,9 +1,10 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import HomeContext from "./context";
 import { AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
 import ArchiveConfirmationModal from "../../components/ArchiveConfirmationModal/ArchiveConfirmationModal";
 import UpcomingRenewalsModal from "../../components/UpcomingRenewalsModal/UpcomingRenewalsModal";
+import DepartmentSpendModal from "../../components/DepartmentSpendModal/DepartmentSpendModal";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import HomeSkeleton from "../../components/Skeleton/HomeSkeleton";
 import HomeHeader from "./components/HomeHeader";
@@ -35,6 +36,7 @@ const HomeComp = () => {
         isAuthLoading,
     } = useContext(HomeContext);
     const navigate = useNavigate();
+    const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
 
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -68,6 +70,7 @@ const HomeComp = () => {
                                 isLoadingHistorical={isLoadingHistorical}
                                 formatter={formatter}
                                 onOpenRenewals={() => setIsRenewalsModalOpen(true)}
+                                onOpenDepartments={() => setIsDeptModalOpen(true)}
                             />
 
                             <ActiveSubscriptions />
@@ -92,6 +95,15 @@ const HomeComp = () => {
                     <UpcomingRenewalsModal
                         renewals={metrics.upcoming_renewals}
                         onClose={() => setIsRenewalsModalOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isDeptModalOpen && metrics?.department_spends && (
+                    <DepartmentSpendModal
+                        departments={metrics.department_spends}
+                        onClose={() => setIsDeptModalOpen(false)}
                     />
                 )}
             </AnimatePresence>
