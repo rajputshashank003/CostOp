@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Calendar, CreditCard, Users, Briefcase, User, Archive, Trash2, RotateCcw } from "lucide-react";
 import toUpper from "lodash/toUpper";
 import head from "lodash/head";
-import { getLogoUrl } from "../../../services/logoService";
-import { getCategoryIcon } from "../../../utils/helpers";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { getLogoUrl } from "@/services/logoService";
+import { getCategoryIcon } from "@/utils/helpers";
 
 export interface Subscription {
     id: number;

@@ -1,13 +1,19 @@
-import { DollarSign, Layers } from "lucide-react";
+import { DollarSign, Layers, Shield, Users, MapPin } from "lucide-react";
+import size from "lodash/size";
+import map from "lodash/map";
 
 interface ProfileHeaderProps {
     user: any;
+    teams?: any[];
     totalCost: number;
     subscriptionCount: number;
     formatter: Intl.NumberFormat;
+    isOwnProfile?: boolean;
 }
 
-const ProfileHeader = ({ user, totalCost, subscriptionCount, formatter }: ProfileHeaderProps) => {
+const ProfileHeader = ({ user, teams = [], totalCost, subscriptionCount, formatter, isOwnProfile }: ProfileHeaderProps) => {
+    const isAdmin = user?.is_admin;
+
     return (
         <div className="bg-white rounded-[2rem] p-6 sm:p-10 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center md:items-start gap-8">
             <img
@@ -19,8 +25,29 @@ const ProfileHeader = ({ user, totalCost, subscriptionCount, formatter }: Profil
                 }}
             />
             <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{user?.name}</h1>
-                <p className="text-lg font-bold text-slate-500 mb-6">{user?.email}</p>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                    <h1 className="text-3xl font-extrabold text-slate-900">{user?.name}</h1>
+                    {isAdmin && (
+                        <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg text-xs font-bold uppercase">
+                            <Shield size={12} /> Admin
+                        </span>
+                    )}
+                </div>
+                <p className="text-lg font-bold text-slate-500 mb-2">{user?.email}</p>
+
+                {/* Team badges */}
+                {size(teams) > 0 && (
+                    <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
+                        {map(teams, (t: any) => (
+                            <span key={t.team_id} className="flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-100">
+                                <MapPin size={12} /> {t.team_name}
+                                {t.designation && <span className="text-indigo-500 font-medium">· {t.designation}</span>}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+                {size(teams) === 0 && <div className="mb-6" />}
 
                 <div className="flex flex-wrap justify-center md:justify-start gap-4">
                     <div className="bg-emerald-50 rounded-2xl px-5 py-4 border border-emerald-100 flex items-center gap-4 min-w-[200px]">

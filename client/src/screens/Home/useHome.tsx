@@ -7,6 +7,7 @@ import { categoriesApi } from "../../utils/api_request/categories";
 import { teamsApi } from "../../utils/api_request/teams";
 import reduce from "lodash/reduce";
 import map from "lodash/map";
+import debounce from "lodash/debounce";
 
 const readParam = (key: string, fallback: string): string => {
     const params = new URLSearchParams(window.location.search);
@@ -31,6 +32,7 @@ const useHome = () => {
     const { user, isLoading: isAuthLoading } = useUser();
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [isLoadingSubs, setIsLoadingSubs] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [showMine, setShowMine] = useState(false);
     const [metrics, setMetrics] = useState<any>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -80,6 +82,7 @@ const useHome = () => {
             setSubscriptions([]);
         } finally {
             setIsLoadingSubs(false);
+            setIsInitialLoad(false);
         }
     }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
 
@@ -113,13 +116,16 @@ const useHome = () => {
         syncParams(searchQuery, filterCategory, filterCycle, String(spendTimeframe), customStart, customEnd, dateStart, dateEnd);
     }, [searchQuery, filterCategory, filterCycle, spendTimeframe, customStart, customEnd, dateStart, dateEnd]);
 
-    // Debounce search
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedSetSearch = useCallback(
+        debounce((val: string) => setSearchQuery(val), 400),
+        []
+    );
+
     useEffect(() => {
-        const handler = setTimeout(() => {
-            setSearchQuery(localSearch);
-        }, 400);
-        return () => clearTimeout(handler);
-    }, [localSearch]);
+        debouncedSetSearch(localSearch);
+        return () => debouncedSetSearch.cancel();
+    }, [localSearch, debouncedSetSearch]);
 
     // Fetch supporting data (categories, teams)
     useEffect(() => {
@@ -173,6 +179,7 @@ const useHome = () => {
         user,
         subscriptions: filteredSubscriptions,
         isLoadingSubs,
+        isInitialLoad,
         showMine, setShowMine,
         metrics,
         isLoadingMetrics,

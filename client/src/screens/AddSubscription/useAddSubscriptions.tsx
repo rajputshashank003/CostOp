@@ -140,15 +140,21 @@ const useAddSubscriptions = () => {
                 navigate("/requests");
             } else {
                 const startDate = new Date(formData.start_date);
-                const nextBillingDate = new Date(startDate);
-                if (formData.billing_cycle === "Monthly") nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-                else nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+                const isOneTime = formData.billing_cycle === "One Time";
+                let nextBillingDate: Date | null = null;
+
+                if (!isOneTime) {
+                    nextBillingDate = new Date(startDate);
+                    if (formData.billing_cycle === "Monthly") nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+                    else nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+                }
 
                 const payload: any = {
                     name: formData.name, category: formData.category, plan_type: formData.plan_type,
                     billing_cycle: formData.billing_cycle, cost: parseFloat(formData.cost),
-                    start_date: startDate.toISOString(), next_billing_date: nextBillingDate.toISOString(),
-                    is_auto_pay: formData.is_auto_pay,
+                    start_date: startDate.toISOString(),
+                    ...(nextBillingDate ? { next_billing_date: nextBillingDate.toISOString() } : {}),
+                    is_auto_pay: isOneTime ? false : formData.is_auto_pay,
                     seat_count: formData.pricing_model === "site_license" ? 999999 : parseInt(formData.seat_count.toString(), 10),
                     assigned_user_ids: formData.access_type === "all_members" ? map(availableMembers, m => m.user.id) : formData.assigned_user_ids
                 };

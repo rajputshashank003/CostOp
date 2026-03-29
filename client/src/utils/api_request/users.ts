@@ -5,6 +5,9 @@ export const usersApi = {
     get_profile_subscriptions: () => {
         return utils.request({ url: `/users/profile/subscriptions`, method: METHODS.GET });
     },
+    get_user_profile: (userId: number) => {
+        return utils.request({ url: `/users/${userId}/profile`, method: METHODS.GET });
+    },
     onboard: (data: { team_name: string; designation: string }) => {
         return utils.request({ url: `/users/onboard`, method: METHODS.PATCH, data });
     },

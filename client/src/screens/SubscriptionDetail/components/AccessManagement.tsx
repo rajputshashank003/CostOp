@@ -5,6 +5,7 @@ import { subscriptionsApi } from "../../../utils/api_request/subscriptions";
 import { teamsApi } from "../../../utils/api_request/teams";
 import { membersApi } from "../../../utils/api_request/members";
 import { useUser } from "../../../hooks/useUser";
+import ConfirmModal from "@/components/ConfirmModal/ConfirmModal";
 import head from 'lodash/head';
 import map from 'lodash/map';
 import includes from 'lodash/includes';
@@ -26,6 +27,10 @@ const AccessManagement = () => {
     const [userSearch, setUserSearch] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // Confirmation modal state
+    const [revokeTeam, setRevokeTeam] = useState<{ id: number; name: string } | null>(null);
+    const [removeUser, setRemoveUser] = useState<{ id: number; name: string } | null>(null);
+
     const subId = data?.subscription?.id;
     const grantedTeamIds = map(data?.granted_teams || [], 'team_id');
     const assignedUserIds = map(data?.assigned_users || [], 'user_id');
@@ -44,10 +49,10 @@ const AccessManagement = () => {
     };
 
     const handleRevokeTeam = async (teamId: number) => {
-        if (!confirm("Revoke this team's access? Team-sourced assignments will be removed.")) return;
         setLoading(true);
         try {
             await subscriptionsApi.revokeTeam(subId, teamId);
+            setRevokeTeam(null);
             refreshData();
         } catch {
             alert("Failed to revoke team access");
@@ -70,10 +75,10 @@ const AccessManagement = () => {
     };
 
     const handleUnassignUser = async (userId: number) => {
-        if (!confirm("Remove this user's access?")) return;
         setLoading(true);
         try {
             await subscriptionsApi.unassignUser(subId, userId);
+            setRemoveUser(null);
             refreshData();
         } catch {
             alert("Failed to remove user");
@@ -115,10 +120,10 @@ const AccessManagement = () => {
 
     if (!isAdmin) return null;
 
-    const filteredTeams = filter(teams, 
+    const filteredTeams = filter(teams,
         (t: any) => !includes(grantedTeamIds, t.id) && lowerCase(t.name).includes(teamSearch.toLowerCase())
     );
-    const filteredMembers = filter(teamMembers, 
+    const filteredMembers = filter(teamMembers,
         (m: any) => !includes(assignedUserIds, m.user_id) && (lowerCase(m.name).includes(userSearch.toLowerCase()) || lowerCase(m.email).includes(userSearch.toLowerCase()))
     );
 
@@ -239,7 +244,7 @@ const AccessManagement = () => {
                                     <span className="text-xs text-slate-500">({t.member_count} members)</span>
                                 </div>
                                 <button
-                                    onClick={() => handleRevokeTeam(t.team_id)}
+                                    onClick={() => setRevokeTeam({ id: t.team_id, name: t.team_name })}
                                     disabled={loading}
                                     className="p-1 rounded-md hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
                                     title="Revoke team access"
@@ -265,7 +270,7 @@ const AccessManagement = () => {
                                         <img src={u.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
                                     ) : (
                                         <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
-                                                {upperCase(head(u.name))}
+                                            {upperCase(head(u.name))}
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
@@ -282,7 +287,7 @@ const AccessManagement = () => {
                                             <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase hidden sm:inline">Individual</span>
                                         )}
                                         <button
-                                            onClick={() => handleUnassignUser(u.user_id)}
+                                            onClick={() => setRemoveUser({ id: u.user_id, name: u.name })}
                                             disabled={loading}
                                             className="p-1 rounded-md hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
                                             title="Remove access"
@@ -296,6 +301,29 @@ const AccessManagement = () => {
                     </div>
                 )}
             </div>
+
+            {/* Revoke Team Confirmation Modal */}
+            <ConfirmModal
+                open={!!revokeTeam}
+                onClose={() => setRevokeTeam(null)}
+                onConfirm={() => revokeTeam && handleRevokeTeam(revokeTeam.id)}
+                title="Revoke Team Access?"
+                description={`Remove ${revokeTeam?.name || "this team"}'s access? All team-sourced seat assignments will be removed.`}
+                confirmLabel="Yes, Revoke"
+                loading={loading}
+                icon={<Users size={32} />}
+            />
+
+            {/* Remove User Confirmation Modal */}
+            <ConfirmModal
+                open={!!removeUser}
+                onClose={() => setRemoveUser(null)}
+                onConfirm={() => removeUser && handleUnassignUser(removeUser.id)}
+                title="Remove Access?"
+                description={`Remove ${removeUser?.name || "this user"}'s access to this subscription?`}
+                confirmLabel="Yes, Remove"
+                loading={loading}
+            />
         </div>
     );
 };

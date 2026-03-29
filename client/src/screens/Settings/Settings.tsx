@@ -16,8 +16,11 @@ const SettingsComp = () => {
 
     if (isLoading || isFetching) {
         return (
-            <div className="flex h-screen items-center justify-center bg-[#f0f0f5]">
-                <span className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></span>
+            <div className="flex min-h-screen bg-[#f0f0f5]">
+                <Sidebar />
+                <main className="flex-1 p-8 flex items-center justify-center">
+                    <span className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></span>
+                </main>
             </div>
         );
     }

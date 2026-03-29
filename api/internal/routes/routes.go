@@ -68,6 +68,7 @@ func SetupRoutes(r *gin.Engine) {
 		users.Use(middleware.RequireAuth())
 		{
 			users.GET("/profile/subscriptions", controllers.GetProfileSubscriptions)
+			users.GET("/:id/profile", controllers.GetUserProfile)
 			users.PATCH("/onboard", controllers.OnboardUser)
 		}
 

@@ -3,6 +3,7 @@ package controllers
 import (
 	"costop/internal/database"
 	"costop/internal/models"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -546,36 +547,36 @@ func AssignSeat(c *gin.Context) {
 		return
 	}
 
-	// Check seat availability
-	var assignedCount int64
-	database.DB.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ?", sub.ID).Count(&assignedCount)
-	if int(assignedCount) >= sub.SeatCount {
+	var resultAssigned []uint
+	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		assigned, _, txErr := acquireSeats(tx, sub.ID, []uint{input.UserID}, "individual", nil)
+		if txErr != nil {
+			return txErr
+		}
+		if len(assigned) == 0 {
+			return ErrNoSeats
+		}
+		resultAssigned = assigned
+		return nil
+	})
+
+	if errors.Is(err, ErrNoSeats) {
 		c.JSON(http.StatusConflict, gin.H{"error": "No seats available for this subscription"})
 		return
 	}
-
-	// Prevent duplicate assignment
-	var existing int64
-	database.DB.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ? AND user_id = ?", sub.ID, input.UserID).Count(&existing)
-	if existing > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "User is already assigned to this subscription"})
-		return
-	}
-
-	assignment := models.SubscriptionAssignment{
-		SubscriptionID: sub.ID,
-		UserID:         input.UserID,
-		Source:         "individual",
-		AssignedAt:     time.Now(),
-	}
-	if err := database.DB.Create(&assignment).Error; err != nil {
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign seat"})
 		return
 	}
 
+	// Recount for accurate response
+	var assignedCount int64
+	database.DB.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ?", sub.ID).Count(&assignedCount)
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message":         "Seat assigned successfully",
-		"available_seats": sub.SeatCount - int(assignedCount) - 1,
+		"assigned_users":  resultAssigned,
+		"available_seats": sub.SeatCount - int(assignedCount),
 	})
 }
 
@@ -716,33 +717,18 @@ func GrantTeamAccess(c *gin.Context) {
 		return
 	}
 
-	// Seat validation: count current occupied + new team members
-	var occupiedSeats int64
-	database.DB.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ?", sub.ID).Count(&occupiedSeats)
-
-	var newTeamMembers int64
-	database.DB.Model(&models.TeamMember{}).Where("team_id = ?", input.TeamID).Count(&newTeamMembers)
-
-	// Count members who already have an assignment (avoid double-counting)
-	var alreadyAssigned int64
-	database.DB.Model(&models.SubscriptionAssignment{}).
-		Where("subscription_id = ? AND user_id IN (SELECT user_id FROM team_members WHERE team_id = ?)", sub.ID, input.TeamID).
-		Count(&alreadyAssigned)
-
-	netNew := newTeamMembers - alreadyAssigned
-	if int(occupiedSeats)+int(netNew) > sub.SeatCount {
-		c.JSON(http.StatusConflict, gin.H{
-			"error":             "Not enough seats to grant team access",
-			"seat_count":        sub.SeatCount,
-			"occupied_seats":    occupiedSeats,
-			"team_member_count": newTeamMembers,
-			"net_new_seats":     netNew,
-		})
-		return
+	// Gather team member user IDs for seat assignment
+	var members []models.TeamMember
+	database.DB.Where("team_id = ?", input.TeamID).Find(&members)
+	memberUIDs := make([]uint, len(members))
+	for i, m := range members {
+		memberUIDs[i] = m.UserID
 	}
 
-	// Transaction: create grant + materialize assignments
+	// Atomic transaction: create grant + acquire seats with row lock
+	var assigned, skipped []uint
 	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		// Create the team policy row
 		if err := tx.Create(&models.SubscriptionTeam{
 			SubscriptionID: sub.ID,
 			TeamID:         input.TeamID,
@@ -752,23 +738,10 @@ func GrantTeamAccess(c *gin.Context) {
 			return err
 		}
 
-		// Materialize assignments for team members who don't already have one
-		var members []models.TeamMember
-		tx.Where("team_id = ?", input.TeamID).Find(&members)
-		for _, m := range members {
-			var existing int64
-			tx.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ? AND user_id = ?", sub.ID, m.UserID).Count(&existing)
-			if existing == 0 {
-				tx.Create(&models.SubscriptionAssignment{
-					SubscriptionID: sub.ID,
-					UserID:         m.UserID,
-					Source:         "team",
-					SourceTeamID:   &input.TeamID,
-					AssignedAt:     time.Now(),
-				})
-			}
-		}
-		return nil
+		// Atomically assign seats with FOR UPDATE lock
+		var txErr error
+		assigned, skipped, txErr = acquireSeats(tx, sub.ID, memberUIDs, "team", &input.TeamID)
+		return txErr
 	})
 
 	if err != nil {
@@ -776,7 +749,15 @@ func GrantTeamAccess(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Team access granted successfully"})
+	response := gin.H{
+		"message":        "Team access granted successfully",
+		"assigned_count": len(assigned),
+	}
+	if len(skipped) > 0 {
+		response["warning"] = fmt.Sprintf("%d member(s) could not be assigned — seats exhausted", len(skipped))
+		response["skipped_user_ids"] = skipped
+	}
+	c.JSON(http.StatusCreated, response)
 }
 
 // RevokeTeamAccess removes a team's access to a subscription.

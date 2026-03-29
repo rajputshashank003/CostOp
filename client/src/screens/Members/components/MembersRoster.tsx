@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { Users, Clock, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import size from "lodash/size";
@@ -8,6 +9,7 @@ import MoveTeamDropdown from "./MoveTeamDropdown";
 
 export default function MembersRoster() {
     const { members, invites, handleRevoke, teams, allTeams, isLoading } = useContext(MembersContext);
+    const navigate = useNavigate();
 
     // Build team name lookup from allTeams
     const teamNameMap: Record<number, string> = {};
@@ -44,8 +46,11 @@ export default function MembersRoster() {
                                     key={m.user.id}
                                     className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                                 >
-                                    {/* Left: Avatar + Name + Email + Team */}
-                                    <div className="flex items-center gap-3 min-w-0">
+                                    {/* Left: Avatar + Name + Email + Team — clickable */}
+                                    <div
+                                        className="flex items-center gap-3 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={() => navigate(`/profile/${m.user.id}`)}
+                                    >
                                         <img
                                             src={m.user.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(m.user.name || "U")}
                                             alt="Avatar"

@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 const HomeComp = () => {
     const {
-        isLoadingSubs,
+        isInitialLoad,
         refreshSubscriptions,
         metrics,
         spendTimeframe,
@@ -35,13 +35,13 @@ const HomeComp = () => {
         isAuthLoading,
     } = useContext(HomeContext);
     const navigate = useNavigate();
-    
+
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
     });
 
-    if (isLoadingSubs || isAuthLoading) {
+    if (isInitialLoad || isAuthLoading) {
         return <HomeSkeleton />;
     }
 

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Layers } from "lucide-react";
 import map from "lodash/map";
-import SubscriptionCard from "../../Home/components/SubscriptionCard";
+import SubscriptionCard from "@/components/SubscriptionCard/SubscriptionCard";
 
 interface ProfileToolsListProps {
     subscriptions: any[];
@@ -39,9 +39,8 @@ const ProfileToolsList = ({ subscriptions, isLoading }: ProfileToolsListProps) =
                 <motion.div key={sub.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <SubscriptionCard
                         sub={sub}
-                        onArchiveClick={() => { }}
-                        onAssignClick={() => { }}
                         isProfileView={true}
+                        clickable
                     />
                 </motion.div>
             ))}

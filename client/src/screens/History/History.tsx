@@ -1,6 +1,6 @@
 import map from "lodash/map";
 import size from "lodash/size";
-import SubscriptionCard from "../Home/components/SubscriptionCard";
+import SubscriptionCard from "@/components/SubscriptionCard/SubscriptionCard";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { useUser } from "../../hooks/useUser";
 import { AnimatePresence, motion } from "framer-motion";
@@ -72,6 +72,7 @@ const HistoryComp = () => {
                                                 onDeleteClick={isAdmin ? () => setSubToDelete(sub) : undefined}
                                                 onRestoreClick={isAdmin ? () => handleRestore(sub) : undefined}
                                                 canRestore={canRestore}
+                                                clickable
                                             />
                                         );
                                     })}

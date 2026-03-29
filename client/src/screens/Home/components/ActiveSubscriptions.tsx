@@ -2,15 +2,16 @@ import { Search, SlidersHorizontal, X, CalendarRange, Users } from "lucide-react
 import map from "lodash/map";
 import size from "lodash/size";
 import { AnimatePresence, motion } from "framer-motion";
-import SubscriptionCard from "./SubscriptionCard";
+import SubscriptionCard from "@/components/SubscriptionCard/SubscriptionCard";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import HomeContext from "../context";
 
 export default function ActiveSubscriptions() {
     const {
         subscriptions,
+        isLoadingSubs,
         filterCategory,
         setFilterCategory,
         filterCycle,
@@ -47,7 +48,7 @@ export default function ActiveSubscriptions() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-4">
                 <h3 className="text-lg whitespace-nowrap font-bold text-slate-900 tracking-tight flex items-center gap-2">
                     Active Subscriptions
-                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{size(subscriptions)}</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">{isLoadingSubs ? "…" : size(subscriptions)}</span>
                 </h3>
 
                 {/* Search, Category, Cycle, Team filters */}
@@ -78,7 +79,8 @@ export default function ActiveSubscriptions() {
                                 options={[
                                     { value: "All Cycles", label: "All Cycles" },
                                     { value: "Monthly", label: "Monthly" },
-                                    { value: "Yearly", label: "Yearly" }
+                                    { value: "Yearly", label: "Yearly" },
+                                    { value: "One Time", label: "One Time" }
                                 ]}
                                 align="left"
                             />
@@ -169,7 +171,7 @@ export default function ActiveSubscriptions() {
                     </button>
                 </motion.div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
+                <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 transition-opacity duration-300 ${isLoadingSubs ? 'opacity-50' : 'opacity-100'}`}>
                     <AnimatePresence>
                         {map(subscriptions, (sub: any) => (
                             <SubscriptionCard key={sub.id} sub={sub} onArchiveClick={() => setSubToArchive(sub)} clickable />

@@ -5,6 +5,7 @@ import (
 	"costop/internal/models"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,66 @@ func GetProfileSubscriptions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, enrichSubscriptions(subscriptions))
+}
+
+// GetUserProfile returns a public profile for any user in the same organization.
+// GET /api/users/:id/profile
+func GetUserProfile(c *gin.Context) {
+	targetID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var targetUser models.User
+	if err := database.DB.First(&targetUser, uint(targetID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Fetch team memberships with team names
+	type TeamInfo struct {
+		TeamID      uint   `json:"team_id"`
+		TeamName    string `json:"team_name"`
+		Role        string `json:"role"`
+		Designation string `json:"designation"`
+	}
+	var teams []TeamInfo
+	database.DB.Raw(`
+		SELECT tm.team_id, t.name AS team_name, tm.role, tm.designation
+		FROM team_members tm
+		JOIN teams t ON t.id = tm.team_id
+		WHERE tm.user_id = ?
+	`, targetUser.ID).Scan(&teams)
+
+	// Check if user is admin (owner of any team)
+	isAdmin := false
+	for _, t := range teams {
+		if t.Role == "owner" {
+			isAdmin = true
+			break
+		}
+	}
+
+	// Fetch assigned subscriptions
+	var subscriptions []models.Subscription
+	database.DB.
+		Joins("JOIN subscription_assignments ON subscription_assignments.subscription_id = subscriptions.id").
+		Where("subscription_assignments.user_id = ?", targetUser.ID).
+		Where("subscriptions.status = ?", "active").
+		Find(&subscriptions)
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":         targetUser.ID,
+			"name":       targetUser.Name,
+			"email":      targetUser.Email,
+			"avatar_url": targetUser.AvatarURL,
+			"is_admin":   isAdmin,
+		},
+		"teams":         teams,
+		"subscriptions": enrichSubscriptions(subscriptions),
+	})
 }
 
 // OnboardUser sets up the initial workspace name and user designation for an organic sign-up.

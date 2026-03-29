@@ -9,7 +9,7 @@ export const SESSION_STORAGE = {
 
 export const SUBSCRIPTION_OPTIONS = {
     PLAN_TYPES: ["Individual", "Team", "Organization"],
-    BILLING_CYCLES: ["Monthly", "Yearly"],
+    BILLING_CYCLES: ["Monthly", "Yearly", "One Time"],
 };
 
 export const METHODS = {
