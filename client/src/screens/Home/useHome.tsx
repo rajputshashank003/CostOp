@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "../../hooks/useUser";
-import { subscriptionsApi } from "../../utils/api_request/subscriptions";
-import { metricsApi } from "../../utils/api_request/metrics";
+import { dashboardApi } from "../../utils/api_request/dashboard";
 import { historyApi } from "../../utils/api_request/history";
-import { categoriesApi } from "../../utils/api_request/categories";
-import { teamsApi } from "../../utils/api_request/teams";
 import reduce from "lodash/reduce";
 import map from "lodash/map";
 import debounce from "lodash/debounce";
@@ -65,11 +62,13 @@ const useHome = () => {
     const [subToArchive, setSubToArchive] = useState<any>(null);
     const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
 
-    const fetchSubscriptions = useCallback(async () => {
+    // Single consolidated fetch for all dashboard data
+    const fetchDashboard = useCallback(async () => {
         if (isAuthLoading) return;
         setIsLoadingSubs(true);
+        setIsLoadingMetrics(true);
         try {
-            const data = await subscriptionsApi.get_all({
+            const data = await dashboardApi.get({
                 search: searchQuery,
                 category: filterCategory,
                 cycle: filterCycle,
@@ -77,39 +76,40 @@ const useHome = () => {
                 ...(dateStart ? { start: dateStart + "-01" } : {}),
                 ...(dateEnd ? { end: dateEnd + "-01" } : {}),
             });
-            setSubscriptions(Array.isArray(data) ? data : []);
+
+            // Subscriptions
+            setSubscriptions(Array.isArray(data?.subscriptions) ? data.subscriptions : []);
+
+            // Metrics (reuse from same response)
+            setMetrics({
+                total_monthly_spend: data?.total_monthly_spend || 0,
+                upcoming_renewals: data?.upcoming_renewals || [],
+                department_spends: data?.department_spends || [],
+                active_subscriptions: data?.active_subscriptions || 0,
+            });
+
+            // Supporting data (categories & teams)
+            if (data?.categories) {
+                const catMapped = map(data.categories, (c: any) => ({ value: c.name, label: c.name }));
+                setAvailableCategories([{ value: "All Categories", label: "All Categories" }, ...catMapped]);
+            }
+            if (data?.teams) {
+                const teamMapped = map(data.teams, (t: any) => ({ value: String(t.id), label: t.name }));
+                setAvailableTeams([{ value: "all", label: "All Teams" }, ...teamMapped]);
+            }
         } catch (err) {
             setSubscriptions([]);
+            setMetrics(null);
         } finally {
             setIsLoadingSubs(false);
+            setIsLoadingMetrics(false);
             setIsInitialLoad(false);
         }
     }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
 
-    const fetchMetrics = useCallback(async () => {
-        if (isAuthLoading) return;
-        setIsLoadingMetrics(true);
-        try {
-            const data = await metricsApi.get_summary({
-                search: searchQuery,
-                category: filterCategory,
-                cycle: filterCycle,
-                team_id: filterTeam,
-                ...(dateStart ? { start: dateStart + "-01" } : {}),
-                ...(dateEnd ? { end: dateEnd + "-01" } : {}),
-            });
-            setMetrics(data);
-        } catch (err) {
-            setMetrics(null);
-        } finally {
-            setIsLoadingMetrics(false);
-        }
-    }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
-
     useEffect(() => {
-        fetchSubscriptions();
-        fetchMetrics();
-    }, [fetchSubscriptions, fetchMetrics]);
+        fetchDashboard();
+    }, [fetchDashboard]);
 
     // Sync all filters to URL
     useEffect(() => {
@@ -126,27 +126,6 @@ const useHome = () => {
         debouncedSetSearch(localSearch);
         return () => debouncedSetSearch.cancel();
     }, [localSearch, debouncedSetSearch]);
-
-    // Fetch supporting data (categories, teams)
-    useEffect(() => {
-        const fetchSupportingData = async () => {
-            try {
-                const [categories, teams] = await Promise.all([
-                    categoriesApi.get_all(),
-                    teamsApi.get_all()
-                ]);
-
-                const catMapped = map((categories || []), (c: any) => ({ value: c.name, label: c.name }));
-                setAvailableCategories([{ value: "All Categories", label: "All Categories" }, ...catMapped]);
-
-                const teamMapped = map((teams || []), (t: any) => ({ value: String(t.id), label: t.name }));
-                setAvailableTeams([{ value: "all", label: "All Teams" }, ...teamMapped]);
-            } catch (err) {
-                console.error("Error fetching supporting data:", err);
-            }
-        };
-        fetchSupportingData();
-    }, []);
 
     // Fetch historical spend total
     useEffect(() => {
@@ -210,8 +189,10 @@ const useHome = () => {
         setSubToArchive,
         isRenewalsModalOpen,
         setIsRenewalsModalOpen,
-        refreshSubscriptions: () => { fetchSubscriptions(); fetchMetrics(); }
+        refreshSubscriptions: fetchDashboard,
+        isAuthLoading,
     };
 };
 
 export default useHome;
+

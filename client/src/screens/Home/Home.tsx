@@ -33,6 +33,9 @@ const HomeComp = () => {
         searchQuery,
         filterCategory,
         filterCycle,
+        filterTeam,
+        dateStart,
+        dateEnd,
         isAuthLoading,
     } = useContext(HomeContext);
     const navigate = useNavigate();
@@ -55,7 +58,7 @@ const HomeComp = () => {
                 <HomeHeader onAddClick={() => navigate('/add-subscription')} />
 
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
-                    {metrics?.active_subscriptions === 0 && !searchQuery && filterCategory === "All Categories" && filterCycle === "All Cycles" ? (
+                    {metrics?.active_subscriptions === 0 && !searchQuery && filterCategory === "All Categories" && filterCycle === "All Cycles" && (!filterTeam || filterTeam === "all") && !dateStart && !dateEnd ? (
                         <HomeEmptyState onAddClick={() => navigate('/add-subscription')} />
                     ) : (
                         <div className="flex flex-col gap-6 sm:gap-8 pb-12">

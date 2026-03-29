@@ -44,5 +44,6 @@ func AddCategory(c *gin.Context) {
 		return
 	}
 
+	InvalidateCategoryCache()
 	c.JSON(http.StatusCreated, input)
 }

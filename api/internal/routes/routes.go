@@ -82,6 +82,13 @@ func SetupRoutes(r *gin.Engine) {
 			requests.PATCH("/:id/reject", controllers.RejectRequest)
 		}
 
+		// ── Dashboard (consolidated endpoint) ────────────────────────────────
+		dashboard := api.Group("/dashboard")
+		dashboard.Use(middleware.RequireAuth())
+		{
+			dashboard.GET("", controllers.GetDashboard)
+		}
+
 		// ── Metrics ───────────────────────────────────────────────────────────
 		metrics := api.Group("/metrics")
 		metrics.Use(middleware.RequireAuth())

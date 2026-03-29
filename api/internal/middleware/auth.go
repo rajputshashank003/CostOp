@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"costop/internal/cache"
 	"costop/internal/config"
+	"costop/internal/database"
+	"costop/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -59,6 +63,22 @@ func RequireAuth() gin.HandlerFunc {
 		}
 
 		c.Set("userID", uint(userID))
+
+		// Preload user — cached in-memory for 5 min to avoid a DB round trip on every request
+		cacheKey := fmt.Sprintf("user_%d", uint(userID))
+		var user models.User
+		if cached, ok := cache.AppCache.Get(cacheKey); ok {
+			user = cached.(models.User)
+		} else {
+			if err := database.DB.First(&user, uint(userID)).Error; err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+				c.Abort()
+				return
+			}
+			cache.AppCache.Set(cacheKey, user, 5*time.Minute)
+		}
+		c.Set("user", user)
+
 		c.Next()
 	}
 }

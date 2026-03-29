@@ -489,6 +489,7 @@ func CreateTeam(c *gin.Context) {
 	}
 	database.DB.Create(&membership)
 
+	InvalidateTeamCache()
 	c.JSON(http.StatusCreated, gin.H{"id": team.ID, "name": team.Name})
 }
 

@@ -15,27 +15,64 @@ import (
 
 // enrichSubscriptions populates virtual fields (names, seat counts) for a slice of subscriptions.
 func enrichSubscriptions(subs []models.Subscription) []models.Subscription {
+	if len(subs) == 0 {
+		return subs
+	}
+
+	// Collect unique user IDs and subscription IDs
+	userIDs := make(map[uint]bool)
+	subIDs := make([]uint, len(subs))
 	for i, sub := range subs {
-		// Who added it
-		var creator models.User
-		if database.DB.First(&creator, sub.UserID).Error == nil {
-			subs[i].AddedByName = creator.Name
-		}
-		// Who owns/pays
-		var owner models.User
-		if database.DB.First(&owner, sub.OwnerID).Error == nil {
-			subs[i].OwnerName = owner.Name
-		}
-		// Who archived
+		userIDs[sub.UserID] = true
+		userIDs[sub.OwnerID] = true
 		if sub.ArchivedBy != nil {
-			var archiver models.User
-			if database.DB.First(&archiver, *sub.ArchivedBy).Error == nil {
-				subs[i].ArchivedByName = archiver.Name
-			}
+			userIDs[*sub.ArchivedBy] = true
 		}
-		// Seat utilisation
-		var assignedCount int64
-		database.DB.Model(&models.SubscriptionAssignment{}).Where("subscription_id = ?", sub.ID).Count(&assignedCount)
+		subIDs[i] = sub.ID
+	}
+
+	var uniqueUserIDs []uint
+	for id := range userIDs {
+		uniqueUserIDs = append(uniqueUserIDs, id)
+	}
+
+	// Fetch all necessary users in one bulk query
+	userMap := make(map[uint]string)
+	if len(uniqueUserIDs) > 0 {
+		var users []models.User
+		database.DB.Where("id IN ?", uniqueUserIDs).Find(&users)
+		for _, u := range users {
+			userMap[u.ID] = u.Name
+		}
+	}
+
+	// Fetch all assigned counts grouped by subscription_id in one bulk query
+	type countResult struct {
+		SubscriptionID uint
+		Count          int64
+	}
+	var counts []countResult
+	countMap := make(map[uint]int64)
+	if len(subIDs) > 0 {
+		database.DB.Model(&models.SubscriptionAssignment{}).
+			Select("subscription_id, count(*) as count").
+			Where("subscription_id IN ?", subIDs).
+			Group("subscription_id").
+			Find(&counts)
+		for _, c := range counts {
+			countMap[c.SubscriptionID] = c.Count
+		}
+	}
+
+	// Populate the virtual fields in-memory
+	for i, sub := range subs {
+		subs[i].AddedByName = userMap[sub.UserID]
+		subs[i].OwnerName = userMap[sub.OwnerID]
+		if sub.ArchivedBy != nil {
+			subs[i].ArchivedByName = userMap[*sub.ArchivedBy]
+		}
+
+		assignedCount := countMap[sub.ID]
 		subs[i].AssignedCount = int(assignedCount)
 		subs[i].AvailableSeats = sub.SeatCount - int(assignedCount)
 	}
