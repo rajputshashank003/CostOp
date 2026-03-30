@@ -17,6 +17,7 @@ var (
 
 	// Services
 	ResendAPIKey string
+	GeminiAPIKey string
 
 	// App
 	FrontendURL string
@@ -33,6 +34,7 @@ func Load() {
 	JWTSecret = getEnvOrDefault("JWT_SECRET", "supersecret_change_in_production")
 	GoogleClientID = os.Getenv("GOOGLE_CLIENT_ID")
 	ResendAPIKey = os.Getenv("RESEND_API_KEY")
+	GeminiAPIKey = os.Getenv("GEMINI_API_KEY")
 	FrontendURL = getEnvOrDefault("VITE_FRONTEND_URL", "http://localhost:5173")
 	Port = getEnvOrDefault("PORT", "8081")
 }

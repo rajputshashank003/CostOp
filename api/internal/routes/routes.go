@@ -118,6 +118,8 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			insights.GET("/duplicates", controllers.GetDuplicateTools)
 			insights.GET("/unused-seats", controllers.GetUnusedSeats)
+			insights.GET("/ai", controllers.GetAIInsights)
+			insights.POST("/ai/refresh", controllers.RefreshAIInsights)
 		}
 	}
 }

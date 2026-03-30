@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useUser } from "../../hooks/useUser";
 import { dashboardApi } from "../../utils/api_request/dashboard";
 import { historyApi } from "../../utils/api_request/history";
+import { insightsApi } from "../../utils/api_request/insights";
 import reduce from "lodash/reduce";
 import map from "lodash/map";
 import debounce from "lodash/debounce";
@@ -61,6 +62,38 @@ const useHome = () => {
     // Modal States
     const [subToArchive, setSubToArchive] = useState<any>(null);
     const [isRenewalsModalOpen, setIsRenewalsModalOpen] = useState(false);
+    const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
+
+    // AI Insights State
+    const [aiInsights, setAiInsights] = useState<any>(null);
+    const [isLoadingAI, setIsLoadingAI] = useState(true);
+    const [isRefreshingAI, setIsRefreshingAI] = useState(false);
+    const [aiError, setAiError] = useState(false);
+
+    const fetchAIInsights = useCallback(async (refresh = false) => {
+        try {
+            if (refresh) {
+                setIsRefreshingAI(true);
+            } else {
+                setIsLoadingAI(true);
+            }
+            if (refresh) {
+                await insightsApi.refreshAIInsights();
+            }
+            const res = await insightsApi.getAIInsights();
+            if (res && res.insights) {
+                setAiInsights(res);
+                setAiError(false);
+            } else {
+                setAiError(true);
+            }
+        } catch {
+            setAiError(true);
+        } finally {
+            setIsLoadingAI(false);
+            setIsRefreshingAI(false);
+        }
+    }, []);
 
     // Single consolidated fetch for all dashboard data
     const fetchDashboard = useCallback(async () => {
@@ -107,6 +140,10 @@ const useHome = () => {
         }
     }, [isAuthLoading, searchQuery, filterCategory, filterCycle, filterTeam, dateStart, dateEnd]);
 
+    useEffect(() => {
+        if (!isAuthLoading) fetchAIInsights();
+    }, [isAuthLoading, fetchAIInsights]);
+    
     useEffect(() => {
         fetchDashboard();
     }, [fetchDashboard]);
@@ -189,8 +226,15 @@ const useHome = () => {
         setSubToArchive,
         isRenewalsModalOpen,
         setIsRenewalsModalOpen,
+        isDeptModalOpen,
+        setIsDeptModalOpen,
         refreshSubscriptions: fetchDashboard,
         isAuthLoading,
+        aiInsights,
+        isLoadingAI,
+        isRefreshingAI,
+        aiError,
+        fetchAIInsights,
     };
 };
 

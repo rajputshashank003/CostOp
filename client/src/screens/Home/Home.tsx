@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import HomeContext from "./context";
 import { AnimatePresence } from "framer-motion";
 import useHome from "./useHome";
@@ -19,18 +19,12 @@ const HomeComp = () => {
         isInitialLoad,
         refreshSubscriptions,
         metrics,
-        spendTimeframe,
-        setSpendTimeframe,
-        customStart,
-        setCustomStart,
-        customEnd,
-        setCustomEnd,
-        historicalSpendTotal,
-        isLoadingHistorical,
         subToArchive,
         setSubToArchive,
         isRenewalsModalOpen,
         setIsRenewalsModalOpen,
+        isDeptModalOpen,
+        setIsDeptModalOpen,
         searchQuery,
         filterCategory,
         filterCycle,
@@ -40,12 +34,6 @@ const HomeComp = () => {
         isAuthLoading,
     } = useContext(HomeContext);
     const navigate = useNavigate();
-    const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
-
-    const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    });
 
     if (isInitialLoad || isAuthLoading) {
         return <HomeSkeleton />;
@@ -63,19 +51,7 @@ const HomeComp = () => {
                         <HomeEmptyState onAddClick={() => navigate('/add-subscription')} />
                     ) : (
                         <div className="flex flex-col gap-6 sm:gap-8 pb-12">
-                            <DashboardMetrics
-                                spendTimeframe={spendTimeframe}
-                                setSpendTimeframe={setSpendTimeframe}
-                                customStart={customStart}
-                                setCustomStart={setCustomStart}
-                                customEnd={customEnd}
-                                setCustomEnd={setCustomEnd}
-                                historicalSpendTotal={historicalSpendTotal}
-                                isLoadingHistorical={isLoadingHistorical}
-                                formatter={formatter}
-                                onOpenRenewals={() => setIsRenewalsModalOpen(true)}
-                                onOpenDepartments={() => setIsDeptModalOpen(true)}
-                            />
+                            <DashboardMetrics />
 
                             <CostInsights />
 

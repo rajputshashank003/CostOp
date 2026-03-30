@@ -228,7 +228,7 @@ func RejectRequest(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request not found"})
 		return
 	}
-	if req.Status != "pending" {
+	if req.Status != "pending" { 
 		c.JSON(http.StatusConflict, gin.H{"error": "Request has already been reviewed"})
 		return
 	}

@@ -10,34 +10,23 @@ import DepartmentSpend from "./DepartmentSpend";
 import { useContext, useRef, useState } from "react";
 import HomeContext from "../context";
 
-interface Props {
-    spendTimeframe: number | "current" | "custom";
-    setSpendTimeframe: (val: number | "current" | "custom") => void;
-    customStart: string;
-    setCustomStart: (val: string) => void;
-    customEnd: string;
-    setCustomEnd: (val: string) => void;
-    historicalSpendTotal: number;
-    isLoadingHistorical: boolean;
-    formatter: Intl.NumberFormat;
-    onOpenRenewals: () => void;
-    onOpenDepartments: () => void;
-}
+const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
-export default function DashboardMetrics({
-    spendTimeframe,
-    setSpendTimeframe,
-    customStart,
-    setCustomStart,
-    customEnd,
-    setCustomEnd,
-    historicalSpendTotal,
-    isLoadingHistorical,
-    formatter,
-    onOpenRenewals,
-    onOpenDepartments
-}: Props) {
-    const { metrics, isLoadingMetrics } = useContext(HomeContext);
+export default function DashboardMetrics() {
+    const {
+        metrics, 
+        isLoadingMetrics,
+        spendTimeframe, 
+        setSpendTimeframe,
+        customStart, 
+        setCustomStart,
+        customEnd, 
+        setCustomEnd,
+        historicalSpendTotal, 
+        isLoadingHistorical,
+        setIsRenewalsModalOpen, 
+        setIsDeptModalOpen,
+    } = useContext(HomeContext);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [activeIdx, setActiveIdx] = useState(0);
 
@@ -125,7 +114,7 @@ export default function DashboardMetrics({
                         ))}
                         {size(metrics.upcoming_renewals) > 2 && (
                             <button
-                                onClick={onOpenRenewals}
+                                onClick={() => setIsRenewalsModalOpen(true)}
                                 className="text-[12px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors text-center mt-1 py-1 w-full cursor-pointer"
                             >
                                 + {size(metrics.upcoming_renewals) - 2} more renewals
@@ -158,7 +147,7 @@ export default function DashboardMetrics({
                 >
                     <div className="snap-center flex-shrink-0 w-[85vw]">{SpendWidget}</div>
                     <div className="snap-center flex-shrink-0 w-[85vw]">{RenewalsWidget}</div>
-                    <div className="snap-center flex-shrink-0 w-[85vw]"><DepartmentSpend formatter={formatter} onOpenDepartments={onOpenDepartments} /></div>
+                    <div className="snap-center flex-shrink-0 w-[85vw]"><DepartmentSpend formatter={formatter} /></div>
                 </div>
                 {/* Pill dot scroll indicators */}
                 <div className="flex items-center justify-center gap-1.5 mt-3">
@@ -177,14 +166,14 @@ export default function DashboardMetrics({
                     {SpendWidget}
                     {RenewalsWidget}
                 </div>
-                <DepartmentSpend formatter={formatter} onOpenDepartments={onOpenDepartments} />
+                <DepartmentSpend formatter={formatter} />
             </div>
 
             {/* Desktop: 3-col equal grid */}
             <div className="hidden lg:grid grid-cols-3 gap-6">
                 {SpendWidget}
                 {RenewalsWidget}
-                <DepartmentSpend formatter={formatter} onOpenDepartments={onOpenDepartments} />
+                <DepartmentSpend formatter={formatter} />
             </div>
         </motion.div>
     );

@@ -118,7 +118,7 @@ export default function UnusedSeatsModal({ entries, onClose }: Props) {
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${usedPct}%` }}
                                                 transition={{ duration: 0.8, delay: idx * 0.05, ease: "easeOut" }}
-                                                className={`h-full rounded-full ${usedPct < 50 ? 'bg-gradient-to-r from-rose-400 to-rose-500' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
+                                                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                                             />
                                         </div>
                                         <span className="text-xs font-bold text-slate-500 whitespace-nowrap">

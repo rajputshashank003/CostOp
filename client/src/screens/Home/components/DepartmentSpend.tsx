@@ -8,11 +8,10 @@ import HomeContext from "../context";
 
 interface Props {
     formatter: Intl.NumberFormat;
-    onOpenDepartments?: () => void;
 }
 
-export default function DepartmentSpend({ formatter, onOpenDepartments }: Props) {
-    const { metrics, isLoadingMetrics } = useContext(HomeContext);
+export default function DepartmentSpend({ formatter }: Props) {
+    const { metrics, isLoadingMetrics, setIsDeptModalOpen } = useContext(HomeContext);
     const deptSpends = metrics?.department_spends || [];
     const totalSpend = sumBy(deptSpends, "spend") || 1;
 
@@ -56,7 +55,7 @@ export default function DepartmentSpend({ formatter, onOpenDepartments }: Props)
                         })}
                         {size(deptSpends) > 4 && (
                             <button
-                                onClick={onOpenDepartments}
+                                onClick={() => setIsDeptModalOpen(true)}
                                 className="text-[12px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors text-center mt-1 py-1 w-full cursor-pointer"
                             >
                                 + {size(deptSpends) - 4} more departments
