@@ -2,6 +2,7 @@ import { Plus, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MobileNav from "../../../components/MobileNav/MobileNav";
 import { useUser } from "../../../hooks/useUser";
+import NotificationBell from "../../../components/Notifications/NotificationBell";
 import map from "lodash/map";
 
 const STATUS_TABS = [
@@ -51,6 +52,8 @@ const RequestsHeader = ({ activeTab, setActiveTab }: RequestsHeaderProps) => {
                         <span className="sm:hidden">Request</span>
                     </button>
                 )}
+
+                <NotificationBell />
 
                 {user && (
                     <div className="flex items-center gap-2 sm:gap-3 border-l border-slate-200 pl-2 sm:pl-3">

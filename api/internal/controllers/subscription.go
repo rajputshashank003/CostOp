@@ -354,6 +354,10 @@ func DeleteSubscription(c *gin.Context) {
 		return
 	}
 
+	// Cascade: soft-delete associated alerts and notifications
+	database.DB.Where("subscription_id = ?", sub.ID).Delete(&models.Alert{})
+	database.DB.Where("subscription_id = ?", sub.ID).Delete(&models.Notification{})
+
 	c.JSON(http.StatusOK, gin.H{"message": "Subscription deleted successfully"})
 }
 

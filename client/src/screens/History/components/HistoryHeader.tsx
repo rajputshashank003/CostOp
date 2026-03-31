@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { useUser } from "../../../hooks/useUser";
 import MobileNav from "../../../components/MobileNav/MobileNav";
+import NotificationBell from "../../../components/Notifications/NotificationBell";
 import HistoryContext from "../context";
 
 export default function HistoryHeader() {
@@ -30,6 +31,8 @@ export default function HistoryHeader() {
                         <span className="hidden sm:inline">Archived Only</span>
                     </button>
                 </div>
+
+                <NotificationBell />
 
                 {user && (
                     <div className="flex items-center gap-2 sm:gap-3 border-l border-slate-200 pl-2 sm:pl-4">

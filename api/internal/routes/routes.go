@@ -121,5 +121,25 @@ func SetupRoutes(r *gin.Engine) {
 			insights.GET("/ai", controllers.GetAIInsights)
 			insights.POST("/ai/refresh", controllers.RefreshAIInsights)
 		}
+
+		// ── Alerts ────────────────────────────────────────────────────────────
+		alerts := api.Group("/alerts")
+		alerts.Use(middleware.RequireAuth())
+		{
+			alerts.GET("", controllers.GetAlerts)          // GET /api/alerts?subscription_id=X
+			alerts.POST("", controllers.CreateAlert)       // POST /api/alerts
+			alerts.PATCH("/:id", controllers.UpdateAlert)  // PATCH /api/alerts/:id
+			alerts.DELETE("/:id", controllers.DeleteAlert) // DELETE /api/alerts/:id
+		}
+
+		// ── Notifications ─────────────────────────────────────────────────────
+		notifs := api.Group("/notifications")
+		notifs.Use(middleware.RequireAuth())
+		{
+			notifs.GET("", controllers.GetNotifications)                    // GET /api/notifications
+			notifs.PATCH("/read-all", controllers.MarkAllNotificationsRead) // PATCH /api/notifications/read-all
+			notifs.PATCH("/:id/read", controllers.MarkNotificationRead)     // PATCH /api/notifications/:id/read
+			notifs.DELETE("/:id", controllers.DeleteNotification)           // DELETE /api/notifications/:id
+		}
 	}
 }

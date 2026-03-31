@@ -1,5 +1,6 @@
 import { useUser } from "../../../hooks/useUser";
 import MobileNav from "../../../components/MobileNav/MobileNav";
+import NotificationBell from "../../../components/Notifications/NotificationBell";
 
 export default function MembersHeader() {
     const { user } = useUser();
@@ -11,6 +12,8 @@ export default function MembersHeader() {
                 <h1 className="text-xl font-bold text-slate-900 hidden sm:block">Workspace Members</h1>
             </div>
             <div className="flex items-center gap-4">
+                <NotificationBell />
+
                 {user && (
                     <div className="flex items-center gap-3 border-l border-slate-200 pl-2 sm:pl-4">
                         <div className="text-right hidden sm:block">

@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "../../../hooks/useUser";
 import MobileNav from "../../../components/MobileNav/MobileNav";
+import NotificationBell from "../../../components/Notifications/NotificationBell";
 
 interface Props {
     onAddClick: () => void;
@@ -30,6 +31,8 @@ export default function HomeHeader({ onAddClick }: Props) {
                         <span className="sm:hidden">Add</span>
                     </motion.button>
                 )}
+
+                <NotificationBell />
 
                 {user && (
                     <div className="flex items-center gap-3 ml-2 sm:ml-4 pl-2 sm:pl-4 border-l border-slate-200">
