@@ -24,8 +24,9 @@ var (
 	Port        string
 
 	// Health Ping Cron
-	HealthURLs string
-	HealthWait string
+	HealthURLs    string
+	HealthWait    string
+	RunUptimeCron bool
 )
 
 // Load initializes all environment variables natively into the Go process.
@@ -43,6 +44,7 @@ func Load() {
 	Port = getEnvOrDefault("PORT", "8081")
 	HealthURLs = os.Getenv("URL")
 	HealthWait = getEnvOrDefault("HEALTH_WAIT", "8")
+	RunUptimeCron = os.Getenv("RUN_UPTIME_CRON") == "true"
 }
 
 func getEnvOrDefault(key, fallback string) string {

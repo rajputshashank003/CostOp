@@ -37,7 +37,9 @@ func main() {
 
 	// Start Cron Schedulers
 	services.StartCronJobs()
-	services.StartHealthPingCron()
+	if config.RunUptimeCron {
+		services.StartHealthPingCron()
+	}
 
 	// Start server natively
 	log.Printf("Server is running on port %s\n", config.Port)

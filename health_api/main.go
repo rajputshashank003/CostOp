@@ -52,6 +52,24 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	if os.Getenv("RUN_UPTIME_CRON") == "true" {
+		go startCron(ctx, urls, waitMins)
+	} else {
+		log.Println("RUN_UPTIME_CRON is not true. Skipping uptime check cron.")
+	}
+
+	<-ctx.Done()
+	log.Println("Shutdown signal received. Stopping...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Health server shutdown error: %v", err)
+	}
+	log.Println("Shutdown complete.")
+}
+
+// startCron runs the periodic URL checks.
+func startCron(ctx context.Context, urls []string, waitMins int) {
 	// Run once immediately, then on every tick
 	checkURLs(urls)
 
@@ -63,13 +81,6 @@ func main() {
 		case <-ticker.C:
 			checkURLs(urls)
 		case <-ctx.Done():
-			log.Println("Shutdown signal received. Stopping...")
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			if err := server.Shutdown(shutdownCtx); err != nil {
-				log.Printf("Health server shutdown error: %v", err)
-			}
-			log.Println("Shutdown complete.")
 			return
 		}
 	}
