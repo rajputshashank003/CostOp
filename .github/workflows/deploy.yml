@@ -3,21 +3,22 @@ name: Deploy API
 on:
   push:
     branches: [main]
-    paths:
-      - "api/**"
-      - "health_api/**"
 
 jobs:
-  filter:
-    name: Detect Changes
+  changes:
+    name: Detect changed services
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.filter.outputs.api }}
       health_api: ${{ steps.filter.outputs.health_api }}
+      workflow: ${{ steps.filter.outputs.workflow }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Filter paths
         id: filter
+        uses: dorny/paths-filter@v3
         with:
           filters: |
             api:
@@ -27,8 +28,8 @@ jobs:
 
   deploy:
     name: Build & Deploy API
-    needs: filter
-    if: needs.filter.outputs.api == 'true'
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -57,8 +58,8 @@ jobs:
 
   health-cron:
     name: Build & Push Health Cron Image
-    needs: filter
-    if: needs.filter.outputs.health_api == 'true'
+    needs: [changes]
+    if: needs.changes.outputs.health_api == 'true'
     runs-on: ubuntu-latest
 
     steps:
