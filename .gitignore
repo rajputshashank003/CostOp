@@ -63,3 +63,5 @@ client/.env.*.local
 *.zip
 *.tar
 *.gz
+
+/docs_costOp

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "api/**"
+      - "health.api/**"
       - ".github/workflows/**"
 
 jobs:
@@ -33,3 +34,26 @@ jobs:
 
       - name: Trigger Render deploy
         run: curl -X POST ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+
+  health-cron:
+    name: Build & Push Health Cron Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push api-health-cron image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./health.api
+          file: ./health.api/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/api-health-cron:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/api-health-cron:${{ github.sha }}

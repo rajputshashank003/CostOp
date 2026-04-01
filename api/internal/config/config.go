@@ -22,6 +22,10 @@ var (
 	// App
 	FrontendURL string
 	Port        string
+
+	// Health Ping Cron
+	HealthURLs string
+	HealthWait string
 )
 
 // Load initializes all environment variables natively into the Go process.
@@ -37,6 +41,8 @@ func Load() {
 	GeminiAPIKey = os.Getenv("GEMINI_API_KEY")
 	FrontendURL = getEnvOrDefault("VITE_FRONTEND_URL", "http://localhost:5173")
 	Port = getEnvOrDefault("PORT", "8081")
+	HealthURLs = os.Getenv("URL")
+	HealthWait = getEnvOrDefault("HEALTH_WAIT", "8")
 }
 
 func getEnvOrDefault(key, fallback string) string {
