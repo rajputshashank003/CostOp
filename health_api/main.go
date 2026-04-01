@@ -51,7 +51,6 @@ func main() {
 	ticker := time.NewTicker(time.Duration(waitMins) * time.Minute)
 	defer ticker.Stop()
 
-	// Initial hit right away
 	checkURLs(urls)
 
 	// Block and loop at the ticker interval

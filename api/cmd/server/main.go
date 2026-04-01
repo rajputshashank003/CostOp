@@ -24,7 +24,6 @@ func main() {
 	// Setup Router
 	r := gin.Default()
 
-	// CORS Setup
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "https://costop1.vercel.app"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -34,7 +33,6 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Initializing Routes
 	routes.SetupRoutes(r)
 
 	// Start Cron Schedulers
