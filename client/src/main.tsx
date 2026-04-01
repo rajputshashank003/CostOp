@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
+import { Analytics } from "@vercel/analytics/react";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -11,6 +12,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
             <AuthProvider>
                 <App />
+                <Analytics />
             </AuthProvider>
         </BrowserRouter>
     </GoogleOAuthProvider>
