@@ -5,12 +5,30 @@ on:
     branches: [main]
     paths:
       - "api/**"
-      - "health.api/**"
-      - ".github/workflows/**"
+      - "health_api/**"
 
 jobs:
+  filter:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      health_api: ${{ steps.filter.outputs.health_api }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**'
+            health_api:
+              - 'health_api/**'
+
   deploy:
     name: Build & Deploy API
+    needs: filter
+    if: needs.filter.outputs.api == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +41,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push API image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@4a13e500e55cf12097e3a3ee31414d732815456c # v5.1.0
         with:
           context: ./api
           file: ./api/Dockerfile
@@ -33,10 +51,14 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/costop-api:${{ github.sha }}
 
       - name: Trigger Render deploy
-        run: curl -X POST ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+        env:
+          RENDER_API_DEPLOY_HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+        run: curl --fail-with-body -X POST "$RENDER_API_DEPLOY_HOOK"
 
   health-cron:
     name: Build & Push Health Cron Image
+    needs: filter
+    if: needs.filter.outputs.health_api == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -49,11 +71,16 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push api-health-cron image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@4a13e500e55cf12097e3a3ee31414d732815456c # v5.1.0
         with:
-          context: ./health.api
-          file: ./health.api/Dockerfile
+          context: ./health_api
+          file: ./health_api/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/api-health-cron:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/api-health-cron:${{ github.sha }}
+
+      - name: Trigger Health API Render deploy
+        env:
+          COSTOP_HEALTH_DEPLOY_HOOK: ${{ secrets.COSTOP_HEALTH_DEPLOY_HOOK }}
+        run: curl --fail-with-body -X POST "$COSTOP_HEALTH_DEPLOY_HOOK"
