@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Receipt, Github, Globe } from "lucide-react";
+import { Receipt, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function LandingFooter() {
@@ -18,18 +18,8 @@ export default function LandingFooter() {
                     </p>
                 </div>
 
-                <div className="flex flex-col md:items-end justify-center">
-                    <div className="text-emerald-400 font-bold mb-4 uppercase tracking-widest text-sm">Created By</div>
-                    <div className="text-xl font-bold text-white mb-6">Shashank Rajput</div>
+                <div className="flex flex-col md:items-end justify-center">                  
                     <div className="flex items-center gap-4">
-                        <a
-                            href="https://github.com/rajputshashank003/"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-12 h-12 rounded-full bg-emerald-900/50 hover:bg-emerald-800 flex items-center justify-center text-emerald-300 hover:text-white transition-all border border-emerald-800"
-                        >
-                            <Github size={22} />
-                        </a>
                         <a
                             href="https://rajputshashank.is-a.dev/"
                             target="_blank"
@@ -44,7 +34,7 @@ export default function LandingFooter() {
 
             <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-emerald-900/50 flex flex-col md:flex-row items-center justify-between text-emerald-600 text-sm font-semibold">
                 <div>© {new Date().getFullYear()} CostOp. All rights reserved.</div>
-                <div className="mt-4 md:mt-0">Designed & Developed by Shashank Rajput</div>
+                <div className="mt-4 md:mt-0">Designed & Developed by <a className="cursor-pointer" href="https://rajputshashank.is-a.dev" >Shashank Rajput</a></div>
             </div>
         </footer>
     );
