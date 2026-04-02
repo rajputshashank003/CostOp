@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import LandingHeader from "./components/LandingHeader";
 import HeroSection from "./components/HeroSection";
 import CostWorkflow from "./components/CostWorkflow";
@@ -6,13 +5,8 @@ import FeaturesGrid from "./components/FeaturesGrid";
 import LandingFooter from "./components/LandingFooter";
 import LandingContext from "./context";
 import useLanding from "./useLanding";
-import axios from "axios";
 
 const LandingComp = () => {
-
-    useEffect(() => {
-        axios.get(`${import.meta.env.VITE_API_URL}/health`)
-    }, []);
 
     return (
         <div className="min-h-screen bg-emerald-50 text-slate-900 overflow-x-hidden">

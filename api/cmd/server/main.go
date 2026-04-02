@@ -18,10 +18,8 @@ func main() {
 	// Load Configuration natively
 	config.Load()
 
-	// Connect to Database
 	database.Connect()
 
-	// Setup Router
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
