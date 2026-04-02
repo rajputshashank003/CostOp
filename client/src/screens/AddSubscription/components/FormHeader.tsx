@@ -1,13 +1,12 @@
-import React from "react";
+import React, { useContext } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import AddSubscriptionContext from "../context";
 
-interface FormHeaderProps {
-    isRequestMode: boolean;
-    originRequest: any | null;
-}
+interface FormHeaderProps {}
 
-const FormHeader = ({ isRequestMode, originRequest }: FormHeaderProps) => {
+const FormHeader = ({}: FormHeaderProps) => {
+    const { isRequestMode, originRequest } = useContext(AddSubscriptionContext);
     const navigate = useNavigate();
 
     return (
