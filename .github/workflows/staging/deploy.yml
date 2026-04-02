@@ -25,7 +25,7 @@ jobs:
               - 'api/**'
 
   deploy:
-    name: Build & Deploy API
+    name: Build & Deploy Staging API
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push API image
+      - name: Build & push staging API image
         uses: docker/build-push-action@v4
         with:
           context: ./api
