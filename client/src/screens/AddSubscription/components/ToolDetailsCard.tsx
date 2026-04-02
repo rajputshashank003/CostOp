@@ -1,34 +1,27 @@
-import React from "react";
+import React, { useContext } from "react";
 import { DollarSign, Briefcase, X } from "lucide-react";
 import { SUBSCRIPTION_OPTIONS } from "../../../utils/constants";
 import CustomSelect from "../../../components/CustomSelect/CustomSelect";
 import map from "lodash/map";
+import AddSubscriptionContext from "../context";
 
-interface ToolDetailsCardProps {
-    formData: any;
-    categories: string[];
-    isAddingCategory: boolean;
-    newCategoryName: string;
-    setNewCategoryName: (v: string) => void;
-    setIsAddingCategory: (v: boolean) => void;
-    setFormData: React.Dispatch<React.SetStateAction<any>>;
-    handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-    handleCategoryChange: (v: string) => void;
-    handleAddNewCategory: (e?: React.SyntheticEvent) => void;
-}
+interface ToolDetailsCardProps {}
 
-const ToolDetailsCard = ({
-    formData, 
-    categories, 
-    isAddingCategory, 
-    newCategoryName,
-    setNewCategoryName, 
-    setIsAddingCategory, 
-    setFormData,
-    handleChange, 
-    handleCategoryChange, 
-    handleAddNewCategory,
-}: ToolDetailsCardProps) => {
+const ToolDetailsCard = ({} : ToolDetailsCardProps) => {
+
+    const {
+        formData,
+        categories,
+        isAddingCategory,
+        newCategoryName,
+        setNewCategoryName,
+        setIsAddingCategory,
+        setFormData,
+        handleChange,
+        handleCategoryChange,
+        handleAddNewCategory,
+    } = useContext(AddSubscriptionContext);
+
     return (
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Briefcase size={18} className="text-emerald-500" /> Tool Details</h2>

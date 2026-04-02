@@ -10,75 +10,23 @@ import DatePicker from "../../components/DatePicker/DatePicker";
 const AddSubscriptionComp = () => {
     const {
         navigate,
-        originRequest,
         isRequestMode,
         isLoading,
         formData,
         setFormData,
-        categories,
-        isAddingCategory,
-        setIsAddingCategory,
-        newCategoryName,
-        setNewCategoryName,
-        teams,
-        isAddingTeam,
-        setIsAddingTeam,
-        newTeamName,
-        setNewTeamName,
         availableMembers,
-        filteredMembers,
-        designationFilter,
-        setDesignationFilter,
-        handleChange,
-        handleCategoryChange,
-        handleAddNewCategory,
-        handleTeamChange,
-        handleAddNewTeam,
-        toggleUserAssignment,
-        handleSelectAllVisible,
         handleSubmit,
     } = useContext(AddSubscriptionContext);
 
     return (
         <div className="max-w-4xl mx-auto pb-12 pt-4 px-4">
-            <FormHeader isRequestMode={isRequestMode} originRequest={originRequest} />
+            <FormHeader/>
 
             <form onSubmit={handleSubmit} className="space-y-6">
 
-                <ToolDetailsCard
-                    formData={formData}
-                    categories={categories}
-                    isAddingCategory={isAddingCategory}
-                    newCategoryName={newCategoryName}
-                    setNewCategoryName={setNewCategoryName}
-                    setIsAddingCategory={setIsAddingCategory}
-                    setFormData={setFormData}
-                    handleChange={handleChange}
-                    handleCategoryChange={handleCategoryChange}
-                    handleAddNewCategory={handleAddNewCategory}
-                />
-
-                <ScopeAndPlanCard
-                    formData={formData}
-                    teams={teams}
-                    isAddingTeam={isAddingTeam}
-                    newTeamName={newTeamName}
-                    setNewTeamName={setNewTeamName}
-                    setIsAddingTeam={setIsAddingTeam}
-                    setFormData={setFormData}
-                    handleTeamChange={handleTeamChange}
-                    handleAddNewTeam={handleAddNewTeam}
-                />
-
-                <AccessConfigCard
-                    formData={formData}
-                    filteredMembers={filteredMembers}
-                    designationFilter={designationFilter}
-                    setDesignationFilter={setDesignationFilter}
-                    setFormData={setFormData}
-                    toggleUserAssignment={toggleUserAssignment}
-                    handleSelectAllVisible={handleSelectAllVisible}
-                />
+                <ToolDetailsCard/>
+                <ScopeAndPlanCard/>
+                <AccessConfigCard/>
 
                 {/* START DATE */}
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
@@ -97,11 +45,11 @@ const AddSubscriptionComp = () => {
                     {formData.pricing_model === "per_seat" &&
                         formData.access_type === "all_members" &&
                         availableMembers.length > formData.seat_count && !isRequestMode ? (
-                        <button type="button" disabled className="px-8 py-3 bg-slate-200 text-slate-400 cursor-not-allowed font-bold rounded-xl flex items-center justify-center min-w-[180px]">
+                        <button type="button" disabled className="px-8 py-3 bg-slate-200 text-slate-400 cursor-not-allowed font-bold rounded-xl flex items-center justify-center min-w-45">
                             Not Enough Seats
                         </button>
                     ) : (
-                        <button type="submit" disabled={isLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center min-w-[180px]">
+                        <button type="submit" disabled={isLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center min-w-45">
                             {isLoading
                                 ? <span className="w-5 h-5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
                                 : isRequestMode ? "Submit Request" : "Track Subscription"

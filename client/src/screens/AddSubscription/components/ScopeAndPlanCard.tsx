@@ -1,33 +1,27 @@
-import React from "react";
+import { useContext } from "react";
 import { Building, Users, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { SUBSCRIPTION_OPTIONS } from "../../../utils/constants";
 import map from "lodash/map";
+import find from 'lodash/find';
 import CustomSelect from "../../../components/CustomSelect/CustomSelect";
+import AddSubscriptionContext from "../context";
 
-interface ScopeAndPlanCardProps {
-    formData: any;
-    teams: { id: number; name: string }[];
-    isAddingTeam: boolean;
-    newTeamName: string;
-    setNewTeamName: (v: string) => void;
-    setIsAddingTeam: (v: boolean) => void;
-    setFormData: React.Dispatch<React.SetStateAction<any>>;
-    handleTeamChange: (v: string) => void;
-    handleAddNewTeam: (e?: React.SyntheticEvent) => void;
-}
+interface ScopeAndPlanCardProps {}
 
-const ScopeAndPlanCard = ({
-    formData, 
-    teams, 
-    isAddingTeam, 
-    newTeamName,
-    setNewTeamName, 
-    setIsAddingTeam, 
-    setFormData,
-    handleTeamChange, 
-    handleAddNewTeam,
-}: ScopeAndPlanCardProps) => {
+const ScopeAndPlanCard = ({}: ScopeAndPlanCardProps) => {
+    const {
+        formData,
+        teams,
+        isAddingTeam,
+        newTeamName,
+        setNewTeamName,
+        setIsAddingTeam,
+        setFormData,
+        handleTeamChange,
+        handleAddNewTeam,
+    } = useContext(AddSubscriptionContext);
+
     return (
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Building size={18} className="text-emerald-500" /> Scope &amp; Plan</h2>
@@ -49,7 +43,7 @@ const ScopeAndPlanCard = ({
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Assigned Team</label>
                         {!isAddingTeam ? (
-                            <CustomSelect options={[...map(teams, t => String(t.id)), "+ Add New Team"]} value={String(formData.team_id)} onChange={handleTeamChange} renderLabel={(val: string) => val === "+ Add New Team" ? val : teams.find(t => String(t.id) === val)?.name || val} />
+                            <CustomSelect options={[...map(teams, t => String(t.id)), "+ Add New Team"]} value={String(formData.team_id)} onChange={handleTeamChange} renderLabel={(val: string) => val === "+ Add New Team" ? val : find(teams, (t: any) => String(t.id) === val)?.name || val} />
                         ) : (
                             <div className="flex gap-2">
                                 <input value={newTeamName} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddNewTeam(e); } }} onChange={(e) => setNewTeamName(e.target.value)} placeholder="Team name..." className="flex-1 px-4 py-2.5 rounded-xl border border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" autoFocus />

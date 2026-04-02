@@ -1,28 +1,23 @@
-import React from "react";
+import React, { useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tag, Search, Check } from "lucide-react";
 import map from "lodash/map";
 import size from "lodash/size";
+import AddSubscriptionContext from "../context";
 
-interface AccessConfigCardProps {
-    formData: any;
-    filteredMembers: any[];
-    designationFilter: string;
-    setDesignationFilter: (v: string) => void;
-    setFormData: React.Dispatch<React.SetStateAction<any>>;
-    toggleUserAssignment: (userId: number) => void;
-    handleSelectAllVisible: () => void;
-}
+interface AccessConfigCardProps {}
 
-const AccessConfigCard = ({
-    formData, 
-    filteredMembers, 
-    designationFilter,
-    setDesignationFilter, 
-    setFormData, 
-    toggleUserAssignment, 
-    handleSelectAllVisible,
-}: AccessConfigCardProps) => {
+const AccessConfigCard = ({}: AccessConfigCardProps) => {
+    const {
+        formData,
+        filteredMembers,
+        designationFilter,
+        setDesignationFilter,
+        setFormData,
+        toggleUserAssignment,
+        handleSelectAllVisible,
+    } = useContext(AddSubscriptionContext);
+
     return (
         <AnimatePresence>
             {(formData.plan_type === "Team" || formData.plan_type === "Organization") && formData.pricing_model === "per_seat" && (
