@@ -36,7 +36,7 @@ func main() {
 	routes.SetupRoutes(r)
 
 	// Start Cron Schedulers
-	services.StartCronJobs()
+	// services.StartCronJobs()
 	if config.RunUptimeCron {
 		services.StartHealthPingCron()
 	}
