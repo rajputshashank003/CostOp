@@ -34,7 +34,7 @@ func SendTeamInviteEmail(toEmail, inviterName, teamName, inviteToken string) err
 	`, inviterName, teamName, inviteLink)
 
 	params := &resend.SendEmailRequest{
-		From:    "CostOp Team <onboarding@resend.dev>",
+		From:    "CostOp Team <help@costop.in>",
 		To:      []string{toEmail},
 		Subject: fmt.Sprintf("Invitation to join %s on CostOp", teamName),
 		Html:    htmlBody,
@@ -77,7 +77,7 @@ func SendRenewalAlertEmail(toEmail, userName, subName string, subCost float64, a
 	`, userName, subName, billingType, subCost, frontendURL)
 
 	params := &resend.SendEmailRequest{
-		From:    "CostOp Tracker <onboarding@resend.dev>",
+		From:    "CostOp Tracker <help@costop.in>",
 		To:      []string{toEmail},
 		Subject: fmt.Sprintf("Action Required: %s is renewing in 7 Days", subName),
 		Html:    htmlBody,
@@ -125,7 +125,7 @@ func SendAlertEmail(toEmail, subject, message, subName string, cost float64, day
 	`, timingLine, frontendURL)
 
 	params := &resend.SendEmailRequest{
-		From:    "CostOp Alerts <onboarding@resend.dev>",
+		From:    "CostOp Alerts <help@costop.in>",
 		To:      []string{toEmail},
 		Subject: subject,
 		Html:    htmlBody,
@@ -159,7 +159,7 @@ func SendCustomAlertEmail(toEmail, subject, message string) error {
 	`, message, frontendURL)
 
 	params := &resend.SendEmailRequest{
-		From:    "CostOp Alerts <onboarding@resend.dev>",
+		From:    "CostOp Alerts <help@costop.in>",
 		To:      []string{toEmail},
 		Subject: subject,
 		Html:    htmlBody,
