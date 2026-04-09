@@ -51,7 +51,6 @@ const HistoryComp = () => {
 
                     <HistoryToolbar />
 
-                    {/* Grid dims slightly during refetch instead of going white */}
                     <motion.div
                         animate={{ opacity: isRefetching ? 0.5 : 1 }}
                         transition={{ duration: 0.15 }}
