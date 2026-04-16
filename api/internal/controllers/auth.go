@@ -8,6 +8,7 @@ import (
 	"costop/internal/config"
 	"costop/internal/database"
 	"costop/internal/models"
+	"costop/internal/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -68,6 +69,7 @@ func VerifyGoogleToken(c *gin.Context) {
 
 	user := uwr.User
 	isAdmin := false
+	isNewUser := false
 
 	if user.ID == 0 {
 		user = models.User{
@@ -83,6 +85,7 @@ func VerifyGoogleToken(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
 			return
 		}
+		isNewUser = true
 
 		if hasInvite {
 			// Invited → joins as member of an existing team; inherit org_id from the team
@@ -132,6 +135,19 @@ func VerifyGoogleToken(c *gin.Context) {
 		user.AvatarURL = avatarURL
 		database.DB.Save(&user)
 	}
+
+	// ── Signup emails — only for brand-new users (non-blocking) ─────────────
+	if isNewUser {
+		accountType := "organic_owner"
+		if !isAdmin {
+			accountType = "invited_member"
+		}
+		go func(u models.User, at string) {
+			_ = services.SendWelcomeEmail(u.Email, u.Name, u.AvatarURL)
+			_ = services.SendAdminSignupNotification(u.Name, u.Email, u.AvatarURL, at)
+		}(user, accountType)
+	}
+
 	secret := config.JWTSecret
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
