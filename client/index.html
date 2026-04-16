@@ -1,34 +1,154 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
 
 <head>
+  <!-- ═══════════════════════════════════════════════
+       Core
+  ═══════════════════════════════════════════════ -->
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/receipt.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <!-- ═══════════════════════════════════════════════
+       Primary SEO
+  ═══════════════════════════════════════════════ -->
+  <title>CostOp — SaaS Spend Optimization | Cut Software Costs Automatically</title>
 
   <meta name="description"
-    content="CostOp - SaaS Spend Optimization Platform. Track, manage, and reduce your software subscription costs with smart insights." />
+    content="CostOp is a SaaS spend optimization platform that helps businesses track, manage, and reduce software subscription costs automatically. Stop wasting runway on unused licenses." />
+
   <meta name="keywords"
-    content="saas management, spend tracking, subscription manager, reduce software costs, budget optimization, financial tools" />
+    content="saas management, spend optimization, subscription manager, reduce software costs, saas cost tracking, budget optimization, software spend analytics, license management, financial tools for startups, saas waste reduction" />
+
   <meta name="author" content="CostOp" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="rating" content="general" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
 
-  <meta property="og:title" content="CostOp — SaaS Spend Optimization" />
-  <meta property="og:description"
-    content="Stop wasting runway on unused licenses. Track, manage, and optimize your entire software stack automatically." />
+  <!-- Canonical — replace with your actual production domain -->
+  <link rel="canonical" href="https://costop.io/" />
+
+  <!-- ═══════════════════════════════════════════════
+       Open Graph (Facebook, LinkedIn, WhatsApp, Slack …)
+  ═══════════════════════════════════════════════ -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="CostOp" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://costop.io/" />
+  <meta property="og:title" content="CostOp — Stop Wasting Money on SaaS" />
+  <meta property="og:description"
+    content="Track every subscription, surface unused licenses, and cut your software spend automatically. CostOp gives your team full visibility over your SaaS stack." />
+  <!-- Replace with your actual OG image (1200×630 px recommended) -->
+  <meta property="og:image" content="https://costop.io/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="CostOp dashboard showing SaaS spend analytics and savings opportunities" />
 
+  <!-- ═══════════════════════════════════════════════
+       Twitter / X Card
+  ═══════════════════════════════════════════════ -->
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@costop_io" />
+  <meta name="twitter:creator" content="@costop_io" />
   <meta name="twitter:title" content="CostOp — SaaS Spend Optimization" />
-  <meta name="twitter:description" content="Track your subscriptions and optimize your monthly software spend." />
+  <meta name="twitter:description"
+    content="Track subscriptions, eliminate waste, and optimize your monthly software spend — all in one place." />
+  <meta name="twitter:image" content="https://costop.io/og-image.png" />
+  <meta name="twitter:image:alt" content="CostOp — SaaS spend dashboard" />
 
-  <title>CostOp — SaaS Spend Optimization</title>
+  <!-- ═══════════════════════════════════════════════
+       Structured Data — JSON-LD (Google Rich Results)
+  ═══════════════════════════════════════════════ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "CostOp",
+    "url": "https://costop.io/",
+    "logo": "https://costop.io/receipt.svg",
+    "description": "CostOp is a SaaS spend optimization platform that helps businesses track, manage, and reduce software subscription costs automatically.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free trial available"
+    },
+    "featureList": [
+      "SaaS subscription tracking",
+      "Spend analytics and reporting",
+      "Unused license detection",
+      "Budget optimization recommendations",
+      "Multi-workspace support"
+    ],
+    "publisher": {
+      "@type": "Organization",
+      "name": "CostOp",
+      "url": "https://costop.io/"
+    }
+  }
+  </script>
+
+  <!-- ═══════════════════════════════════════════════
+       Favicons & App Icons
+  ═══════════════════════════════════════════════ -->
+  <link rel="icon" type="image/svg+xml" href="/receipt.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <!-- Apple / iOS -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CostOp" />
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/site.webmanifest" />
+  <!-- Theme color (browser UI chrome on Android/Chrome) -->
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <!-- Windows tiles -->
+  <meta name="msapplication-TileColor" content="#0f172a" />
+  <meta name="msapplication-config" content="/browserconfig.xml" />
+
+  <!-- ═══════════════════════════════════════════════
+       Performance — Preconnect critical origins
+  ═══════════════════════════════════════════════ -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Inline no-script fallback for crawlers & users with JS disabled -->
+    <noscript>
+      <style>
+        .noscript-fallback {
+          font-family: system-ui, -apple-system, sans-serif;
+          max-width: 680px;
+          margin: 80px auto;
+          padding: 0 24px;
+          text-align: center;
+          color: #0f172a;
+        }
+        .noscript-fallback h1 { font-size: 2rem; margin-bottom: 12px; }
+        .noscript-fallback p  { font-size: 1.1rem; color: #475569; }
+      </style>
+      <div class="noscript-fallback">
+        <h1>CostOp — SaaS Spend Optimization</h1>
+        <p>
+          Track, manage, and reduce your software subscription costs with smart insights.
+          Please enable JavaScript to use the full CostOp experience.
+        </p>
+      </div>
+    </noscript>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
