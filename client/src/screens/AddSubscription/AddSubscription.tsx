@@ -19,7 +19,7 @@ const AddSubscriptionComp = () => {
     } = useContext(AddSubscriptionContext);
 
     return (
-        <div className="max-w-4xl mx-auto pb-32 pt-4 px-4">
+        <div className="max-w-4xl mx-auto pb-52 pt-4 px-4">
             <FormHeader/>
 
             <form onSubmit={handleSubmit} className="space-y-6">
