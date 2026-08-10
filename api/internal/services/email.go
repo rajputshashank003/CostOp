@@ -161,7 +161,7 @@ func SendCustomAlertEmail(toEmail, subject, message string) error {
 	`, message, frontendURL)
 
 	params := &resend.SendEmailRequest{
-		From:    "CostOp Alerts <help@costop.in>",
+		From:    "CostOp Alerts <support@costop.in>",
 		To:      []string{toEmail},
 		Subject: subject,
 		Html:    htmlBody,
