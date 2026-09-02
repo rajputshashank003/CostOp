@@ -164,22 +164,31 @@ func AddSubscription(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	var result struct {
+		models.User
+		Role string `gorm:"column:role"`
+	}
+
+	// Fetch user and their default team role in one batch query
+	if err := database.DB.Table("users").
+		Select("users.*, team_members.role").
+		Joins("LEFT JOIN team_members ON team_members.user_id = users.id AND team_members.team_id = users.default_team_id").
+		Where("users.id = ?", userID).
+		First(&result).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
 	}
 
 	// Only owners can add subscriptions
-	var member models.TeamMember
-	if err := database.DB.Where("team_id = ? AND user_id = ?", user.DefaultTeamID, user.ID).First(&member).Error; err != nil {
+	if result.Role == "" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Unauthorized"})
 		return
 	}
-	if member.Role != "owner" {
+	if result.Role != "owner" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can add subscriptions"})
 		return
 	}
+	user := result.User
 
 	// Set server-controlled fields
 	input.UserID = userID
@@ -202,7 +211,8 @@ func AddSubscription(c *gin.Context) {
 	// Seat validation: if granting to teams and no individual picks, check seat capacity
 	if len(req.TeamIDs) > 0 && len(req.AssignedUserIDs) == 0 {
 		var totalMembers int64
-		database.DB.Model(&models.TeamMember{}).Where("team_id IN ?", req.TeamIDs).Count(&totalMembers)
+		// Optimised: Use Distinct to prevent double-counting users in multiple teams
+		database.DB.Model(&models.TeamMember{}).Distinct("user_id").Where("team_id IN ?", req.TeamIDs).Count(&totalMembers)
 		if int(totalMembers) > input.SeatCount {
 			c.JSON(http.StatusConflict, gin.H{
 				"error":             "Not enough seats for all team members. Select specific members instead.",
@@ -261,24 +271,44 @@ func AddSubscription(c *gin.Context) {
 			}
 		} else {
 			// Team-wide mode: grant teams and auto-assign all members
+			var subTeams []models.SubscriptionTeam
 			for _, tid := range req.TeamIDs {
-				tx.Create(&models.SubscriptionTeam{
+				subTeams = append(subTeams, models.SubscriptionTeam{
 					SubscriptionID: input.ID,
 					TeamID:         tid,
 					GrantedAt:      time.Now(),
 					GrantedBy:      userID,
 				})
+			}
+			if len(subTeams) > 0 {
+				if err := tx.Create(&subTeams).Error; err != nil {
+					return err
+				}
+			}
 
-				var members []models.TeamMember
-				tx.Where("team_id = ?", tid).Find(&members)
-				for _, m := range members {
-					tx.Create(&models.SubscriptionAssignment{
+			// Batch fetch all members from all selected teams
+			var allMembers []models.TeamMember
+			tx.Where("team_id IN ?", req.TeamIDs).Find(&allMembers)
+
+			var assignments []models.SubscriptionAssignment
+			seenUsers := make(map[uint]bool) // Deduplicate across teams
+			for _, m := range allMembers {
+				if !seenUsers[m.UserID] {
+					seenUsers[m.UserID] = true
+					
+					teamIDCopy := m.TeamID // Pin value for pointer
+					assignments = append(assignments, models.SubscriptionAssignment{
 						SubscriptionID: input.ID,
 						UserID:         m.UserID,
 						Source:         "team",
-						SourceTeamID:   &tid,
+						SourceTeamID:   &teamIDCopy,
 						AssignedAt:     time.Now(),
 					})
+				}
+			}
+			if len(assignments) > 0 {
+				if err := tx.Create(&assignments).Error; err != nil {
+					return err
 				}
 			}
 		}
