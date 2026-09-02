@@ -19,22 +19,24 @@ export default function LandingFooter() {
                 </div>
 
                 <div className="flex flex-col md:items-end justify-center">                  
-                    <div className="flex items-center gap-4">
-                        {/* <a
-                            href="https://rajputshashank.is-a.dev/"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-12 h-12 rounded-full bg-emerald-900/50 hover:bg-emerald-800 flex items-center justify-center text-emerald-300 hover:text-white transition-all border border-emerald-800"
-                        >
-                            <Globe size={22} />
-                        </a> */}
+                    <div className="flex items-center gap-6 text-sm font-medium text-emerald-300">
+                        <Link to="/terms" className="hover:text-white transition-colors" onClick={() => window.scrollTo(0, 0)}>
+                            Terms & Conditions
+                        </Link>
+                        <Link to="/privacy" className="hover:text-white transition-colors" onClick={() => window.scrollTo(0, 0)}>
+                            Privacy Policy
+                        </Link>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-emerald-900/50 flex flex-col md:flex-row items-center justify-between text-emerald-600 text-sm font-semibold">
+            <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-emerald-900/50 flex flex-col md:flex-row items-center justify-between text-emerald-600 text-xs font-medium gap-4">
                 <div>© {new Date().getFullYear()} CostOp. All rights reserved.</div>
-                {/* <div className="mt-4 md:mt-0">Designed & Developed by <a className="cursor-pointer" href="https://rajputshashank.is-a.dev" >Shashank Rajput</a></div> */}
+                <div className="flex items-center gap-4">
+                    <Link to="/terms" className="hover:text-emerald-400 transition-colors" onClick={() => window.scrollTo(0, 0)}>Terms & Conditions</Link>
+                    <span>•</span>
+                    <Link to="/privacy" className="hover:text-emerald-400 transition-colors" onClick={() => window.scrollTo(0, 0)}>Privacy Policy</Link>
+                </div>
             </div>
         </footer>
     );

@@ -1,6 +1,7 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { ShieldCheck } from "lucide-react";
 import { useContext } from "react";
+import { Link } from "react-router-dom";
 import LoginContext from "../context";
 import LoggingInOverlay from "./LoggingInOverlay";
 
@@ -32,6 +33,18 @@ export default function LoginBox() {
                             text="continue_with"
                         />
                     </div>
+
+                    <p className="mt-8 text-xs text-slate-400">
+                        By continuing, you agree to CostOp&apos;s{" "}
+                        <Link to="/terms" className="underline hover:text-slate-600">
+                            Terms
+                        </Link>{" "}
+                        and{" "}
+                        <Link to="/privacy" className="underline hover:text-slate-600">
+                            Privacy Policy
+                        </Link>
+                        .
+                    </p>
                 </div>
             </div>
         </>

@@ -15,6 +15,8 @@ const AddSubscription = lazy(() => import("./screens/AddSubscription/AddSubscrip
 const Profile = lazy(() => import("./screens/Profile/Profile"));
 const Onboarding = lazy(() => import("./screens/Onboarding/Onboarding"));
 const Settings = lazy(() => import("./screens/Settings/Settings"));
+const Terms = lazy(() => import("./screens/Terms/Terms"));
+const Privacy = lazy(() => import("./screens/Privacy/Privacy"));
 
 const SuspenseFallback = () => (
     <div className="flex items-center justify-center min-h-screen bg-[#f0f0f5]">
@@ -42,6 +44,10 @@ function App() {
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/" element={<Landing />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/terms-and-conditions" element={<Terms />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/privacy-policy" element={<Privacy />} />
                     <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                     <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
                     <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
