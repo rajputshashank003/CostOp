@@ -1,5 +1,5 @@
 import { GoogleLogin } from "@react-oauth/google";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, Sparkles, User as UserIcon } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
 import { useContext } from "react";
 import { Link } from "react-router-dom";
 import LoginContext from "../context";
@@ -23,7 +23,6 @@ export default function LoginBox() {
         errorMessage,
         setErrorMessage,
         handleEmailSubmit,
-        fillDemoCredentials,
     } = useContext(LoginContext);
 
     const isLogin = authMode === 'login';
@@ -163,7 +162,7 @@ export default function LoginBox() {
                                     autoComplete="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="demo@costop.in"
+                                    placeholder="name@company.com"
                                     required
                                     disabled={isSubmitting}
                                     className="w-full h-11 sm:h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:bg-slate-50"
@@ -196,7 +195,7 @@ export default function LoginBox() {
                                     autoComplete={isLogin ? "current-password" : "new-password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="demo@123"
+                                    placeholder={isLogin ? "Enter your password" : "Create a password (min. 6 chars)"}
                                     required
                                     disabled={isSubmitting}
                                     className="w-full h-11 sm:h-12 pl-10 pr-11 text-sm bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:bg-slate-50"
@@ -250,26 +249,6 @@ export default function LoginBox() {
                             )}
                         </button>
                     </form>
-
-                    {/* Quick Demo Credentials Helper */}
-                    <div className="mt-5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 truncate">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 shrink-0 font-bold text-[10px]">
-                                <Sparkles size={12} />
-                            </span>
-                            <div className="truncate">
-                                <span className="font-semibold text-slate-800">Demo Account:</span>{" "}
-                                <span className="font-mono text-slate-600">demo@costop.in</span>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={fillDemoCredentials}
-                            className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 rounded-lg transition-colors shrink-0 cursor-pointer"
-                        >
-                            Fill Demo
-                        </button>
-                    </div>
 
                     {/* Terms & Privacy */}
                     <p className="mt-6 text-xs text-slate-400 text-center">

@@ -79,13 +79,6 @@ const useLogin = () => {
         }
     };
 
-    const fillDemoCredentials = () => {
-        setAuthMode('login');
-        setEmail('demo@costop.in');
-        setPassword('demo@123');
-        setErrorMessage('');
-    };
-
     useEffect(() => {
         if ( user ) {
             navigate('/home');
@@ -120,7 +113,6 @@ const useLogin = () => {
         errorMessage,
         setErrorMessage,
         handleEmailSubmit,
-        fillDemoCredentials,
     };
 };
 
