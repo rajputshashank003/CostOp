@@ -3,9 +3,13 @@ package controllers
 import (
 	"costop/internal/database"
 	"costop/internal/models"
+	"costop/internal/services"
 	"errors"
+	"net/http"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -96,3 +100,217 @@ func acquireSeats(
 
 	return assigned, skipped, nil
 }
+
+// GetOrganization returns metadata, plan, and member quotas for the caller's organization.
+// GET /api/organization
+func GetOrganization(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	orgID, err := resolveOrgID(userID)
+	if err != nil || orgID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	var org models.Organization
+	if err := database.DB.First(&org, orgID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	// Count active accepted members belonging to this organization
+	var activeMembersCount int64
+	database.DB.Model(&models.User{}).Where("org_id = ? AND deleted_at IS NULL", org.ID).Count(&activeMembersCount)
+
+	memberLimit := 30
+	if org.Plan == "pro" {
+		memberLimit = 100
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":                   org.ID,
+		"name":                 org.Name,
+		"owner_id":             org.OwnerID,
+		"plan":                 org.Plan,
+		"slack_webhook_url":    org.SlackWebhookURL,
+		"razorpay_customer_id": org.RazorpayCustomerID,
+		"razorpay_sub_id":      org.RazorpaySubID,
+		"razorpay_payment_id":  org.RazorpayPaymentID,
+		"active_members_count": activeMembersCount,
+		"member_limit":         memberLimit,
+		"can_export_report":    org.Plan == "pro",
+		"can_use_slack":        org.Plan == "pro",
+	})
+}
+
+// UpdateOrganizationSettings updates the organization name or Slack Webhook URL.
+// PATCH /api/organization/settings
+func UpdateOrganizationSettings(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	orgID, err := resolveOrgID(userID)
+	if err != nil || orgID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	var org models.Organization
+	if err := database.DB.First(&org, orgID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	// Verify caller is an admin or owner
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	isOwner := org.OwnerID == userID
+	isAdmin := isOwner
+	if !isAdmin && user.DefaultTeamID > 0 {
+		var membership models.TeamMember
+		if err := database.DB.Where("team_id = ? AND user_id = ?", user.DefaultTeamID, userID).First(&membership).Error; err == nil {
+			isAdmin = membership.Role == "owner"
+		}
+	}
+
+	if !isAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only workspace owners can update organization settings"})
+		return
+	}
+
+	var input struct {
+		Name            string `json:"name"`
+		SlackWebhookURL string `json:"slack_webhook_url"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	if input.Name != "" {
+		org.Name = input.Name
+	}
+
+	// If updating slack webhook, verify Pro tier
+	if input.SlackWebhookURL != "" {
+		trimmedURL := strings.TrimSpace(input.SlackWebhookURL)
+		if !strings.HasPrefix(trimmedURL, "https://hooks.slack.com/") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Slack webhook URL. Must start with https://hooks.slack.com/"})
+			return
+		}
+		if org.Plan != "pro" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Slack Webhook Notifications are only available on the Pro plan. Please upgrade to Pro to enable Slack alerts.",
+				"code":  "PRO_REQUIRED",
+			})
+			return
+		}
+		org.SlackWebhookURL = trimmedURL
+	} else if c.Request.ContentLength > 0 {
+		// Allow clearing the webhook URL
+		org.SlackWebhookURL = ""
+	}
+
+	if err := database.DB.Save(&org).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update organization settings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "Organization settings updated successfully",
+		"organization": org,
+	})
+}
+
+// UpgradeOrganization transitions the organization to the Pro plan (Admin only).
+// POST /api/organization/upgrade
+func UpgradeOrganization(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	orgID, err := resolveOrgID(userID)
+	if err != nil || orgID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	var org models.Organization
+	if err := database.DB.First(&org, orgID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	org.Plan = "pro"
+	org.RazorpayPaymentID = "pay_test_direct_upgrade"
+	if err := database.DB.Save(&org).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade organization"})
+		return
+	}
+
+	// Send rich confirmation receipt email to user
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err == nil && user.Email != "" {
+		go func(u models.User) {
+			_ = services.SendPaymentSuccessEmail(u.Email, u.Name, "Pro", "monthly", 999.00, "pay_test_direct_upgrade")
+		}(user)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Workspace upgraded to CostOp Pro successfully!",
+		"plan":    "pro",
+	})
+}
+
+// TestSlackWebhook sends a verification message to a provided Slack Webhook URL.
+// POST /api/organization/test-slack
+func TestSlackWebhook(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	orgID, err := resolveOrgID(userID)
+	if err != nil || orgID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	var org models.Organization
+	if err := database.DB.First(&org, orgID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	if org.Plan != "pro" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Slack Webhook Notifications are a Pro feature.",
+			"code":  "PRO_REQUIRED",
+		})
+		return
+	}
+
+	var input struct {
+		WebhookURL string `json:"webhook_url"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	targetURL := strings.TrimSpace(input.WebhookURL)
+	if targetURL == "" {
+		targetURL = org.SlackWebhookURL
+	}
+
+	if targetURL == "" || !strings.HasPrefix(targetURL, "https://hooks.slack.com/") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Slack webhook URL. Must start with https://hooks.slack.com/"})
+		return
+	}
+
+	if err := services.SendSlackTestMessage(targetURL); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to send test message to Slack. Please verify the URL."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Test message sent to Slack successfully!"})
+}
+

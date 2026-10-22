@@ -18,22 +18,99 @@ func SendTeamInviteEmail(toEmail, inviterName, teamName, inviteToken string) err
 	}
 
 	client := resend.NewClient(apiKey)
-
-	// In production, this should be your actual verified domain or localhost for testing.
-	// For Resend testing without a verified domain, you can only send to the email address registered with Resend.
-	// We'll use a standard onboarding template.
 	frontendURL := config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://costop1.vercel.app"
+	}
 	inviteLink := fmt.Sprintf("%s/login?token=%s", frontendURL, inviteToken)
 
-	htmlBody := fmt.Sprintf(`
-		<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-			<h2>You've been invited to CostOp!</h2>
-			<p><strong>%s</strong> has invited you to join the <strong>%s</strong> workspace to track SaaS expenses together.</p>
-			<p>Click the button below to accept the invitation and securely login with your Google account:</p>
-			<a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px;">Accept Invitation</a>
-			<p style="margin-top: 30px; font-size: 12px; color: #888;">If you did not expect this invitation, you can safely ignore this email.</p>
-		</div>
-	`, inviterName, teamName, inviteLink)
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Invitation to join %s on CostOp</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
+
+  <!-- Header Banner -->
+  <tr>
+    <td style="background-color:#ffffff;padding:36px 36px 28px;text-align:center;border-bottom:1px solid #f1f5f9;">
+      <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+        <tr>
+          <td valign="middle">
+            <div style="width:36px;height:36px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#059669;display:inline-block;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:10px;">
+            <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:20px;">Spend Optimization Platform</div>
+
+      <!-- Badge -->
+      <div style="display:inline-block;padding:6px 16px;border-radius:9999px;background-color:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:16px;">
+        👥 TEAM INVITATION
+      </div>
+
+      <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;line-height:1.3;">You've been invited to %s</h1>
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;max-width:480px;display:inline-block;">
+        <strong style="color:#0f172a;">%s</strong> has invited you to join the team workspace to track and manage software spending together.
+      </p>
+    </td>
+  </tr>
+
+  <!-- Body Content -->
+  <tr>
+    <td style="background-color:#ffffff;padding:32px 36px 36px;">
+      <!-- Feature Card -->
+      <div style="background-color:#f8fafc;border-radius:18px;border:1px solid #e2e8f0;padding:22px;margin-bottom:28px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:14px;">
+          What you'll get access to:
+        </div>
+        <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#334155;line-height:1.8;">
+          <tr>
+            <td style="padding:4px 0;"><span style="color:#059669;font-weight:bold;margin-right:8px;">✓</span> Unified company subscription dashboard</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;"><span style="color:#059669;font-weight:bold;margin-right:8px;">✓</span> Renewal alerts and payment schedules</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;"><span style="color:#059669;font-weight:bold;margin-right:8px;">✓</span> Request new software approvals with team owners</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="%s" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Accept Invitation & Join →</a>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
+
+      <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
+        If you did not expect this invitation, you can safely ignore this email.<br/>
+        Questions? Contact us at <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp · All rights reserved</p>
+      <p style="margin:0;font-size:11px;color:#94a3b8;">SaaS Spend Optimization Engine</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`, teamName, teamName, inviterName, inviteLink)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Team <help@costop.in>",
@@ -59,24 +136,107 @@ func SendRenewalAlertEmail(toEmail, userName, subName string, subCost float64, a
 	}
 
 	client := resend.NewClient(apiKey)
-
 	frontendURL := config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://costop1.vercel.app"
+	}
 
 	billingType := "auto-renews and charges"
 	if !autoPay {
 		billingType = "expires"
 	}
 
-	htmlBody := fmt.Sprintf(`
-		<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-			<h2>Upcoming SaaS Renewal Alert!</h2>
-			<p>Hey <strong>%s</strong>!</p>
-			<p>Your tracking software has flagged that your active subscription to <strong>%s</strong> %s your account <strong>$%.2f</strong> in roughly <strong>7 Days</strong>.</p>
-			<p>If you wish to archive this module and halt recording, please sign into CostOp below:</p>
-			<a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px;">Review on Dashboard</a>
-			<p style="margin-top: 30px; font-size: 12px; color: #888;">Powered natively by your CostOp Automation Engine.</p>
-		</div>
-	`, userName, subName, billingType, subCost, frontendURL)
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Upcoming SaaS Renewal Alert</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
+
+  <!-- Header Banner -->
+  <tr>
+    <td style="background-color:#ffffff;padding:36px 36px 28px;text-align:center;border-bottom:1px solid #f1f5f9;">
+      <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+        <tr>
+          <td valign="middle">
+            <div style="width:36px;height:36px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#059669;display:inline-block;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:10px;">
+            <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:20px;">Spend Optimization Platform</div>
+
+      <!-- Badge -->
+      <div style="display:inline-block;padding:6px 16px;border-radius:9999px;background-color:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:16px;">
+        🔔 UPCOMING RENEWAL • 7 DAYS
+      </div>
+
+      <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;line-height:1.3;">%s is renewing soon</h1>
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;max-width:480px;display:inline-block;">
+        Hi %s, your tracking automation flagged that an active subscription is scheduled to renew in 7 days.
+      </p>
+    </td>
+  </tr>
+
+  <!-- Body Content -->
+  <tr>
+    <td style="background-color:#ffffff;padding:32px 36px 36px;">
+      <!-- Detail Card -->
+      <div style="background-color:#f8fafc;border-radius:18px;border:1px solid #e2e8f0;padding:22px;margin-bottom:28px;">
+        <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#334155;">
+          <tr>
+            <td style="padding:8px 0;color:#64748b;">Subscription</td>
+            <td style="padding:8px 0;text-align:right;font-weight:700;color:#0f172a;">%s</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;">Action Expected</td>
+            <td style="padding:8px 0;text-align:right;color:#334155;font-weight:600;">%s</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;">Renewal Cost</td>
+            <td style="padding:8px 0;text-align:right;font-size:18px;font-weight:900;color:#059669;">$%.2f</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#64748b;">Timeline</td>
+            <td style="padding:8px 0;text-align:right;color:#0f172a;font-weight:700;">In ~7 Days</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="%s" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Review Subscription on Dashboard →</a>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
+
+      <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
+        Powered natively by your CostOp Automation Engine.<br/>
+        Need assistance? Reply to <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp · Spend Optimization Platform</p>
+      <p style="margin:0;font-size:11px;color:#94a3b8;">Automated renewal alert dispatched from your CostOp workspace.</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`, subName, userName, subName, billingType, subCost, frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Tracker <help@costop.in>",
@@ -103,6 +263,9 @@ func SendAlertEmail(toEmail, subject, message, subName string, cost float64, day
 
 	client := resend.NewClient(apiKey)
 	frontendURL := config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://costop1.vercel.app"
+	}
 
 	actionWord := "auto-renews"
 	if !isAutoPay {
@@ -116,15 +279,82 @@ func SendAlertEmail(toEmail, subject, message, subName string, cost float64, day
 		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s in <strong>%d day(s)</strong> for <strong>$%.2f</strong>.", subName, actionWord, daysLeft, cost)
 	}
 
-	htmlBody := fmt.Sprintf(`
-		<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-			<h2 style="color: #059669;">⚡ Subscription Alert</h2>
-			<p>%s</p>
-			<p>Log into CostOp to review or take action:</p>
-			<a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px;">Open Dashboard</a>
-			<p style="margin-top: 30px; font-size: 12px; color: #888;">This alert was configured by you in CostOp. You can update or delete it anytime from the subscription detail page.</p>
-		</div>
-	`, timingLine, frontendURL)
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>%s</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
+
+  <!-- Header Banner -->
+  <tr>
+    <td style="background-color:#ffffff;padding:36px 36px 28px;text-align:center;border-bottom:1px solid #f1f5f9;">
+      <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+        <tr>
+          <td valign="middle">
+            <div style="width:36px;height:36px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#059669;display:inline-block;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:10px;">
+            <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:20px;">Spend Optimization Platform</div>
+
+      <!-- Badge -->
+      <div style="display:inline-block;padding:6px 16px;border-radius:9999px;background-color:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:16px;">
+        ⚡ SUBSCRIPTION ALERT
+      </div>
+
+      <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;line-height:1.3;">%s</h1>
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;max-width:480px;display:inline-block;">
+        Your custom alert conditions have been triggered for this subscription.
+      </p>
+    </td>
+  </tr>
+
+  <!-- Body Content -->
+  <tr>
+    <td style="background-color:#ffffff;padding:32px 36px 36px;">
+      <!-- Alert Box -->
+      <div style="background-color:#f8fafc;border-radius:18px;border:1px solid #e2e8f0;padding:22px;margin-bottom:28px;">
+        <p style="margin:0;font-size:15px;color:#0f172a;line-height:1.6;font-weight:500;">
+          %s
+        </p>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="%s" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Open Dashboard →</a>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
+
+      <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
+        This alert was configured in CostOp. You can update or delete it anytime from the subscription detail page.<br/>
+        Contact: <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp · All rights reserved</p>
+      <p style="margin:0;font-size:11px;color:#94a3b8;">Automated notification from CostOp.</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`, subject, subName, timingLine, frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Alerts <help@costop.in>",
@@ -150,15 +380,82 @@ func SendCustomAlertEmail(toEmail, subject, message string) error {
 
 	client := resend.NewClient(apiKey)
 	frontendURL := config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://costop1.vercel.app"
+	}
 
-	htmlBody := fmt.Sprintf(`
-		<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-			<h2 style="color: #059669;">🔔 Custom Reminder</h2>
-			<p>%s</p>
-			<a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px;">Open Dashboard</a>
-			<p style="margin-top: 30px; font-size: 12px; color: #888;">This reminder was set by you in CostOp.</p>
-		</div>
-	`, message, frontendURL)
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>%s</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
+
+  <!-- Header Banner -->
+  <tr>
+    <td style="background-color:#ffffff;padding:36px 36px 28px;text-align:center;border-bottom:1px solid #f1f5f9;">
+      <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+        <tr>
+          <td valign="middle">
+            <div style="width:36px;height:36px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#059669;display:inline-block;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:10px;">
+            <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:20px;">Spend Optimization Platform</div>
+
+      <!-- Badge -->
+      <div style="display:inline-block;padding:6px 16px;border-radius:9999px;background-color:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:16px;">
+        🔔 REMINDER NOTIFICATION
+      </div>
+
+      <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;line-height:1.3;">%s</h1>
+    </td>
+  </tr>
+
+  <!-- Body Content -->
+  <tr>
+    <td style="background-color:#ffffff;padding:32px 36px 36px;">
+      <!-- Content Box -->
+      <div style="background-color:#f8fafc;border-radius:18px;border:1px solid #e2e8f0;padding:22px;margin-bottom:28px;">
+        <p style="margin:0;font-size:15px;color:#0f172a;line-height:1.6;font-weight:500;">
+          %s
+        </p>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="%s" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Open Dashboard →</a>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
+
+      <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
+        This reminder was scheduled in CostOp.<br/>
+        Contact: <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp · All rights reserved</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`, subject, subject, message, frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Alerts <support@costop.in>",
@@ -198,7 +495,7 @@ func SendWelcomeEmail(toEmail, userName, avatarURL string) error {
 	if avatarURL != "" {
 		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:72px;height:72px;border-radius:50%%;border:3px solid #10b981;display:block;margin:0 auto;" />`, avatarURL, userName)
 	} else {
-		avatarSection = fmt.Sprintf(`<div style="width:72px;height:72px;border-radius:50%%;background:linear-gradient(135deg,#10b981,#059669);line-height:72px;text-align:center;font-size:32px;font-weight:700;color:#fff;margin:0 auto;">%s</div>`, initial)
+		avatarSection = fmt.Sprintf(`<div style="width:72px;height:72px;border-radius:50%%;background:linear-gradient(135deg,#059669,#047857);line-height:72px;text-align:center;font-size:28px;font-weight:900;color:#ffffff;margin:0 auto;">%s</div>`, initial)
 	}
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
@@ -208,84 +505,97 @@ func SendWelcomeEmail(toEmail, userName, avatarURL string) error {
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Welcome to CostOp</title>
 </head>
-<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
 
 <!-- Hero -->
-<tr><td style="background:linear-gradient(135deg,#0f2942 0%%,#0a1628 50%%,#0f2942 100%%);padding:48px 40px 40px;text-align:center;border-bottom:1px solid rgba(16,185,129,0.2);">
-  <div style="margin-bottom:24px;">
-    <span style="font-size:28px;font-weight:800;letter-spacing:-0.5px;">
-      <span style="color:#10b981;">Cost</span><span style="color:#ffffff;">Op</span>
-    </span>
-    <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#6b7280;margin-top:4px;">Spend Optimization Platform</div>
-  </div>
+<tr><td style="background-color:#ffffff;padding:40px 36px 30px;text-align:center;border-bottom:1px solid #f1f5f9;">
+  <!-- Logo -->
+  <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+    <tr>
+      <td valign="middle">
+        <div style="width:36px;height:36px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#059669;display:inline-block;">$</div>
+      </td>
+      <td valign="middle" style="padding-left:10px;">
+        <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+      </td>
+    </tr>
+  </table>
+  <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:24px;">Spend Optimization Platform</div>
+
   <div style="margin-bottom:20px;">%s</div>
-  <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Welcome aboard, %s! 🎉</h1>
-  <p style="margin:0;font-size:15px;color:#94a3b8;">Your SaaS spend is about to get smarter.</p>
+  <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">Welcome aboard, %s! 🎉</h1>
+  <p style="margin:0;font-size:14px;color:#64748b;">Your SaaS spend optimization dashboard is ready to go.</p>
 </td></tr>
 
 <!-- Body -->
-<tr><td style="background:#1e293b;padding:40px;">
-  <p style="margin:0 0 28px;font-size:15px;color:#cbd5e1;line-height:1.8;">
-    Hi <strong style="color:#e2e8f0;">%s</strong>, you've just joined <strong style="color:#10b981;">CostOp</strong> — the platform that gives you complete visibility and control over every software subscription your team pays for. No more bill-shock renewals. No more zombie licenses.
+<tr><td style="background-color:#ffffff;padding:36px;">
+  <p style="margin:0 0 24px;font-size:14px;color:#334155;line-height:1.7;">
+    Hi <strong style="color:#0f172a;">%s</strong>, you've just joined <strong style="color:#059669;">CostOp</strong> — the platform that gives you complete visibility and control over every software subscription your team pays for. No more bill-shock renewals or zombie licenses.
   </p>
 
-  <div style="border-top:1px solid rgba(255,255,255,0.07);margin-bottom:28px;"></div>
+  <div style="border-top:1px solid #e2e8f0;margin-bottom:24px;"></div>
 
-  <p style="margin:0 0 20px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#6b7280;">What you can do with CostOp</p>
+  <p style="margin:0 0 16px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;">What you can do with CostOp</p>
 
   <!-- Feature 1 -->
-  <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;">
   <tr>
-    <td width="48" valign="top"><div style="width:40px;height:40px;border-radius:10px;background:rgba(16,185,129,0.12);text-align:center;line-height:40px;font-size:20px;">📊</div></td>
-    <td style="padding-left:16px;" valign="middle">
-      <strong style="color:#e2e8f0;font-size:14px;">Track every subscription</strong>
-      <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">One dashboard for all your SaaS tools — billing dates, costs, and owners.</p>
+    <td width="52" style="padding:14px 0 14px 16px;" valign="middle">
+      <div style="width:34px;height:34px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:34px;font-size:16px;">📊</div>
+    </td>
+    <td style="padding:14px 16px 14px 10px;" valign="middle">
+      <strong style="color:#0f172a;font-size:13px;display:block;">Track every subscription</strong>
+      <span style="font-size:12px;color:#64748b;line-height:1.4;">One central dashboard for all your SaaS tools — billing dates, costs, and owners.</span>
     </td>
   </tr>
   </table>
 
   <!-- Feature 2 -->
-  <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;">
   <tr>
-    <td width="48" valign="top"><div style="width:40px;height:40px;border-radius:10px;background:rgba(16,185,129,0.12);text-align:center;line-height:40px;font-size:20px;">🔍</div></td>
-    <td style="padding-left:16px;" valign="middle">
-      <strong style="color:#e2e8f0;font-size:14px;">Surface unused licenses</strong>
-      <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">Our engine flags tools your team stopped using so you can cancel before renewal.</p>
+    <td width="52" style="padding:14px 0 14px 16px;" valign="middle">
+      <div style="width:34px;height:34px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:34px;font-size:16px;">🔍</div>
+    </td>
+    <td style="padding:14px 16px 14px 10px;" valign="middle">
+      <strong style="color:#0f172a;font-size:13px;display:block;">Surface unused licenses</strong>
+      <span style="font-size:12px;color:#64748b;line-height:1.4;">Our FinOps engine flags tools your team stopped using so you can cancel before renewal.</span>
     </td>
   </tr>
   </table>
 
   <!-- Feature 3 -->
-  <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;">
   <tr>
-    <td width="48" valign="top"><div style="width:40px;height:40px;border-radius:10px;background:rgba(16,185,129,0.12);text-align:center;line-height:40px;font-size:20px;">🔔</div></td>
-    <td style="padding-left:16px;" valign="middle">
-      <strong style="color:#e2e8f0;font-size:14px;">Smart renewal alerts</strong>
-      <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">Receive reminders 7 days before any subscription renews — never be surprised again.</p>
+    <td width="52" style="padding:14px 0 14px 16px;" valign="middle">
+      <div style="width:34px;height:34px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:34px;font-size:16px;">🔔</div>
+    </td>
+    <td style="padding:14px 16px 14px 10px;" valign="middle">
+      <strong style="color:#0f172a;font-size:13px;display:block;">Smart renewal alerts</strong>
+      <span style="font-size:12px;color:#64748b;line-height:1.4;">Receive reminders 7 days before any subscription renews — never be surprised again.</span>
     </td>
   </tr>
   </table>
 
   <!-- CTA -->
-  <div style="text-align:center;margin-bottom:32px;">
-    <a href="%s" style="display:inline-block;padding:15px 40px;background:linear-gradient(135deg,#10b981,#059669);color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:700;box-shadow:0 4px 20px rgba(16,185,129,0.35);">Open My Dashboard →</a>
+  <div style="text-align:center;margin-bottom:28px;">
+    <a href="%s" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Open My Dashboard →</a>
   </div>
 
-  <div style="border-top:1px solid rgba(255,255,255,0.07);margin-bottom:24px;"></div>
+  <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
 
-  <p style="margin:0;font-size:13px;color:#64748b;text-align:center;line-height:1.7;">
+  <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
     Questions? Reply to this email — we read every one.<br/>
-    <a href="mailto:costop.in@gmail.com" style="color:#10b981;text-decoration:none;">costop.in@gmail.com</a>
+    <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
   </p>
 </td></tr>
 
 <!-- Footer -->
-<tr><td style="background:#0f172a;padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);">
-  <p style="margin:0 0 6px;font-size:12px;color:#475569;">© 2025 CostOp · All rights reserved</p>
-  <p style="margin:0;font-size:11px;color:#334155;">You're receiving this because you signed up at <a href="%s" style="color:#10b981;text-decoration:none;">costop.io</a></p>
+<tr><td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+  <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp · All rights reserved</p>
+  <p style="margin:0;font-size:11px;color:#94a3b8;">You're receiving this because you signed up at <a href="%s" style="color:#059669;text-decoration:none;">costop.io</a></p>
 </td></tr>
 
 </table>
@@ -321,10 +631,14 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 
 	now := nowIST()
 
-	badgeColor := "#10b981"
+	badgeColor := "#059669"
+	badgeBg := "#ecfdf5"
+	badgeBorder := "#a7f3d0"
 	badgeLabel := "🧑‍💼 New Owner"
 	if accountType == "invited_member" {
-		badgeColor = "#6366f1"
+		badgeColor = "#4f46e5"
+		badgeBg = "#eef2ff"
+		badgeBorder = "#c7d2fe"
 		badgeLabel = "👥 Invited Member"
 	}
 
@@ -334,9 +648,9 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 	}
 	avatarSection := ""
 	if avatarURL != "" {
-		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:56px;height:56px;border-radius:50%%;border:2px solid %s;display:block;" />`, avatarURL, userName, badgeColor)
+		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:52px;height:52px;border-radius:50%%;border:2px solid %s;display:block;" />`, avatarURL, userName, badgeColor)
 	} else {
-		avatarSection = fmt.Sprintf(`<div style="width:56px;height:56px;border-radius:50%%;background:linear-gradient(135deg,%s,#059669);line-height:56px;text-align:center;font-size:24px;font-weight:700;color:#fff;">%s</div>`, badgeColor, initial)
+		avatarSection = fmt.Sprintf(`<div style="width:52px;height:52px;border-radius:50%%;background:linear-gradient(135deg,%s,#059669);line-height:52px;text-align:center;font-size:22px;font-weight:700;color:#fff;">%s</div>`, badgeColor, initial)
 	}
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
@@ -346,80 +660,87 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>New Signup — CostOp Admin</title>
 </head>
-<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
 
 <!-- Header -->
-<tr><td style="background:linear-gradient(135deg,#0f2942 0%%,#0a1628 50%%,#0f2942 100%%);padding:32px 40px;border-bottom:1px solid rgba(16,185,129,0.2);">
+<tr><td style="background-color:#ffffff;padding:32px 36px 24px;border-bottom:1px solid #f1f5f9;">
   <table width="100%%" cellpadding="0" cellspacing="0"><tr>
     <td>
-      <span style="font-size:22px;font-weight:800;">
-        <span style="color:#10b981;">Cost</span><span style="color:#fff;">Op</span>
-      </span>
-      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#6b7280;margin-top:2px;">Admin Notification</div>
+      <table cellpadding="0" cellspacing="0">
+        <tr>
+          <td valign="middle">
+            <div style="width:32px;height:32px;border-radius:8px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:32px;font-size:16px;font-weight:900;color:#059669;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:8px;">
+            <span style="font-size:22px;font-weight:900;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-top:2px;">Admin Notification</div>
     </td>
     <td align="right">
-      <span style="display:inline-block;padding:6px 14px;border-radius:20px;background:%s;color:#fff;font-size:12px;font-weight:600;">%s</span>
+      <span style="display:inline-block;padding:6px 14px;border-radius:20px;background:%s;color:%s;border:1px solid %s;font-size:12px;font-weight:700;">%s</span>
     </td>
   </tr></table>
 </td></tr>
 
 <!-- Alert banner -->
-<tr><td style="background:rgba(16,185,129,0.08);border-left:4px solid #10b981;padding:16px 40px;">
-  <p style="margin:0;font-size:15px;font-weight:600;color:#10b981;">🎉 New user just signed up on CostOp!</p>
+<tr><td style="background-color:#ecfdf5;border-left:4px solid #059669;padding:14px 36px;">
+  <p style="margin:0;font-size:14px;font-weight:700;color:#065f46;">🎉 New user just signed up on CostOp!</p>
 </td></tr>
 
 <!-- Body -->
-<tr><td style="background:#1e293b;padding:36px 40px;">
+<tr><td style="background-color:#ffffff;padding:32px 36px;">
 
   <!-- User card -->
-  <table width="100%%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:16px;border:1px solid rgba(255,255,255,0.07);margin-bottom:28px;">
-  <tr><td style="padding:24px;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:16px;border:1px solid #e2e8f0;margin-bottom:24px;">
+  <tr><td style="padding:20px;">
     <table cellpadding="0" cellspacing="0"><tr>
-      <td width="72" valign="middle">%s</td>
-      <td style="padding-left:18px;" valign="middle">
-        <strong style="font-size:18px;color:#e2e8f0;">%s</strong><br/>
-        <a href="mailto:%s" style="font-size:14px;color:#10b981;text-decoration:none;">%s</a>
+      <td width="64" valign="middle">%s</td>
+      <td style="padding-left:16px;" valign="middle">
+        <strong style="font-size:16px;color:#0f172a;">%s</strong><br/>
+        <a href="mailto:%s" style="font-size:13px;color:#059669;text-decoration:none;font-weight:600;">%s</a>
       </td>
     </tr></table>
   </td></tr>
   </table>
 
   <!-- Detail rows -->
-  <p style="margin:0 0 14px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#6b7280;">Account Details</p>
-  <table width="100%%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-      <td style="padding:12px 0;font-size:13px;color:#64748b;width:38%%;">Full Name</td>
-      <td style="padding:12px 0;font-size:13px;color:#e2e8f0;font-weight:500;">%s</td>
+  <p style="margin:0 0 12px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;">Account Details</p>
+  <table width="100%%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:13px;">
+    <tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:10px 0;color:#64748b;width:38%%;">Full Name</td>
+      <td style="padding:10px 0;color:#0f172a;font-weight:600;">%s</td>
     </tr>
-    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-      <td style="padding:12px 0;font-size:13px;color:#64748b;">Email</td>
-      <td style="padding:12px 0;font-size:13px;color:#e2e8f0;font-weight:500;">%s</td>
+    <tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:10px 0;color:#64748b;">Email</td>
+      <td style="padding:10px 0;color:#0f172a;font-weight:600;">%s</td>
     </tr>
-    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-      <td style="padding:12px 0;font-size:13px;color:#64748b;">Account Type</td>
-      <td style="padding:12px 0;">
-        <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:%s30;color:%s;font-size:12px;font-weight:600;border:1px solid %s60;">%s</span>
+    <tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:10px 0;color:#64748b;">Account Type</td>
+      <td style="padding:10px 0;">
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;background:%s;color:%s;font-size:11px;font-weight:700;border:1px solid %s;">%s</span>
       </td>
     </tr>
     <tr>
-      <td style="padding:12px 0;font-size:13px;color:#64748b;">Signed up at</td>
-      <td style="padding:12px 0;font-size:13px;color:#e2e8f0;font-weight:500;">%s</td>
+      <td style="padding:10px 0;color:#64748b;">Signed up at</td>
+      <td style="padding:10px 0;color:#0f172a;font-weight:600;">%s</td>
     </tr>
   </table>
 
-  <div style="border-top:1px solid rgba(255,255,255,0.07);margin:28px 0;"></div>
+  <div style="border-top:1px solid #e2e8f0;margin:24px 0;"></div>
 
   <div style="text-align:center;">
-    <a href="%s" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#10b981,#059669);color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(16,185,129,0.3);">View on Dashboard →</a>
+    <a href="%s" style="display:inline-block;padding:12px 30px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:10px;font-size:13px;font-weight:800;box-shadow:0 4px 12px rgba(5,150,105,0.3);">View on Dashboard →</a>
   </div>
 </td></tr>
 
 <!-- Footer -->
-<tr><td style="background:#0f172a;padding:20px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);">
-  <p style="margin:0;font-size:11px;color:#334155;">This is an automated admin alert from <strong style="color:#10b981;">CostOp</strong>. Do not reply.</p>
+<tr><td style="background-color:#f8fafc;padding:20px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+  <p style="margin:0;font-size:11px;color:#94a3b8;">This is an automated admin notification from <strong style="color:#059669;">CostOp</strong>.</p>
 </td></tr>
 
 </table>
@@ -427,12 +748,12 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 </table>
 </body>
 </html>`,
-		badgeColor, badgeLabel,
+		badgeBg, badgeColor, badgeBorder, badgeLabel,
 		avatarSection,
 		userName, userEmail, userEmail,
 		userName,
 		userEmail,
-		badgeColor, badgeColor, badgeColor, accountType,
+		badgeBg, badgeColor, badgeBorder, accountType,
 		now,
 		frontendURL,
 	)
@@ -460,4 +781,380 @@ func nowIST() string {
 	}
 	return time.Now().In(loc).Format("02 Jan 2006, 03:04 PM IST")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment & Subscription Emails
+// ─────────────────────────────────────────────────────────────────────────────
+
+// SendPaymentSuccessEmail dispatches a high-conversion, beautifully formatted receipt
+// and feature activation email when a user upgrades to CostOp Pro.
+func SendPaymentSuccessEmail(toEmail, userName, planName, billingInterval string, amountPaid float64, paymentID string) error {
+	apiKey := config.ResendAPIKey
+	if apiKey == "" {
+		return fmt.Errorf("RESEND_API_KEY is not set in environment")
+	}
+
+	client := resend.NewClient(apiKey)
+	frontendURL := config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://costop1.vercel.app"
+	}
+
+	billingCycleLabel := "Monthly Subscription"
+	if billingInterval == "yearly" || billingInterval == "annual" {
+		billingCycleLabel = "Annual Subscription (Billed Yearly)"
+	}
+
+	dateStr := nowIST()
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Payment Successful - Welcome to CostOp Pro</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
+<tr><td align="center">
+<!-- Main Card Container -->
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
+
+  <!-- Header Banner -->
+  <tr>
+    <td style="background-color:#ffffff;padding:36px 36px 28px;text-align:center;border-bottom:1px solid #f1f5f9;">
+      <!-- Logo matching website -->
+      <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+        <tr>
+          <td valign="middle">
+            <div style="width:36px;height:36px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#059669;display:inline-block;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:10px;">
+            <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#059669;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:20px;">Spend Optimization Platform</div>
+
+      <!-- Status Badge -->
+      <div style="display:inline-block;padding:6px 16px;border-radius:9999px;background-color:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:16px;">
+        ✓ PAYMENT CONFIRMED • PRO ACTIVATED
+      </div>
+
+      <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;line-height:1.3;">Welcome to CostOp Pro, %s! 🚀</h1>
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;max-width:480px;display:inline-block;">Your workspace has been upgraded with expanded team limits, executive reporting, and automated Slack alerts.</p>
+    </td>
+  </tr>
+
+  <!-- Body Content -->
+  <tr>
+    <td style="background-color:#ffffff;padding:32px 36px 36px;">
+
+      <!-- Transaction Receipt Card -->
+      <div style="background-color:#f8fafc;border-radius:18px;border:1px solid #e2e8f0;padding:22px;margin-bottom:30px;">
+        <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+          <tr>
+            <td>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;">
+                Transaction Receipt
+              </span>
+            </td>
+            <td align="right">
+              <span style="font-size:11px;font-weight:700;color:#059669;background-color:#ecfdf5;padding:3px 8px;border-radius:6px;border:1px solid #a7f3d0;">
+                Razorpay Verified
+              </span>
+            </td>
+          </tr>
+        </table>
+
+        <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#334155;">
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Plan</td>
+            <td style="padding:7px 0;text-align:right;font-weight:700;color:#0f172a;">CostOp Pro Workspace</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Billing Cycle</td>
+            <td style="padding:7px 0;text-align:right;font-weight:600;color:#334155;">%s</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Amount Paid</td>
+            <td style="padding:7px 0;text-align:right;font-size:18px;font-weight:900;color:#059669;">₹%.2f</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Payment ID</td>
+            <td style="padding:7px 0;text-align:right;">
+              <code style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#0f172a;background-color:#e2e8f0;padding:3px 6px;border-radius:6px;">%s</code>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Date & Time</td>
+            <td style="padding:7px 0;text-align:right;color:#334155;font-weight:500;">%s</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Status</td>
+            <td style="padding:7px 0;text-align:right;color:#059669;font-weight:800;">Completed (256-Bit SSL)</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Pro Capabilities Title -->
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:16px;">
+        Unlocked Pro Capabilities
+      </div>
+
+      <!-- Feature 1 -->
+      <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;">
+        <tr>
+          <td width="52" style="padding:14px 0 14px 16px;" valign="middle">
+            <div style="width:34px;height:34px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:34px;font-size:16px;">👥</div>
+          </td>
+          <td style="padding:14px 16px 14px 10px;" valign="middle">
+            <strong style="color:#0f172a;font-size:13px;display:block;">100 Active Team Seats</strong>
+            <span style="font-size:12px;color:#64748b;line-height:1.4;">Collaborate across teams with expanded seat quota without invite limits.</span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Feature 2 -->
+      <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;">
+        <tr>
+          <td width="52" style="padding:14px 0 14px 16px;" valign="middle">
+            <div style="width:34px;height:34px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:34px;font-size:16px;">📊</div>
+          </td>
+          <td style="padding:14px 16px 14px 10px;" valign="middle">
+            <strong style="color:#0f172a;font-size:13px;display:block;">Monthly Executive Spend Reports (CSV & PDF)</strong>
+            <span style="font-size:12px;color:#64748b;line-height:1.4;">One-click executive spend digests ready for finance audits and board reviews.</span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Feature 3 -->
+      <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;">
+        <tr>
+          <td width="52" style="padding:14px 0 14px 16px;" valign="middle">
+            <div style="width:34px;height:34px;border-radius:10px;background-color:#ecfdf5;border:1px solid #a7f3d0;text-align:center;line-height:34px;font-size:16px;">💬</div>
+          </td>
+          <td style="padding:14px 16px 14px 10px;" valign="middle">
+            <strong style="color:#0f172a;font-size:13px;display:block;">Slack Webhook Renewal Alerts</strong>
+            <span style="font-size:12px;color:#64748b;line-height:1.4;">Configure real-time renewal alerts in Settings to notify team channels before charges.</span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA Button matching website -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="%s/home" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Open Pro Workspace Dashboard →</a>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
+
+      <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
+        Need an official GST Invoice or have questions regarding this charge?<br/>
+        Reply directly to this email or contact us at <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp Technologies Inc. • Secured by Razorpay 256-bit SSL</p>
+      <p style="margin:0;font-size:11px;color:#94a3b8;">All prices in INR (₹). Manage your subscription and quota anytime in Workspace Settings.</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
+		userName,
+		billingCycleLabel,
+		amountPaid,
+		paymentID,
+		dateStr,
+		frontendURL,
+	)
+
+	params := &resend.SendEmailRequest{
+		From:    "CostOp Billing <help@costop.in>",
+		To:      []string{toEmail},
+		Subject: fmt.Sprintf("🎉 Payment Confirmed: Welcome to CostOp Pro, %s!", userName),
+		Html:    htmlBody,
+	}
+
+	_, err := client.Emails.Send(params)
+	if err != nil {
+		fmt.Printf("[EMAIL ERROR] SendPaymentSuccessEmail error: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+// SendPaymentFailedEmail dispatches an empathetic, action-oriented alert email
+// when a user's transaction cannot be completed, providing clear retry instructions.
+func SendPaymentFailedEmail(toEmail, userName, planName string, amountAttempted float64, failureReason string) error {
+	apiKey := config.ResendAPIKey
+	if apiKey == "" {
+		return fmt.Errorf("RESEND_API_KEY is not set in environment")
+	}
+
+	client := resend.NewClient(apiKey)
+	frontendURL := config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "https://costop1.vercel.app"
+	}
+
+	dateStr := nowIST()
+	if failureReason == "" {
+		failureReason = "Transaction was declined by bank or timed out"
+	}
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Payment Unsuccessful - CostOp Pro Upgrade</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f0f5;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f5;padding:40px 16px;">
+<tr><td align="center">
+<!-- Main Card Container -->
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);border:1px solid #e2e8f0;">
+
+  <!-- Header Banner -->
+  <tr>
+    <td style="background-color:#ffffff;padding:36px 36px 28px;text-align:center;border-bottom:1px solid #f1f5f9;">
+      <!-- Logo matching website -->
+      <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;">
+        <tr>
+          <td valign="middle">
+            <div style="width:36px;height:36px;border-radius:10px;background-color:#fef2f2;border:1px solid #fecaca;text-align:center;line-height:36px;font-size:18px;font-weight:900;color:#ef4444;display:inline-block;">$</div>
+          </td>
+          <td valign="middle" style="padding-left:10px;">
+            <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;color:#0f172a;">Cost<span style="color:#ef4444;">Op</span></span>
+          </td>
+        </tr>
+      </table>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:20px;">Spend Optimization Platform</div>
+
+      <!-- Warning Badge -->
+      <div style="display:inline-block;padding:6px 16px;border-radius:9999px;background-color:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:16px;">
+        ⚠️ PAYMENT ATTEMPT UNSUCCESSFUL
+      </div>
+
+      <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;line-height:1.3;">Your payment could not be processed</h1>
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;max-width:480px;display:inline-block;">Hi %s, we noticed an issue completing your upgrade to CostOp Pro.</p>
+    </td>
+  </tr>
+
+  <!-- Body Content -->
+  <tr>
+    <td style="background-color:#ffffff;padding:32px 36px 36px;">
+
+      <!-- Failure Details Card -->
+      <div style="background-color:#f8fafc;border-radius:18px;border:1px solid #e2e8f0;padding:22px;margin-bottom:26px;">
+        <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+          <tr>
+            <td>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;">
+                Attempt Details
+              </span>
+            </td>
+            <td align="right">
+              <span style="font-size:11px;font-weight:700;color:#dc2626;background-color:#fef2f2;padding:3px 8px;border-radius:6px;border:1px solid #fecaca;">
+                Payment Failed
+              </span>
+            </td>
+          </tr>
+        </table>
+
+        <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#334155;">
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Plan Attempted</td>
+            <td style="padding:7px 0;text-align:right;font-weight:700;color:#0f172a;">CostOp Pro Workspace</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Amount</td>
+            <td style="padding:7px 0;text-align:right;font-size:16px;font-weight:800;color:#0f172a;">₹%.2f</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Reason</td>
+            <td style="padding:7px 0;text-align:right;color:#dc2626;font-weight:700;font-size:13px;">%s</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;color:#64748b;">Time</td>
+            <td style="padding:7px 0;text-align:right;color:#334155;font-weight:500;">%s</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Reassurance Box -->
+      <div style="background-color:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:18px;margin-bottom:26px;">
+        <div style="font-size:13px;font-weight:800;color:#065f46;margin-bottom:4px;">No funds were charged</div>
+        <p style="margin:0;font-size:12px;color:#047857;line-height:1.6;">
+          Don't worry — your bank account or card was not debited. Your CostOp workspace remains completely secure on the Free plan, and all your existing subscriptions and team data are safe.
+        </p>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:12px;">
+        Alternative Payment Methods Available
+      </div>
+
+      <div style="background-color:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;padding:16px;margin-bottom:28px;font-size:13px;color:#334155;line-height:1.8;">
+        • <strong>UPI QR or App:</strong> Google Pay, PhonePe, Paytm, BHIM<br/>
+        • <strong>Cards:</strong> Any Visa, Mastercard, RuPay, or Corporate Card<br/>
+        • <strong>Net Banking:</strong> All major Indian banks supported
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="%s/billing" style="display:inline-block;padding:15px 38px;background-color:#059669;background-image:linear-gradient(135deg,#059669 0%%,#047857 100%%);color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 4px 14px rgba(5,150,105,0.35);letter-spacing:0.2px;">Retry Upgrade on Billing Page →</a>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:20px;"></div>
+
+      <p style="margin:0;font-size:12px;color:#64748b;text-align:center;line-height:1.6;">
+        Need help with checkout? Reply directly to this email or write to<br/>
+        <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;font-weight:700;">help@costop.in</a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© 2026 CostOp Technologies Inc. • Secured by Razorpay</p>
+      <p style="margin:0;font-size:11px;color:#94a3b8;">This is an automated transaction notification regarding your CostOp workspace.</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
+		userName,
+		amountAttempted,
+		failureReason,
+		dateStr,
+		frontendURL,
+	)
+
+	params := &resend.SendEmailRequest{
+		From:    "CostOp Billing <help@costop.in>",
+		To:      []string{toEmail},
+		Subject: fmt.Sprintf("Action Required: Payment could not be processed for CostOp Pro"),
+		Html:    htmlBody,
+	}
+
+	_, err := client.Emails.Send(params)
+	if err != nil {
+		fmt.Printf("[EMAIL ERROR] SendPaymentFailedEmail error: %v\n", err)
+		return err
+	}
+	return nil
+}
+
 

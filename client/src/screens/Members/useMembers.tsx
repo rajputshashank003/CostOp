@@ -22,6 +22,9 @@ const useMembers = () => {
     const [invites, setInvites] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [allowMemberInvites, setAllowMemberInvites] = useState(false);
+    const [plan, setPlan] = useState<'free' | 'pro'>('free');
+    const [memberLimit, setMemberLimit] = useState(30);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // Invite form state
     const [inviteEmail, setInviteEmail] = useState("");
@@ -38,6 +41,8 @@ const useMembers = () => {
                 : await membersApi.get_by_team(selectedTeamId, debouncedSearchQuery, subscriptionFilter);
             setMembers(data.members || []);
             setInvites(data.invites || []);
+            if (data.plan) setPlan(data.plan);
+            if (data.member_limit) setMemberLimit(data.member_limit);
         } catch (err) {
             console.error(err);
         } finally {
@@ -58,7 +63,11 @@ const useMembers = () => {
             setInviteDesignation("");
             fetchRoster();
         } catch (err: any) {
-            toast.error(err.response?.data?.error || "Failed to send invitation.");
+            const errorMsg = err.response?.data?.error || "Failed to send invitation.";
+            toast.error(errorMsg);
+            if (err.response?.data?.code === 'PLAN_LIMIT_REACHED') {
+                setShowUpgradeModal(true);
+            }
         } finally {
             setIsInviting(false);
         }
@@ -168,7 +177,11 @@ const useMembers = () => {
         handleCreateTeam,
         fetchRoster,
         searchQuery, setSearchQuery,
-        subscriptionFilter, setSubscriptionFilter
+        subscriptionFilter, setSubscriptionFilter,
+        plan,
+        memberLimit,
+        showUpgradeModal,
+        setShowUpgradeModal,
     };
 };
 

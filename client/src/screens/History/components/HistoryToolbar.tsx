@@ -4,6 +4,8 @@ import { useContext, useEffect, useState } from "react";
 import HistoryContext from "../context";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
+import ExportReportButton from "../../../components/ExportReport/ExportReportButton";
+import { organizationApi } from "../../../utils/api_request/organization";
 
 export default function HistoryToolbar() {
     const {
@@ -24,19 +26,30 @@ export default function HistoryToolbar() {
         setDateEnd
     } = useContext(HistoryContext);
 
+    const [isPro, setIsPro] = useState(false);
+
+    useEffect(() => {
+        organizationApi.get_details().then((data) => {
+            if (data?.plan) setIsPro(data.plan === 'pro');
+        }).catch(() => {});
+    }, []);
+
     const hasDateFilter = dateStart || dateEnd;
 
     return (
         <div className="flex flex-col gap-3 mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <h3 className="text-lg whitespace-nowrap font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    Archived Subscriptions
-                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">
-                        {size(archived)}
-                    </span>
-                </h3>
+                <div className="flex items-center gap-3">
+                    <h3 className="text-lg whitespace-nowrap font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        Archived Subscriptions
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs font-semibold">
+                            {size(archived)}
+                        </span>
+                    </h3>
+                </div>
 
                 <div className="flex flex-col xl:flex-row items-start xl:items-center gap-3 w-full xl:w-auto mt-2 md:mt-0">
+                    <ExportReportButton isPro={isPro} />
                     <div className="relative w-full xl:w-[220px]">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input

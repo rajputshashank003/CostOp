@@ -48,6 +48,7 @@ func Connect() {
 		&models.SubscriptionRequest{},
 		&models.Alert{},
 		&models.Notification{},
+		&models.Order{},
 	)
 
 	// Add performance indexes for the dashboard hot path

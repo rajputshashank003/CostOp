@@ -33,6 +33,27 @@ func fireSubscriptionAlert(alert models.Alert, sub models.Subscription, offset i
 		}
 	}
 
+	// Pro Tier: Fire alert to Slack if configured
+	if alert.OrgID > 0 {
+		var org models.Organization
+		if err := database.DB.First(&org, alert.OrgID).Error; err == nil {
+			if org.Plan == "pro" && org.SlackWebhookURL != "" {
+				go func(webhook string, s models.Subscription, off int) {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("[SLACK PANIC RECOVERED] %v\n", r)
+						}
+					}()
+					if err := SendSlackAlert(webhook, s, off); err != nil {
+						log.Printf("[SLACK ALERT ERROR] Failed to send alert to Slack: %v\n", err)
+					} else {
+						log.Printf("[SLACK ALERT] Alert successfully sent to Slack for %s\n", s.Name)
+					}
+				}(org.SlackWebhookURL, sub, offset)
+			}
+		}
+	}
+
 	createNotification(alert.UserID, alert.OrgID, &alert.ID, alert.SubscriptionID,
 		title, message, "alert_triggered")
 
@@ -49,6 +70,36 @@ func fireCustomAlert(alert models.Alert, now time.Time) {
 			log.Printf("[CRON ERROR] Failed to send custom alert email to %s (alert %d): %v\n", email, alert.ID, err)
 		} else {
 			log.Printf("[CRON] Custom alert email sent to %s (alert %d)\n", email, alert.ID)
+		}
+	}
+
+	// Pro Tier: Fire custom alert to Slack if configured
+	if alert.OrgID > 0 {
+		var org models.Organization
+		if err := database.DB.First(&org, alert.OrgID).Error; err == nil {
+			if org.Plan == "pro" && org.SlackWebhookURL != "" {
+				go func(webhook string, t, m string) {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("[SLACK PANIC RECOVERED] %v\n", r)
+						}
+					}()
+					payload := map[string]interface{}{
+						"text": fmt.Sprintf("🔔 CostOp Reminder: %s", t),
+						"blocks": []map[string]interface{}{
+							{
+								"type": "header",
+								"text": map[string]string{"type": "plain_text", "text": "🔔 CostOp Custom Reminder"},
+							},
+							{
+								"type": "section",
+								"text": map[string]string{"type": "mrkdwn", "text": fmt.Sprintf("*%s*\n%s", t, m)},
+							},
+						},
+					}
+					_ = SendSlackWebhook(webhook, payload)
+				}(org.SlackWebhookURL, title, message)
+			}
 		}
 	}
 

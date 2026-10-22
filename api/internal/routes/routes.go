@@ -22,6 +22,30 @@ func SetupRoutes(r *gin.Engine) {
 			auth.POST("/google", controllers.VerifyGoogleToken)
 		}
 
+		// ── Payment (Razorpay) ────────────────────────────────────────────────
+		payment := api.Group("/payment")
+		{
+			payment.POST("/webhook", controllers.HandleRazorpayWebhook) // Public endpoint for Razorpay webhooks
+
+			paymentProtected := payment.Group("")
+			paymentProtected.Use(middleware.RequireAuth())
+			{
+				paymentProtected.POST("/create-order", controllers.CreateRazorpayOrder)
+				paymentProtected.POST("/verify", controllers.VerifyRazorpayPayment)
+				paymentProtected.GET("/orders", controllers.GetUserOrders)
+			}
+		}
+
+		// ── Organization ──────────────────────────────────────────────────────
+		org := api.Group("/organization")
+		org.Use(middleware.RequireAuth())
+		{
+			org.GET("", controllers.GetOrganization)
+			org.PATCH("/settings", controllers.UpdateOrganizationSettings)
+			org.POST("/upgrade", controllers.UpgradeOrganization)
+			org.POST("/test-slack", controllers.TestSlackWebhook)
+		}
+
 		// ── Teams ─────────────────────────────────────────────────────────────
 		teams := api.Group("/teams")
 		teams.Use(middleware.RequireAuth())
@@ -120,6 +144,13 @@ func SetupRoutes(r *gin.Engine) {
 			insights.GET("/unused-seats", controllers.GetUnusedSeats)
 			insights.GET("/ai", controllers.GetAIInsights)
 			insights.POST("/ai/refresh", controllers.RefreshAIInsights)
+		}
+
+		// ── Reports (Pro Feature) ─────────────────────────────────────────────
+		reports := api.Group("/reports")
+		reports.Use(middleware.RequireAuth())
+		{
+			reports.GET("/monthly", controllers.GetMonthlyReport)
 		}
 
 		// ── Alerts ────────────────────────────────────────────────────────────

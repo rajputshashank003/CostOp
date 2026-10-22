@@ -358,9 +358,19 @@ func GetTeamMembers(c *gin.Context) {
 		}
 	}
 
+	var org models.Organization
+	database.DB.First(&org, user.OrgID)
+	memberLimit := 30
+	if org.Plan == "pro" {
+		memberLimit = 100
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"members": allMembers,
-		"invites": allInvites,
+		"members":      allMembers,
+		"invites":      allInvites,
+		"plan":         org.Plan,
+		"member_limit": memberLimit,
+		"active_count": len(allMembers),
 	})
 }
 
@@ -383,6 +393,29 @@ func InviteMember(c *gin.Context) {
 	if err := database.DB.First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
+	}
+
+	// Enforce active member quota based on organization plan
+	var org models.Organization
+	if err := database.DB.First(&org, user.OrgID).Error; err == nil {
+		var activeMembersCount int64
+		database.DB.Model(&models.User{}).Where("org_id = ? AND deleted_at IS NULL", user.OrgID).Count(&activeMembersCount)
+
+		if org.Plan == "free" && activeMembersCount >= 30 {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Free plan is limited to 30 active team members. Upgrade to Pro to add up to 100 members.",
+				"code":  "PLAN_LIMIT_REACHED",
+			})
+			return
+		}
+
+		if org.Plan == "pro" && activeMembersCount >= 100 {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Pro plan limit of 100 active team members reached.",
+				"code":  "PLAN_LIMIT_REACHED",
+			})
+			return
+		}
 	}
 
 	// Resolve target team

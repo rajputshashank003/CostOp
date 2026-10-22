@@ -5,13 +5,18 @@ import useSettings from "./useSettings";
 import SettingsHeader from "./components/SettingsHeader";
 import WorkspaceProfileCard from "./components/WorkspaceProfileCard";
 import SecurityCard from "./components/SecurityCard";
+import BillingCard from "./components/BillingCard";
+import SlackIntegrationCard from "./components/SlackIntegrationCard";
 
 const SettingsComp = () => {
     const {
         isLoading, isFetching,
         teamName, setTeamName,
         allowInvites, setAllowInvites,
+        slackWebhookUrl, setSlackWebhookUrl,
+        orgDetails, isPro,
         isSaving, handleSave,
+        refreshOrgDetails,
     } = useContext(SettingsContext);
 
     if (isLoading || isFetching) {
@@ -31,9 +36,11 @@ const SettingsComp = () => {
             <main className="flex-1 flex flex-col h-screen overflow-y-auto">
                 <SettingsHeader />
                 <div className="p-4 sm:p-8 max-w-4xl w-full mx-auto">
+                    <BillingCard orgDetails={orgDetails} onUpgradeSuccess={refreshOrgDetails} />
                     <WorkspaceProfileCard teamName={teamName} setTeamName={setTeamName} />
+                    <SlackIntegrationCard isPro={isPro} webhookUrl={slackWebhookUrl} setWebhookUrl={setSlackWebhookUrl} />
                     <SecurityCard allowInvites={allowInvites} setAllowInvites={setAllowInvites} />
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pb-8">
                         <button
                             onClick={handleSave}
                             disabled={isSaving}

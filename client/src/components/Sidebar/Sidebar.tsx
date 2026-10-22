@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Settings, LogOut, Receipt, History as HistoryIcon, Users, Inbox } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Receipt, History as HistoryIcon, Users, Inbox, CreditCard, ReceiptText } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,6 +51,14 @@ export default function Sidebar() {
                 <MotionLink whileTap={{ scale: 0.98 }} to="/profile" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/profile' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
                     <motion.div className="group-hover:scale-110 transition-transform"><Users size={20} /></motion.div>
                     Profile
+                </MotionLink>
+                <MotionLink whileTap={{ scale: 0.98 }} to="/billing" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/billing' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    <motion.div className="group-hover:scale-110 transition-transform"><CreditCard size={20} /></motion.div>
+                    Billing
+                </MotionLink>
+                <MotionLink whileTap={{ scale: 0.98 }} to="/orders" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/orders' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    <motion.div className="group-hover:scale-110 transition-transform"><ReceiptText size={20} /></motion.div>
+                    Orders
                 </MotionLink>
 
                 {user?.is_admin && (

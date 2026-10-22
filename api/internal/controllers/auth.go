@@ -50,6 +50,26 @@ func VerifyGoogleToken(c *gin.Context) {
 	var hasInvite bool = false
 	if req.InviteToken != "" {
 		if err := database.DB.Where("token = ? AND status = ?", req.InviteToken, "pending").First(&invite).Error; err == nil {
+			// Verify target organization has capacity
+			var inviteTeam models.Team
+			if err := database.DB.First(&inviteTeam, invite.TeamID).Error; err == nil {
+				var org models.Organization
+				if err := database.DB.First(&org, inviteTeam.OrgID).Error; err == nil {
+					var activeCount int64
+					database.DB.Model(&models.User{}).Where("org_id = ? AND deleted_at IS NULL", org.ID).Count(&activeCount)
+					limit := 30
+					if org.Plan == "pro" {
+						limit = 100
+					}
+					if int(activeCount) >= limit {
+						c.JSON(http.StatusForbidden, gin.H{
+							"error": "This workspace has reached its member limit. Please ask an administrator to upgrade the workspace plan.",
+							"code":  "PLAN_LIMIT_REACHED",
+						})
+						return
+					}
+				}
+			}
 			hasInvite = true
 		}
 	}

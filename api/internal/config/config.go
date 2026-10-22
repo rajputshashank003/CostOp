@@ -27,6 +27,11 @@ var (
 	HealthURLs    string
 	HealthWait    string
 	RunUptimeCron bool
+
+	// Razorpay
+	RazorpayKeyID         string
+	RazorpayKeySecret     string
+	RazorpayWebhookSecret string
 )
 
 // Load initializes all environment variables natively into the Go process.
@@ -45,6 +50,10 @@ func Load() {
 	HealthURLs = os.Getenv("URL")
 	HealthWait = getEnvOrDefault("HEALTH_WAIT", "8")
 	RunUptimeCron = os.Getenv("RUN_UPTIME_CRON") == "true"
+
+	RazorpayKeyID = getEnvOrDefault("RAZORPAY_KEY_ID", "rzp_test_Tr306sywUEBzzY")
+	RazorpayKeySecret = getEnvOrDefault("RAZORPAY_KEY_SECRET", "aUfXOSRzFnsxRkt28CAG23x5")
+	RazorpayWebhookSecret = getEnvOrDefault("RAZORPAY_WEBHOOK_SECRET", "costop_razorpay_secret_2026")
 }
 
 func getEnvOrDefault(key, fallback string) string {

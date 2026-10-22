@@ -15,6 +15,8 @@ const AddSubscription = lazy(() => import("./screens/AddSubscription/AddSubscrip
 const Profile = lazy(() => import("./screens/Profile/Profile"));
 const Onboarding = lazy(() => import("./screens/Onboarding/Onboarding"));
 const Settings = lazy(() => import("./screens/Settings/Settings"));
+const Billing = lazy(() => import("./screens/Billing/Billing"));
+const Orders = lazy(() => import("./screens/Orders/Orders"));
 const Terms = lazy(() => import("./screens/Terms/Terms"));
 const Privacy = lazy(() => import("./screens/Privacy/Privacy"));
 
@@ -58,6 +60,8 @@ function App() {
                     <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                    <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+                    <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                 </Routes>
             </Suspense>
             <Toaster
