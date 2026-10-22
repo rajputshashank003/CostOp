@@ -33,46 +33,37 @@ export default function useBilling() {
     }, [fetchOrgDetails]);
 
     const handleUpgrade = async () => {
-        if (isPro) {
-            toast("Your workspace is already on the Pro plan!", { icon: "✨" });
-            return;
-        }
-
-        setIsUpgrading(true);
-        try {
-            await startRazorpayCheckout({
-                userEmail: user?.email,
-                userName: user?.name,
-                interval: billingInterval,
-                onSuccess: () => {
-                    setIsUpgrading(false);
-                    fetchOrgDetails();
-                },
-                onError: () => {
-                    setIsUpgrading(false);
-                },
-            });
-        } catch (err: any) {
-            setIsUpgrading(false);
-            console.error("Checkout initiation failed:", err);
-        }
+        toast("This feature is currently under maintenance. Please try again later.", {
+            icon: "🔧",
+            duration: 4000,
+            style: {
+                borderRadius: '16px',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+                fontSize: '13px',
+                fontWeight: '600',
+                padding: '12px 16px',
+            },
+        });
     };
 
     const handleDirectTestUpgrade = async () => {
-        if (isPro) {
-            toast("Your workspace is already on the Pro plan!", { icon: "✨" });
-            return;
-        }
-        setIsUpgrading(true);
-        try {
-            await organizationApi.upgrade();
-            toast.success("Workspace upgraded to Pro successfully! (Test Mode)");
-            await fetchOrgDetails();
-        } catch (err: any) {
-            toast.error(err?.response?.data?.error || "Upgrade failed");
-        } finally {
-            setIsUpgrading(false);
-        }
+        toast("This feature is currently under maintenance. Please try again later.", {
+            icon: "🔧",
+            duration: 4000,
+            style: {
+                borderRadius: '16px',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+                fontSize: '13px',
+                fontWeight: '600',
+                padding: '12px 16px',
+            },
+        });
     };
 
     return {

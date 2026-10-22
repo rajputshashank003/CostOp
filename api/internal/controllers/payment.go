@@ -41,9 +41,19 @@ func verifyHMACSignature(data, signature, secret string) bool {
 	return hmac.Equal([]byte(expectedSignature), []byte(signature))
 }
 
+// PaymentMaintenanceMode controls whether Pro checkout is active or under maintenance.
+const PaymentMaintenanceMode = true
+
 // CreateRazorpayOrder generates a checkout order on Razorpay for upgrading to Pro.
 // POST /api/payment/create-order
 func CreateRazorpayOrder(c *gin.Context) {
+	if PaymentMaintenanceMode {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Payment feature is currently under maintenance. Please try again later.",
+		})
+		return
+	}
+
 	userID := c.MustGet("userID").(uint)
 
 	orgID, err := resolveOrgID(userID)

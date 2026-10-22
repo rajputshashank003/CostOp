@@ -228,6 +228,13 @@ func UpdateOrganizationSettings(c *gin.Context) {
 // UpgradeOrganization transitions the organization to the Pro plan (Admin only).
 // POST /api/organization/upgrade
 func UpgradeOrganization(c *gin.Context) {
+	if PaymentMaintenanceMode {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Payment feature is currently under maintenance. Please try again later.",
+		})
+		return
+	}
+
 	userID := c.MustGet("userID").(uint)
 
 	orgID, err := resolveOrgID(userID)

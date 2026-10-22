@@ -65,3 +65,4 @@ client/.env.*.local
 *.gz
 
 /docs_costOp
+.agents/
