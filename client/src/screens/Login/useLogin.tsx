@@ -8,6 +8,13 @@ import { useEffect, useState } from "react";
 const useLogin = () => {
     const { login, user } = useUser();
     const [loggingIn, setLoggingIn] = useState(false);
+    const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -22,11 +29,61 @@ const useLogin = () => {
                 // Wipe token after it has been safely deployed!
                 sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);
             }
-        } catch (err) {
-            // Global error mapping is handled natively by utils/api_request/utils.ts
+        } catch (err: any) {
+            setErrorMessage(err?.response?.data?.error || "Google authentication failed");
         } finally {
             setLoggingIn(false);
         }
+    };
+
+    const handleEmailSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMessage('');
+
+        const cleanEmail = email.trim();
+        const cleanPassword = password.trim();
+        const cleanName = name.trim();
+
+        if (!cleanEmail || !cleanPassword) {
+            setErrorMessage("Please enter both email and password.");
+            return;
+        }
+
+        if (authMode === 'signup' && !cleanName) {
+            setErrorMessage("Please enter your full name.");
+            return;
+        }
+
+        if (authMode === 'signup' && cleanPassword.length < 6) {
+            setErrorMessage("Password must be at least 6 characters.");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const inviteToken = sessionStorage.getItem(SESSION_STORAGE.INVITE_TOKEN) || undefined;
+            let data;
+            if (authMode === 'signup') {
+                data = await authApi.signup_with_email(cleanName, cleanEmail, cleanPassword, inviteToken);
+            } else {
+                data = await authApi.login_with_email(cleanEmail, cleanPassword);
+            }
+
+            login(data.token, data.user, data.is_admin ?? false);
+            sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || (authMode === 'signup' ? "Failed to create account. Please try again." : "Invalid email or password.");
+            setErrorMessage(msg);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const fillDemoCredentials = () => {
+        setAuthMode('login');
+        setEmail('demo@costop.in');
+        setPassword('demo@123');
+        setErrorMessage('');
     };
 
     useEffect(() => {
@@ -39,12 +96,31 @@ const useLogin = () => {
         if (urlToken) {
             sessionStorage.setItem(SESSION_STORAGE.INVITE_TOKEN, urlToken);
         }
+        const mode = searchParams.get('mode');
+        if (mode === 'signup') {
+            setAuthMode('signup');
+        }
     }, [location.search, user]);
 
     return {
         handleGoogleSuccess,
         loggingIn,
         setLoggingIn,
+        authMode,
+        setAuthMode,
+        name,
+        setName,
+        email,
+        setEmail,
+        password,
+        setPassword,
+        showPassword,
+        setShowPassword,
+        isSubmitting,
+        errorMessage,
+        setErrorMessage,
+        handleEmailSubmit,
+        fillDemoCredentials,
     };
 };
 

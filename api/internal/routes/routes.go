@@ -20,6 +20,8 @@ func SetupRoutes(r *gin.Engine) {
 		auth := api.Group("/auth")
 		{
 			auth.POST("/google", controllers.VerifyGoogleToken)
+			auth.POST("/login", controllers.EmailPasswordLogin)
+			auth.POST("/signup", controllers.EmailPasswordSignup)
 		}
 
 		// ── Payment (Razorpay) ────────────────────────────────────────────────

@@ -51,11 +51,9 @@ func Connect() {
 		&models.Order{},
 	)
 
-	// Add performance indexes for the dashboard hot path
-	// db.Exec("CREATE INDEX IF NOT EXISTS idx_subscriptions_org_status ON subscriptions(org_id, status) WHERE deleted_at IS NULL")
-	// db.Exec("CREATE INDEX IF NOT EXISTS idx_subscription_assignments_sub_id ON subscription_assignments(subscription_id)")
-	// db.Exec("CREATE INDEX IF NOT EXISTS idx_subscription_teams_sub_id ON subscription_teams(subscription_id)")
-	// db.Exec("CREATE INDEX IF NOT EXISTS idx_subscriptions_renewal ON subscriptions(org_id, status, is_auto_pay, next_billing_date) WHERE deleted_at IS NULL")
+	// Allow email/pass users without google_id to coexist without duplicate key error on empty strings
+	db.Exec("DROP INDEX IF EXISTS idx_users_google_id")
+	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id_nonempty ON users(google_id) WHERE google_id IS NOT NULL AND google_id != ''")
 
 	DB = db
 }

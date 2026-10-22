@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"costop/internal/config"
+	"costop/internal/controllers"
 	"costop/internal/database"
 	"costop/internal/routes"
 
@@ -19,6 +20,9 @@ func main() {
 	config.Load()
 
 	database.Connect()
+
+	// Ensure demo verification account exists
+	controllers.EnsureDemoUser()
 
 	r := gin.Default()
 
