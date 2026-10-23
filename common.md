@@ -170,15 +170,23 @@ PORT=8081
 POSTGRES_DSN="host=localhost user=postgres password=postgres dbname=costop port=5432 sslmode=disable"
 JWT_SECRET="your_jwt_secret"
 GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
 RESEND_API_KEY="re_..."
-VITE_FRONTEND_URL="http://localhost:5173"
+GEMINI_API_KEY=""
+FRONTEND_URL="http://localhost:5173"
 RUN_UPTIME_CRON="false"
+ADMIN_EMAIL="admin@example.com"
+RAZORPAY_KEY_ID="rzp_..."
+RAZORPAY_KEY_SECRET="..."
+RAZORPAY_WEBHOOK_SECRET="..."
 ```
 
 ### Frontend (`client/.env`)
 ```env
 VITE_API_URL="http://localhost:8081/api"
 VITE_GOOGLE_CLIENT_ID="your_google_client_id"
+VITE_RAZORPAY_KEY_ID="rzp_..."
+VITE_ADMIN_EMAIL="admin@example.com"
 ```
 
 ---

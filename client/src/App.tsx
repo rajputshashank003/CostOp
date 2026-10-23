@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useUser } from "./hooks/useUser";
+import { isWebsiteAdmin } from "./utils/admin";
 import "./index.css";
 
 const Home = lazy(() => import("./screens/Home/Home"));
@@ -46,7 +47,7 @@ const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
     if (isLoading) return null;
 
-    if (!user || user.email?.toLowerCase() !== "hariomshashank@gmail.com") {
+    if (!user || !isWebsiteAdmin(user.email)) {
         return <Navigate to="/home" replace />;
     }
 

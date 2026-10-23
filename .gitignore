@@ -63,6 +63,10 @@ client/.env.*.local
 *.zip
 *.tar
 *.gz
+*.pem
+*.key
+*.cert
+*.crt
 
 /docs_costOp
 .agents/

@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"costop/internal/config"
@@ -758,9 +759,14 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 		frontendURL,
 	)
 
+	adminRecipient := strings.TrimSpace(config.AdminEmail)
+	if adminRecipient == "" {
+		adminRecipient = "help@costop.in"
+	}
+
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Admin <help@costop.in>",
-		To:      []string{"costop.in@gmail.com"},
+		To:      []string{adminRecipient},
 		Subject: fmt.Sprintf("🚀 New Signup: %s (%s)", userName, userEmail),
 		Html:    htmlBody,
 	}

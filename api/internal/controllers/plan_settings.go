@@ -5,14 +5,21 @@ import (
 	"net/http"
 	"strings"
 
+	"costop/internal/config"
 	"costop/internal/database"
 	"costop/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-// WebsiteAdminEmail defines the single authorized website admin allowed to manage platform plan pricing.
-const WebsiteAdminEmail = "hariomshashank@gmail.com"
+// IsWebsiteAdmin checks if the given user email matches the configured admin email.
+func IsWebsiteAdmin(email string) bool {
+	admin := strings.ToLower(strings.TrimSpace(config.AdminEmail))
+	if admin == "" {
+		return false
+	}
+	return strings.ToLower(strings.TrimSpace(email)) == admin
+}
 
 // GetPublicPricing returns the active plan pricing, discount percentage, and calculated yearly amounts.
 // GET /api/payment/pricing
@@ -60,7 +67,7 @@ func UpdatePlanSettings(c *gin.Context) {
 		return
 	}
 
-	if strings.ToLower(strings.TrimSpace(caller.Email)) != strings.ToLower(WebsiteAdminEmail) {
+	if !IsWebsiteAdmin(caller.Email) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "Access denied: Only website admin can modify plan pricing",
 		})

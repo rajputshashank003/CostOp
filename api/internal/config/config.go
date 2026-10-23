@@ -28,6 +28,9 @@ var (
 	HealthWait    string
 	RunUptimeCron bool
 
+	// Admin
+	AdminEmail string
+
 	// Razorpay
 	RazorpayKeyID         string
 	RazorpayKeySecret     string
@@ -50,6 +53,7 @@ func Load() {
 	HealthURLs = os.Getenv("URL")
 	HealthWait = getEnvOrDefault("HEALTH_WAIT", "8")
 	RunUptimeCron = os.Getenv("RUN_UPTIME_CRON") == "true"
+	AdminEmail = os.Getenv("ADMIN_EMAIL")
 
 	RazorpayKeyID = os.Getenv("RAZORPAY_KEY_ID")
 	RazorpayKeySecret = os.Getenv("RAZORPAY_KEY_SECRET")

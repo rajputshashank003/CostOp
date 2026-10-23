@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { LayoutDashboard, Settings, LogOut, Receipt, History as HistoryIcon, Users, Inbox, CreditCard, ReceiptText, Sliders } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
+import { isWebsiteAdmin } from "../../utils/admin";
 import { motion, AnimatePresence } from "framer-motion";
 
 const MotionLink = motion(Link as any);
@@ -68,7 +69,7 @@ export default function Sidebar() {
                     </MotionLink>
                 )}
 
-                {user?.email?.toLowerCase() === "hariomshashank@gmail.com" && (
+                {isWebsiteAdmin(user?.email) && (
                     <MotionLink
                         whileTap={{ scale: 0.98 }}
                         to="/org-settings"

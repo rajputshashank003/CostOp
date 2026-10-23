@@ -106,8 +106,8 @@ export default function Privacy() {
                                     <Mail size={16} className="text-emerald-600" />
                                     <span>
                                         <strong>Email:</strong>{" "}
-                                        <a href="mailto:hariomshashank@gmail.com" className="text-emerald-600 hover:underline">
-                                            hariomshashank@gmail.com
+                                        <a href="mailto:support@costop.in" className="text-emerald-600 hover:underline">
+                                            support@costop.in
                                         </a>
                                     </span>
                                 </div>

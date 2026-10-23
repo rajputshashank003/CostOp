@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, LogOut, Receipt, History as HistoryIcon, Users, Settings, Menu, X, Inbox, CreditCard, ReceiptText, Sliders } from "lucide-react";
 import { useUser } from "../../hooks/useUser";
+import { isWebsiteAdmin } from "../../utils/admin";
 import { motion, AnimatePresence } from "framer-motion";
 
 const MotionLink = motion(Link as any);
@@ -125,7 +126,7 @@ export default function MobileNav() {
                                 </MotionLink>
                             )}
 
-                            {user?.email?.toLowerCase() === "hariomshashank@gmail.com" && (
+                            {isWebsiteAdmin(user?.email) && (
                                 <MotionLink whileTap={{ scale: 0.98 }} onClick={() => setIsOpen(false)} to="/org-settings" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors group ${location.pathname === '/org-settings' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
                                     <motion.div className="group-hover:scale-110 transition-transform"><Sliders size={20} /></motion.div>
                                     Org Settings

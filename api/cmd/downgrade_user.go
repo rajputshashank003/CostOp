@@ -13,8 +13,7 @@ import (
 // ==============================================================================
 // ENTER USER EMAIL IN THIS VARIABLE TO MOVE THEM TO FREE TIER:
 // ==============================================================================
-var TargetEmail = "hariomshashank@gmail.com"
-// ==============================================================================
+var TargetEmail = ""
 
 func main() {
 	// If an email argument is passed via CLI, it takes precedence (e.g. go run cmd/downgrade_user.go user@example.com)
@@ -24,7 +23,7 @@ func main() {
 
 	TargetEmail = strings.TrimSpace(TargetEmail)
 	if TargetEmail == "" {
-		fmt.Println("❌ Error: TargetEmail variable is empty. Please enter an email.")
+		fmt.Println("❌ Error: TargetEmail variable is empty. Usage: go run cmd/downgrade_user.go <user_email>")
 		return
 	}
 

@@ -236,7 +236,7 @@ func UpgradeOrganization(c *gin.Context) {
 		return
 	}
 
-	if strings.ToLower(strings.TrimSpace(caller.Email)) != strings.ToLower(WebsiteAdminEmail) {
+	if !IsWebsiteAdmin(caller.Email) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Unauthorized: Manual upgrade bypass is restricted to website admin"})
 		return
 	}
