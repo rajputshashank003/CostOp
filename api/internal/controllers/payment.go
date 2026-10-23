@@ -185,6 +185,12 @@ func VerifyRazorpayPayment(c *gin.Context) {
 		return
 	}
 
+	if config.RazorpayKeySecret == "" {
+		log.Println("[RAZORPAY ERROR] Missing RAZORPAY_KEY_SECRET in server environment during verification")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Payment gateway secret not configured on server"})
+		return
+	}
+
 	// Signature verification: HMAC-SHA256(order_id + "|" + payment_id, secret)
 	payloadToSign := input.RazorpayOrderID + "|" + input.RazorpayPaymentID
 	if !verifyHMACSignature(payloadToSign, input.RazorpaySignature, config.RazorpayKeySecret) {
@@ -209,7 +215,7 @@ func VerifyRazorpayPayment(c *gin.Context) {
 
 	// Mark order as paid
 	database.DB.Model(&models.Order{}).
-		Where("razorpay_order_id = ? OR (org_id = ? AND status = 'created')", input.RazorpayOrderID, org.ID).
+		Where("razorpay_order_id = ?", input.RazorpayOrderID).
 		Updates(map[string]interface{}{
 			"status":              "paid",
 			"razorpay_payment_id": input.RazorpayPaymentID,
@@ -291,6 +297,12 @@ func HandleRazorpayWebhook(c *gin.Context) {
 		return
 	}
 
+	if config.RazorpayWebhookSecret == "" {
+		log.Println("[RAZORPAY WEBHOOK ERROR] RAZORPAY_WEBHOOK_SECRET is not configured on server")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Webhook secret not configured"})
+		return
+	}
+
 	// Verify signature using webhook secret
 	if !verifyHMACSignature(string(bodyBytes), signature, config.RazorpayWebhookSecret) {
 		log.Printf("[RAZORPAY WEBHOOK ERROR] Invalid webhook signature\n")
@@ -323,6 +335,20 @@ func HandleRazorpayWebhook(c *gin.Context) {
 	}
 	if targetOrgID == 0 {
 		targetOrgID = extractOrgID(event.Payload.Subscription.Entity.Notes)
+	}
+
+	// Fallback: If notes are absent in webhook payload, resolve org_id from local order record
+	if targetOrgID == 0 {
+		lookupOrderID := event.Payload.Payment.Entity.OrderID
+		if lookupOrderID == "" {
+			lookupOrderID = event.Payload.Order.Entity.ID
+		}
+		if lookupOrderID != "" {
+			var ord models.Order
+			if err := database.DB.Where("razorpay_order_id = ?", lookupOrderID).First(&ord).Error; err == nil && ord.OrgID > 0 {
+				targetOrgID = ord.OrgID
+			}
+		}
 	}
 
 	switch event.Event {

@@ -8,6 +8,10 @@ import (
 	"costop/internal/config"
 	"costop/internal/database"
 	"costop/internal/models"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // ==============================================================================
@@ -28,7 +32,15 @@ func main() {
 	}
 
 	config.Load()
-	database.Connect()
+	db, err := gorm.Open(postgres.Open(config.PostgresDSN), &gorm.Config{
+		PrepareStmt: false,
+		Logger:      logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		fmt.Printf("❌ Failed to connect to PostgreSQL: %v\n", err)
+		return
+	}
+	database.DB = db
 
 	fmt.Printf("\n🔍 Looking up user with email: %s ...\n", TargetEmail)
 
