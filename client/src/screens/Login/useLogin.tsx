@@ -4,6 +4,7 @@ import { CredentialResponse } from "@react-oauth/google";
 import { authApi } from "../../utils/api_request/auth";
 import { SESSION_STORAGE } from "../../utils/constants";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 const useLogin = () => {
     const { login, user } = useUser();
@@ -15,6 +16,8 @@ const useLogin = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [verificationSentEmail, setVerificationSentEmail] = useState<string | null>(null);
+    const [isResending, setIsResending] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -62,21 +65,54 @@ const useLogin = () => {
         try {
             setIsSubmitting(true);
             const inviteToken = sessionStorage.getItem(SESSION_STORAGE.INVITE_TOKEN) || undefined;
-            let data;
             if (authMode === 'signup') {
-                data = await authApi.signup_with_email(cleanName, cleanEmail, cleanPassword, inviteToken);
+                const data = await authApi.signup_with_email(cleanName, cleanEmail, cleanPassword, inviteToken);
+                if (data.requires_verification) {
+                    setVerificationSentEmail(cleanEmail);
+                    return;
+                }
+                if (data.token) {
+                    login(data.token, data.user, data.is_admin ?? false);
+                    sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);
+                }
             } else {
-                data = await authApi.login_with_email(cleanEmail, cleanPassword);
+                const data = await authApi.login_with_email(cleanEmail, cleanPassword);
+                login(data.token, data.user, data.is_admin ?? false);
+                sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);
             }
-
-            login(data.token, data.user, data.is_admin ?? false);
-            sessionStorage.removeItem(SESSION_STORAGE.INVITE_TOKEN);
         } catch (err: any) {
+            if (err?.response?.data?.requires_verification) {
+                setVerificationSentEmail(err.response.data.email || cleanEmail);
+                setErrorMessage('');
+                return;
+            }
             const msg = err?.response?.data?.error || (authMode === 'signup' ? "Failed to create account. Please try again." : "Invalid email or password.");
             setErrorMessage(msg);
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleResendVerification = async (targetEmail?: string) => {
+        const emailToUse = (targetEmail || verificationSentEmail || email).trim();
+        if (!emailToUse) {
+            toast.error("Please provide an email address.");
+            return;
+        }
+        try {
+            setIsResending(true);
+            const res = await authApi.resend_verification(emailToUse);
+            toast.success(res?.message || "Verification link sent! Please check your inbox.");
+        } catch (err: any) {
+            toast.error(err?.response?.data?.error || "Failed to resend verification link.");
+        } finally {
+            setIsResending(false);
+        }
+    };
+
+    const resetVerificationSent = () => {
+        setVerificationSentEmail(null);
+        setErrorMessage('');
     };
 
     useEffect(() => {
@@ -113,6 +149,10 @@ const useLogin = () => {
         errorMessage,
         setErrorMessage,
         handleEmailSubmit,
+        verificationSentEmail,
+        isResending,
+        handleResendVerification,
+        resetVerificationSent,
     };
 };
 

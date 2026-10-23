@@ -19,6 +19,7 @@ const Billing = lazy(() => import("./screens/Billing/Billing"));
 const Orders = lazy(() => import("./screens/Orders/Orders"));
 const Terms = lazy(() => import("./screens/Terms/Terms"));
 const Privacy = lazy(() => import("./screens/Privacy/Privacy"));
+const VerifyEmail = lazy(() => import("./screens/VerifyEmail/VerifyEmail"));
 
 const SuspenseFallback = () => (
     <div className="flex items-center justify-center min-h-screen bg-[#f0f0f5]">
@@ -50,6 +51,7 @@ function App() {
                     <Route path="/terms-and-conditions" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/privacy-policy" element={<Privacy />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                     <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
                     <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />

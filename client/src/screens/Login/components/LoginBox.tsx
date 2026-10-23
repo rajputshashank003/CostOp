@@ -1,5 +1,5 @@
 import { GoogleLogin } from "@react-oauth/google";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail, MailCheck, RefreshCw, ShieldCheck, User as UserIcon } from "lucide-react";
 import { useContext } from "react";
 import { Link } from "react-router-dom";
 import LoginContext from "../context";
@@ -23,9 +23,80 @@ export default function LoginBox() {
         errorMessage,
         setErrorMessage,
         handleEmailSubmit,
+        verificationSentEmail,
+        isResending,
+        handleResendVerification,
+        resetVerificationSent,
     } = useContext(LoginContext);
 
     const isLogin = authMode === 'login';
+
+    if (verificationSentEmail) {
+        return (
+            <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-4 sm:p-8 md:p-12 relative overflow-y-auto min-h-screen">
+                <div className="w-full max-w-md p-6 sm:p-8 md:p-10 bg-white border border-slate-100 rounded-[2rem] shadow-2xl shadow-slate-200/50 relative z-10 my-auto text-center animate-fadeIn">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                        <MailCheck size={36} className="sm:w-10 sm:h-10 stroke-[2.2]" />
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+                        Check your email
+                    </h2>
+
+                    <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-6">
+                        We&apos;ve sent a verification link to:
+                        <br />
+                        <span className="font-bold text-slate-900 break-all">{verificationSentEmail}</span>
+                    </p>
+
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 text-left mb-6 space-y-2">
+                        <p className="font-semibold text-slate-800">What to do next:</p>
+                        <p className="flex items-start gap-2">
+                            <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">1</span>
+                            <span>Click the <strong>Verify My Email</strong> button in the email we sent you.</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                            <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">2</span>
+                            <span>You will be automatically verified and redirected directly to your CostOp dashboard.</span>
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <button
+                            type="button"
+                            onClick={() => handleResendVerification(verificationSentEmail)}
+                            disabled={isResending}
+                            className="w-full h-11 sm:h-12 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 text-xs sm:text-sm"
+                        >
+                            {isResending ? (
+                                <>
+                                    <RefreshCw size={16} className="animate-spin" />
+                                    <span>Sending new link...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw size={16} />
+                                    <span>Resend verification link</span>
+                                </>
+                            )}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={resetVerificationSent}
+                            className="w-full h-10 text-slate-600 hover:text-slate-900 font-semibold rounded-xl transition-colors text-xs sm:text-sm flex items-center justify-center cursor-pointer"
+                        >
+                            &larr; Back to Sign In
+                        </button>
+                    </div>
+
+                    <p className="mt-6 text-[11px] text-slate-400">
+                        Can&apos;t find it? Check your Spam or Junk folder.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

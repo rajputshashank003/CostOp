@@ -12,10 +12,13 @@ type User struct {
 	Name          string         `json:"name"`
 	AvatarURL     string         `json:"avatar_url"`
 	GoogleID      string         `gorm:"index" json:"google_id"`
-	PasswordHash  string         `json:"-"`
-	OrgID         uint           `gorm:"index" json:"org_id"`
-	DefaultTeamID uint           `json:"default_team_id"`
-	IsOnboarded   bool           `gorm:"default:false" json:"is_onboarded"`
+	PasswordHash         string         `json:"-"`
+	IsEmailVerified      bool           `gorm:"default:false" json:"is_email_verified"`
+	EmailVerifyToken     string         `gorm:"index" json:"-"`
+	EmailVerifyExpiresAt *time.Time     `json:"-"`
+	OrgID                uint           `gorm:"index" json:"org_id"`
+	DefaultTeamID        uint           `json:"default_team_id"`
+	IsOnboarded          bool           `gorm:"default:false" json:"is_onboarded"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`

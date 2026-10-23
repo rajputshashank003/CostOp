@@ -54,6 +54,7 @@ func Connect() {
 	// Allow email/pass users without google_id to coexist without duplicate key error on empty strings
 	db.Exec("DROP INDEX IF EXISTS idx_users_google_id")
 	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id_nonempty ON users(google_id) WHERE google_id IS NOT NULL AND google_id != ''")
+	db.Exec("UPDATE users SET is_email_verified = true WHERE is_email_verified IS NULL OR email = 'demo@costop.in'")
 
 	DB = db
 }

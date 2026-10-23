@@ -45,7 +45,7 @@ func Load() {
 	GoogleClientID = os.Getenv("GOOGLE_CLIENT_ID")
 	ResendAPIKey = os.Getenv("RESEND_API_KEY")
 	GeminiAPIKey = os.Getenv("GEMINI_API_KEY")
-	FrontendURL = getEnvOrDefault("VITE_FRONTEND_URL", "http://localhost:5173")
+	FrontendURL = getEnvOrDefault("FRONTEND_URL", getEnvOrDefault("VITE_FRONTEND_URL", "http://localhost:5173"))
 	Port = getEnvOrDefault("PORT", "8081")
 	HealthURLs = os.Getenv("URL")
 	HealthWait = getEnvOrDefault("HEALTH_WAIT", "8")

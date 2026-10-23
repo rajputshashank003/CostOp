@@ -22,6 +22,8 @@ func SetupRoutes(r *gin.Engine) {
 			auth.POST("/google", controllers.VerifyGoogleToken)
 			auth.POST("/login", controllers.EmailPasswordLogin)
 			auth.POST("/signup", controllers.EmailPasswordSignup)
+			auth.POST("/verify-email", controllers.VerifyEmail)
+			auth.POST("/resend-verification", controllers.ResendVerificationEmail)
 		}
 
 		// ── Payment (Razorpay) ────────────────────────────────────────────────

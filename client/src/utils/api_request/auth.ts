@@ -22,5 +22,19 @@ export const authApi = {
             method: METHODS.POST,
             data: { name, email, password, invite_token: inviteToken }
         });
+    },
+    verify_email: (token: string) => {
+        return utils.request({
+            url: `/auth/verify-email`,
+            method: METHODS.POST,
+            data: { token }
+        });
+    },
+    resend_verification: (email: string) => {
+        return utils.request({
+            url: `/auth/resend-verification`,
+            method: METHODS.POST,
+            data: { email }
+        });
     }
 };

@@ -1157,4 +1157,110 @@ func SendPaymentFailedEmail(toEmail, userName, planName string, amountAttempted 
 	return nil
 }
 
+// SendVerificationEmail sends a modern branded email with an activation link for newly registered accounts.
+func SendVerificationEmail(toEmail, userName, verifyURL string) error {
+	apiKey := config.ResendAPIKey
+	if apiKey == "" {
+		return fmt.Errorf("RESEND_API_KEY is not set in environment")
+	}
+
+	client := resend.NewClient(apiKey)
+
+	displayName := userName
+	if displayName == "" {
+		displayName = "there"
+	}
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Verify your CostOp account</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:40px 16px;">
+<tr><td align="center">
+<table width="100%%" border="0" cellpadding="0" cellspacing="0" style="max-width:540px;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.05);border:1px solid #e2e8f0;">
+
+  <!-- Emerald Brand Header -->
+  <tr>
+    <td style="background:linear-gradient(135deg, #059669 0%%, #10b981 100%%);padding:36px 36px 30px;text-align:center;">
+      <div style="display:inline-block;background-color:#ffffff;border-radius:16px;padding:12px;margin-bottom:14px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+      </div>
+      <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">CostOp</h1>
+      <p style="margin:6px 0 0;font-size:13px;color:#d1fae5;font-weight:500;">SaaS Spend Optimization & Tracking</p>
+    </td>
+  </tr>
+
+  <!-- Main Content Card -->
+  <tr>
+    <td style="padding:36px 36px 28px;">
+      <h2 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;">Verify your email address</h2>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#475569;">
+        Hi <strong>%s</strong>,
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#475569;">
+        Thanks for signing up for CostOp! Please confirm your email address by clicking the button below to activate your account and start tracking your software costs.
+      </p>
+
+      <!-- Primary Action CTA Button -->
+      <table width="100%%" border="0" cellpadding="0" cellspacing="0" style="margin:30px 0;">
+        <tr>
+          <td align="center">
+            <a href="%s" target="_blank" style="display:inline-block;background-color:#059669;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:15px 36px;border-radius:14px;box-shadow:0 4px 16px rgba(5,150,105,0.3);letter-spacing:-0.01em;">
+              Verify My Email &rarr;
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0 0 20px;font-size:13px;color:#64748b;line-height:1.5;text-align:center;">
+        This link will expire in <strong>24 hours</strong>. If you did not create a CostOp account, no further action is required.
+      </p>
+
+      <!-- Fallback Raw Link Box -->
+      <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-top:24px;">
+        <p style="margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:0.05em;">Button not working? Copy and paste this URL into your browser:</p>
+        <p style="margin:0;font-size:12px;color:#059669;word-break:break-all;font-family:monospace;">
+          <a href="%s" style="color:#059669;text-decoration:none;">%s</a>
+        </p>
+      </div>
+    </td>
+  </tr>
+
+  <!-- Professional Light Footer -->
+  <tr>
+    <td style="background-color:#f8fafc;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">© %d CostOp · All rights reserved</p>
+      <p style="margin:0;font-size:11px;color:#94a3b8;">Need assistance? Reply directly or email <a href="mailto:help@costop.in" style="color:#059669;text-decoration:none;">help@costop.in</a></p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`, displayName, verifyURL, verifyURL, verifyURL, time.Now().Year())
+
+	params := &resend.SendEmailRequest{
+		From:    "CostOp <help@costop.in>",
+		To:      []string{toEmail},
+		Subject: "Verify your email address for CostOp",
+		Html:    htmlBody,
+	}
+
+	_, err := client.Emails.Send(params)
+	if err != nil {
+		fmt.Printf("[EMAIL ERROR] SendVerificationEmail error: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+
 

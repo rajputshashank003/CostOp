@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -96,10 +99,11 @@ func VerifyGoogleToken(c *gin.Context) {
 
 	if user.ID == 0 {
 		user = models.User{
-			Email:     email,
-			Name:      name,
-			GoogleID:  googleID,
-			AvatarURL: avatarURL,
+			Email:           email,
+			Name:            name,
+			GoogleID:        googleID,
+			AvatarURL:       avatarURL,
+			IsEmailVerified: true,
 		}
 		if hasInvite {
 			user.DefaultTeamID = invite.TeamID
@@ -161,6 +165,7 @@ func VerifyGoogleToken(c *gin.Context) {
 		if user.GoogleID == "" {
 			user.GoogleID = googleID
 		}
+		user.IsEmailVerified = true
 		database.DB.Save(&user)
 	}
 
@@ -251,6 +256,15 @@ func EmailPasswordLogin(c *gin.Context) {
 		return
 	}
 
+	if !user.IsEmailVerified && strings.ToLower(user.Email) != "demo@costop.in" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":                 "Please verify your email address to log in. We sent a verification link to your email.",
+			"requires_verification": true,
+			"email":                 user.Email,
+		})
+		return
+	}
+
 	isAdmin := uwr.Role == "owner"
 
 	secret := config.JWTSecret
@@ -334,10 +348,16 @@ func EmailPasswordSignup(c *gin.Context) {
 		}
 	}
 
+	verifyToken := generateSecureToken()
+	expiresAt := time.Now().Add(24 * time.Hour)
+
 	user := models.User{
-		Email:        cleanEmail,
-		Name:         cleanName,
-		PasswordHash: string(hashedPassword),
+		Email:                cleanEmail,
+		Name:                 cleanName,
+		PasswordHash:         string(hashedPassword),
+		IsEmailVerified:      false,
+		EmailVerifyToken:     verifyToken,
+		EmailVerifyExpiresAt: &expiresAt,
 	}
 	if hasInvite {
 		user.DefaultTeamID = invite.TeamID
@@ -348,7 +368,6 @@ func EmailPasswordSignup(c *gin.Context) {
 		return
 	}
 
-	isAdmin := false
 	if hasInvite {
 		var inviteTeam models.Team
 		database.DB.First(&inviteTeam, invite.TeamID)
@@ -358,7 +377,6 @@ func EmailPasswordSignup(c *gin.Context) {
 		database.DB.Model(&invite).Update("status", "accepted")
 		user.IsOnboarded = true
 		database.DB.Save(&user)
-		isAdmin = false
 	} else {
 		newOrg := models.Organization{Name: user.Name + "'s Organization", OwnerID: user.ID}
 		database.DB.Create(&newOrg)
@@ -368,10 +386,79 @@ func EmailPasswordSignup(c *gin.Context) {
 		user.DefaultTeamID = newTeam.ID
 		user.OrgID = newOrg.ID
 		database.DB.Save(&user)
-		isAdmin = true
 	}
 
-	// Async welcome emails
+	// Dispatch email verification link asynchronously via Resend
+	frontendURL := config.FrontendURL
+	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", frontendURL, verifyToken)
+	go func(toEmail, toName, vURL string) {
+		_ = services.SendVerificationEmail(toEmail, toName, vURL)
+	}(user.Email, user.Name, verifyURL)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":               "Account created! Please check your email to verify your account.",
+		"requires_verification": true,
+		"email":                 user.Email,
+	})
+}
+
+// ── Email Verification Endpoints ──────────────────────────────────────────────
+
+func generateSecureToken() string {
+	b := make([]byte, 32)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+type VerifyEmailRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+type ResendVerificationRequest struct {
+	Email string `json:"email" binding:"required"`
+}
+
+// VerifyEmail marks a user account as verified when given a valid link token
+func VerifyEmail(c *gin.Context) {
+	var req VerifyEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Token) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Verification token is required"})
+		return
+	}
+
+	cleanToken := strings.TrimSpace(req.Token)
+
+	var user models.User
+	if err := database.DB.Where("email_verify_token = ? AND deleted_at IS NULL", cleanToken).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This verification link is invalid or has already been used."})
+		return
+	}
+
+	if user.EmailVerifyExpiresAt != nil && user.EmailVerifyExpiresAt.Before(time.Now()) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "This verification link has expired. Please request a new one.",
+			"email": user.Email,
+		})
+		return
+	}
+
+	// Mark user verified and clear token
+	user.IsEmailVerified = true
+	user.EmailVerifyToken = ""
+	user.EmailVerifyExpiresAt = nil
+	database.DB.Save(&user)
+
+	// Fetch user's role in their default team
+	var role string
+	if user.DefaultTeamID > 0 {
+		var member models.TeamMember
+		if err := database.DB.Where("team_id = ? AND user_id = ?", user.DefaultTeamID, user.ID).First(&member).Error; err == nil {
+			role = member.Role
+		}
+	}
+	isAdmin := role == "owner"
+
+	// Async welcome and admin emails upon verified activation
 	accountType := "organic_owner"
 	if !isAdmin {
 		accountType = "invited_member"
@@ -381,6 +468,7 @@ func EmailPasswordSignup(c *gin.Context) {
 		_ = services.SendAdminSignupNotification(u.Name, u.Email, u.AvatarURL, at)
 	}(user, accountType)
 
+	// Issue JWT token so user is automatically authenticated upon verification
 	secret := config.JWTSecret
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
@@ -395,10 +483,53 @@ func EmailPasswordSignup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"message":  "Email verified successfully",
 		"token":    tokenString,
 		"user":     user,
 		"is_admin": isAdmin,
 	})
+}
+
+// ResendVerificationEmail sends a fresh verification link to the user's email
+func ResendVerificationEmail(c *gin.Context) {
+	var req ResendVerificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Valid email address is required"})
+		return
+	}
+
+	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
+	if cleanEmail == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Valid email address is required"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.Where("LOWER(email) = ? AND deleted_at IS NULL", cleanEmail).First(&user).Error; err != nil {
+		// Generic response to prevent email enumeration
+		c.JSON(http.StatusOK, gin.H{"message": "If an account exists with this email, a verification link has been sent."})
+		return
+	}
+
+	if user.IsEmailVerified {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This email address is already verified. Please sign in."})
+		return
+	}
+
+	// Generate fresh token and 24h expiry
+	newToken := generateSecureToken()
+	expiresAt := time.Now().Add(24 * time.Hour)
+	user.EmailVerifyToken = newToken
+	user.EmailVerifyExpiresAt = &expiresAt
+	database.DB.Save(&user)
+
+	frontendURL := config.FrontendURL
+	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", frontendURL, newToken)
+	go func(toEmail, toName, vURL string) {
+		_ = services.SendVerificationEmail(toEmail, toName, vURL)
+	}(user.Email, user.Name, verifyURL)
+
+	c.JSON(http.StatusOK, gin.H{"message": "A new verification link has been sent to your email."})
 }
 
 // EnsureDemoUser creates or synchronizes the demo account required for verification
@@ -418,10 +549,11 @@ func EnsureDemoUser() {
 	if err != nil {
 		// Create new demo user
 		user = models.User{
-			Email:        demoEmail,
-			Name:         "Demo User",
-			PasswordHash: string(hash),
-			IsOnboarded:  true,
+			Email:           demoEmail,
+			Name:            "Demo User",
+			PasswordHash:    string(hash),
+			IsOnboarded:     true,
+			IsEmailVerified: true,
 		}
 		if err := database.DB.Create(&user).Error; err != nil {
 			log.Printf("[DEMO_USER] Failed to create demo user: %v", err)
@@ -457,9 +589,10 @@ func EnsureDemoUser() {
 		database.DB.Save(&user)
 		log.Println("[DEMO_USER] Created demo user demo@costop.in with Demo Org")
 	} else {
-		// User already exists: ensure password, onboarded status, org name and designation
+		// User already exists: ensure password, onboarded status, email verified status, org name and designation
 		user.PasswordHash = string(hash)
 		user.IsOnboarded = true
+		user.IsEmailVerified = true
 		database.DB.Save(&user)
 
 		if user.OrgID != 0 {
