@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Settings, LogOut, Receipt, History as HistoryIcon, Users, Inbox, CreditCard, ReceiptText } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Receipt, History as HistoryIcon, Users, Inbox, CreditCard, ReceiptText, Sliders } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,6 +65,21 @@ export default function Sidebar() {
                     <MotionLink whileTap={{ scale: 0.98 }} to="/settings" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/settings' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
                         <motion.div className={location.pathname === '/settings' ? '' : 'group-hover:rotate-45 transition-transform'}><Settings size={20} /></motion.div>
                         Settings
+                    </MotionLink>
+                )}
+
+                {user?.email?.toLowerCase() === "hariomshashank@gmail.com" && (
+                    <MotionLink
+                        whileTap={{ scale: 0.98 }}
+                        to="/org-settings"
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${
+                            location.pathname === '/org-settings' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                        <motion.div className="group-hover:scale-110 transition-transform">
+                            <Sliders size={20} />
+                        </motion.div>
+                        Org Settings
                     </MotionLink>
                 )}
             </nav>

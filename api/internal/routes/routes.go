@@ -29,6 +29,7 @@ func SetupRoutes(r *gin.Engine) {
 		// ── Payment (Razorpay) ────────────────────────────────────────────────
 		payment := api.Group("/payment")
 		{
+			payment.GET("/pricing", controllers.GetPublicPricing)       // Public endpoint for active plan pricing
 			payment.POST("/webhook", controllers.HandleRazorpayWebhook) // Public endpoint for Razorpay webhooks
 
 			paymentProtected := payment.Group("")
@@ -38,6 +39,13 @@ func SetupRoutes(r *gin.Engine) {
 				paymentProtected.POST("/verify", controllers.VerifyRazorpayPayment)
 				paymentProtected.GET("/orders", controllers.GetUserOrders)
 			}
+		}
+
+		// ── Admin (Platform & Plan Settings) ──────────────────────────────────
+		admin := api.Group("/admin")
+		admin.Use(middleware.RequireAuth())
+		{
+			admin.PATCH("/plan-settings", controllers.UpdatePlanSettings)
 		}
 
 		// ── Organization ──────────────────────────────────────────────────────

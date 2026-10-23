@@ -17,6 +17,7 @@ const Onboarding = lazy(() => import("./screens/Onboarding/Onboarding"));
 const Settings = lazy(() => import("./screens/Settings/Settings"));
 const Billing = lazy(() => import("./screens/Billing/Billing"));
 const Orders = lazy(() => import("./screens/Orders/Orders"));
+const OrgSettings = lazy(() => import("./screens/OrgSettings/OrgSettings"));
 const Terms = lazy(() => import("./screens/Terms/Terms"));
 const Privacy = lazy(() => import("./screens/Privacy/Privacy"));
 const VerifyEmail = lazy(() => import("./screens/VerifyEmail/VerifyEmail"));
@@ -35,6 +36,18 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     // Non-onboarded organic signups MUST be redirected to onboarding
     if (user && !user.is_onboarded) {
         return <Navigate to="/onboarding" replace />;
+    }
+
+    return children;
+};
+
+const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => {
+    const { user, isLoading } = useUser();
+
+    if (isLoading) return null;
+
+    if (!user || user.email?.toLowerCase() !== "hariomshashank@gmail.com") {
+        return <Navigate to="/home" replace />;
     }
 
     return children;
@@ -64,6 +77,8 @@ function App() {
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
                     <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                    <Route path="/org-settings" element={<AdminProtectedRoute><OrgSettings /></AdminProtectedRoute>} />
+                    <Route path="/org_setting" element={<Navigate to="/org-settings" replace />} />
                 </Routes>
             </Suspense>
             <Toaster

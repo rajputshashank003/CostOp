@@ -3,7 +3,8 @@ import BillingContext from "../context";
 import { motion } from "framer-motion";
 
 export default function BillingIntervalToggle() {
-    const { billingInterval, setBillingInterval } = useContext(BillingContext);
+    const { billingInterval, setBillingInterval, pricing } = useContext(BillingContext);
+    const discount = pricing?.yearly_discount_percent ?? 20;
 
     return (
         <div className="flex flex-col items-center justify-center mb-8 sm:mb-10">
@@ -41,7 +42,7 @@ export default function BillingIntervalToggle() {
                     )}
                     Annual Billing
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
-                        Save 20%
+                        Save {discount}%
                     </span>
                 </button>
             </div>

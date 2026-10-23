@@ -4,10 +4,19 @@ import { Check, X, Sparkles, ShieldCheck, ArrowRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function PlanCards() {
-    const { isPro, billingInterval, handleUpgrade, handleDirectTestUpgrade, isUpgrading } = useContext(BillingContext);
+    const { isPro, pricing, billingInterval, handleUpgrade, isUpgrading } = useContext(BillingContext);
 
-    const proPrice = billingInterval === "annual" ? "₹799" : "₹999";
-    const proBillingPeriod = billingInterval === "annual" ? "per month, billed ₹9,588 annually (Save 20%)" : "per month, cancel anytime";
+    const monthlyPrice = pricing?.monthly_price ?? 999;
+    const yearlyMonthlyEq = pricing?.yearly_monthly_equivalent ?? 799;
+    const yearlyDiscount = pricing?.yearly_discount_percent ?? 20;
+    const yearlyTotal = pricing?.yearly_total_price ?? (yearlyMonthlyEq * 12);
+
+    const proPrice = billingInterval === "annual"
+        ? `₹${Math.round(yearlyMonthlyEq).toLocaleString('en-IN')}`
+        : `₹${Math.round(monthlyPrice).toLocaleString('en-IN')}`;
+    const proBillingPeriod = billingInterval === "annual"
+        ? `per month, billed ₹${Math.round(yearlyTotal).toLocaleString('en-IN')} annually (Save ${yearlyDiscount}%)`
+        : "per month, cancel anytime";
 
     return (
         <section aria-label="Subscription Plans Comparison" className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-12 sm:mb-16">
@@ -219,15 +228,6 @@ export default function PlanCards() {
                                     </>
                                 )}
                             </motion.button>
-
-                            <button
-                                type="button"
-                                onClick={handleDirectTestUpgrade}
-                                disabled={isUpgrading}
-                                className="w-full py-2 px-3 text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:underline transition-colors cursor-pointer text-center"
-                            >
-                                Or activate directly with 1-click test mode
-                            </button>
                         </>
                     )}
                 </div>

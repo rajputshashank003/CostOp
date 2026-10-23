@@ -225,17 +225,21 @@ func UpdateOrganizationSettings(c *gin.Context) {
 	})
 }
 
-// UpgradeOrganization transitions the organization to the Pro plan (Admin only).
+// UpgradeOrganization transitions the organization to the Pro plan (Website Admin only manual override).
 // POST /api/organization/upgrade
 func UpgradeOrganization(c *gin.Context) {
-	if PaymentMaintenanceMode {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "Payment feature is currently under maintenance. Please try again later.",
-		})
+	userID := c.MustGet("userID").(uint)
+
+	var caller models.User
+	if err := database.DB.First(&caller, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
 	}
 
-	userID := c.MustGet("userID").(uint)
+	if strings.ToLower(strings.TrimSpace(caller.Email)) != strings.ToLower(WebsiteAdminEmail) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Unauthorized: Manual upgrade bypass is restricted to website admin"})
+		return
+	}
 
 	orgID, err := resolveOrgID(userID)
 	if err != nil || orgID == 0 {

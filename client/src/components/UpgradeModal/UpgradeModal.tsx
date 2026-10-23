@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Zap, Sparkles, ShieldCheck } from 'lucide-react';
 import { useUser } from '../../hooks/useUser';
 import { startRazorpayCheckout } from '../../utils/razorpay';
-import { organizationApi } from '../../utils/api_request/organization';
-import toast from 'react-hot-toast';
+import { paymentApi, PricingInfo } from '../../utils/api_request/payment';
 
 interface Props {
     isOpen: boolean;
@@ -15,6 +14,7 @@ interface Props {
 export default function UpgradeModal({ isOpen, onClose, onUpgradeSuccess }: Props) {
     const { user } = useUser();
     const [isLoading, setIsLoading] = useState(false);
+    const [pricing, setPricing] = useState<PricingInfo | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -22,43 +22,36 @@ export default function UpgradeModal({ isOpen, onClose, onUpgradeSuccess }: Prop
             if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
+        paymentApi.get_pricing().then(setPricing).catch(() => null);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
-    const handleRazorpayUpgrade = async () => {
-        toast("This feature is currently under maintenance. Please try again later.", {
-            icon: "🔧",
-            duration: 4000,
-            style: {
-                borderRadius: '16px',
-                background: '#ffffff',
-                color: '#0f172a',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
-                fontSize: '13px',
-                fontWeight: '600',
-                padding: '12px 16px',
-            },
-        });
-    };
+    const monthlyPrice = pricing?.monthly_price ?? 999;
+    const yearlyMonthlyEq = pricing?.yearly_monthly_equivalent ?? 799;
+    const discount = pricing?.yearly_discount_percent ?? 20;
 
-    const handleInstantDemoUpgrade = async () => {
-        toast("This feature is currently under maintenance. Please try again later.", {
-            icon: "🔧",
-            duration: 4000,
-            style: {
-                borderRadius: '16px',
-                background: '#ffffff',
-                color: '#0f172a',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
-                fontSize: '13px',
-                fontWeight: '600',
-                padding: '12px 16px',
-            },
-        });
+    const handleRazorpayUpgrade = async () => {
+        setIsLoading(true);
+        try {
+            await startRazorpayCheckout({
+                userEmail: user?.email,
+                userName: user?.name,
+                interval: 'monthly',
+                onSuccess: () => {
+                    setIsLoading(false);
+                    onClose();
+                    if (onUpgradeSuccess) onUpgradeSuccess();
+                    setTimeout(() => window.location.reload(), 800);
+                },
+                onError: () => {
+                    setIsLoading(false);
+                },
+            });
+        } catch (err) {
+            setIsLoading(false);
+        }
     };
 
     const features = [
@@ -125,11 +118,11 @@ export default function UpgradeModal({ isOpen, onClose, onUpgradeSuccess }: Prop
                     {/* Pricing Highlight */}
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 flex items-baseline justify-between">
                         <div>
-                            <span className="text-3xl font-black text-slate-900 tracking-tight">₹999</span>
+                            <span className="text-3xl font-black text-slate-900 tracking-tight">₹{Math.round(monthlyPrice).toLocaleString('en-IN')}</span>
                             <span className="text-slate-500 text-sm font-medium ml-1">/ month</span>
                         </div>
                         <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">
-                            ₹799/mo on yearly • Save 20%
+                            ₹{Math.round(yearlyMonthlyEq).toLocaleString('en-IN')}/mo on yearly • Save {discount}%
                         </span>
                     </div>
 
@@ -160,19 +153,9 @@ export default function UpgradeModal({ isOpen, onClose, onUpgradeSuccess }: Prop
                             ) : (
                                 <>
                                     <ShieldCheck size={18} />
-                                    <span>Pay with Razorpay (₹999)</span>
+                                    <span>Pay with Razorpay (₹{Math.round(monthlyPrice).toLocaleString('en-IN')})</span>
                                 </>
                             )}
-                        </button>
-
-                        {/* Test / Instant Demo Activation option */}
-                        <button
-                            type="button"
-                            onClick={handleInstantDemoUpgrade}
-                            disabled={isLoading}
-                            className="text-xs text-slate-500 hover:text-slate-700 font-semibold py-1.5 transition-colors cursor-pointer text-center"
-                        >
-                            ⚡ Or activate instant test mode (Skip checkout)
                         </button>
                     </div>
                 </motion.div>

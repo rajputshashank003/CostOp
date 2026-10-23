@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -41,16 +42,12 @@ func verifyHMACSignature(data, signature, secret string) bool {
 	return hmac.Equal([]byte(expectedSignature), []byte(signature))
 }
 
-// PaymentMaintenanceMode controls whether Pro checkout is active or under maintenance.
-const PaymentMaintenanceMode = true
-
 // CreateRazorpayOrder generates a checkout order on Razorpay for upgrading to Pro.
 // POST /api/payment/create-order
 func CreateRazorpayOrder(c *gin.Context) {
-	if PaymentMaintenanceMode {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "Payment feature is currently under maintenance. Please try again later.",
-		})
+	if config.RazorpayKeyID == "" || config.RazorpayKeySecret == "" {
+		log.Println("[RAZORPAY ERROR] Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET in environment")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Payment gateway configuration is missing on server"})
 		return
 	}
 
@@ -73,14 +70,21 @@ func CreateRazorpayOrder(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&orderInput)
 
-	// Pricing:
-	// Monthly: ₹999 / month (99900 paise)
-	// Yearly:  ₹799 / month billed annually = ₹9,588 / year (958800 paise)
-	amountPaise := int64(99900)
+	// Fetch dynamic pricing from database
+	var setting models.PlanSetting
+	if err := database.DB.Where("plan_code = ? AND is_active = ?", "pro", true).First(&setting).Error; err != nil {
+		setting = models.PlanSetting{MonthlyPrice: 999.00, YearlyDiscountPercent: 20.00}
+	}
+
+	var amountPaise int64
 	interval := "monthly"
 	if orderInput.Interval == "yearly" || orderInput.Interval == "annual" {
-		amountPaise = int64(958800)
+		discountMultiplier := 1.0 - (setting.YearlyDiscountPercent / 100.0)
+		yearlyTotal := setting.MonthlyPrice * 12.0 * discountMultiplier
+		amountPaise = int64(math.Round(yearlyTotal * 100.0))
 		interval = "yearly"
+	} else {
+		amountPaise = int64(math.Round(setting.MonthlyPrice * 100.0))
 	}
 
 	currency := "INR"
@@ -330,6 +334,15 @@ func HandleRazorpayWebhook(c *gin.Context) {
 			})
 			log.Printf("[RAZORPAY WEBHOOK] Upgraded organization %d to pro via %s\n", targetOrgID, event.Event)
 
+			// Check if the order was already marked as paid (e.g. by VerifyRazorpayPayment from frontend)
+			var existingOrder models.Order
+			alreadyPaid := false
+			orderLookup := database.DB.Where("razorpay_order_id = ? OR razorpay_payment_id = ?",
+				event.Payload.Payment.Entity.OrderID, event.Payload.Payment.Entity.ID).First(&existingOrder)
+			if orderLookup.Error == nil && existingOrder.Status == "paid" {
+				alreadyPaid = true
+			}
+
 			// Mark order as paid
 			database.DB.Model(&models.Order{}).
 				Where("razorpay_order_id = ? OR razorpay_payment_id = ? OR (org_id = ? AND status = 'created')",
@@ -339,33 +352,35 @@ func HandleRazorpayWebhook(c *gin.Context) {
 					"razorpay_payment_id": event.Payload.Payment.Entity.ID,
 				})
 
-			// Send payment success confirmation email
-			userEmail := event.Payload.Payment.Entity.Email
-			userName := "Valued Member"
-			var org models.Organization
-			if err := database.DB.First(&org, targetOrgID).Error; err == nil {
-				var owner models.User
-				if err := database.DB.First(&owner, org.OwnerID).Error; err == nil {
-					if userEmail == "" {
-						userEmail = owner.Email
-					}
-					if owner.Name != "" {
-						userName = owner.Name
+			// Only send confirmation email if order was not already marked paid by frontend checkout handler
+			if !alreadyPaid {
+				userEmail := event.Payload.Payment.Entity.Email
+				userName := "Valued Member"
+				var org models.Organization
+				if err := database.DB.First(&org, targetOrgID).Error; err == nil {
+					var owner models.User
+					if err := database.DB.First(&owner, org.OwnerID).Error; err == nil {
+						if userEmail == "" {
+							userEmail = owner.Email
+						}
+						if owner.Name != "" {
+							userName = owner.Name
+						}
 					}
 				}
-			}
-			amount := float64(event.Payload.Payment.Entity.Amount) / 100.0
-			if amount <= 0 {
-				amount = 999.00
-			}
-			interval := event.Payload.Payment.Entity.Notes["interval"]
-			if interval == "" {
-				interval = "monthly"
-			}
-			if userEmail != "" {
-				go func(to, name, cycle string, amt float64, pid string) {
-					_ = services.SendPaymentSuccessEmail(to, name, "Pro", cycle, amt, pid)
-				}(userEmail, userName, interval, amount, event.Payload.Payment.Entity.ID)
+				amount := float64(event.Payload.Payment.Entity.Amount) / 100.0
+				if amount <= 0 {
+					amount = 999.00
+				}
+				interval := event.Payload.Payment.Entity.Notes["interval"]
+				if interval == "" {
+					interval = "monthly"
+				}
+				if userEmail != "" {
+					go func(to, name, cycle string, amt float64, pid string) {
+						_ = services.SendPaymentSuccessEmail(to, name, "Pro", cycle, amt, pid)
+					}(userEmail, userName, interval, amount, event.Payload.Payment.Entity.ID)
+				}
 			}
 		}
 

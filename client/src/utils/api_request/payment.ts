@@ -32,7 +32,42 @@ export interface OrderItem {
     updated_at: string;
 }
 
+export interface PricingInfo {
+    plan_code: string;
+    plan_name: string;
+    monthly_price: number;
+    yearly_discount_percent: number;
+    yearly_monthly_equivalent: number;
+    yearly_total_price: number;
+    yearly_total_savings: number;
+    currency: string;
+    max_members: number;
+}
+
+export interface UpdatePlanSettingsPayload {
+    monthly_price: number;
+    yearly_discount_percent: number;
+    plan_name?: string;
+    max_members?: number;
+}
+
 export const paymentApi = {
+    get_pricing: (): Promise<PricingInfo> => {
+        return utils.request({
+            url: '/payment/pricing',
+            method: METHODS.GET,
+            show_error: false,
+        });
+    },
+
+    update_plan_settings: (data: UpdatePlanSettingsPayload): Promise<any> => {
+        return utils.request({
+            url: '/admin/plan-settings',
+            method: METHODS.PATCH,
+            data,
+        });
+    },
+
     create_order: (data?: { interval?: string }): Promise<RazorpayOrderInfo> => {
         return utils.request({
             url: '/payment/create-order',

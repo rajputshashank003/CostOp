@@ -51,9 +51,13 @@ func Load() {
 	HealthWait = getEnvOrDefault("HEALTH_WAIT", "8")
 	RunUptimeCron = os.Getenv("RUN_UPTIME_CRON") == "true"
 
-	RazorpayKeyID = getEnvOrDefault("RAZORPAY_KEY_ID", "rzp_test_Tr306sywUEBzzY")
-	RazorpayKeySecret = getEnvOrDefault("RAZORPAY_KEY_SECRET", "aUfXOSRzFnsxRkt28CAG23x5")
-	RazorpayWebhookSecret = getEnvOrDefault("RAZORPAY_WEBHOOK_SECRET", "costop_razorpay_secret_2026")
+	RazorpayKeyID = os.Getenv("RAZORPAY_KEY_ID")
+	RazorpayKeySecret = os.Getenv("RAZORPAY_KEY_SECRET")
+	RazorpayWebhookSecret = os.Getenv("RAZORPAY_WEBHOOK_SECRET")
+
+	if RazorpayKeyID == "" || RazorpayKeySecret == "" {
+		log.Println("[CONFIG WARNING] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not configured in environment.")
+	}
 }
 
 func getEnvOrDefault(key, fallback string) string {

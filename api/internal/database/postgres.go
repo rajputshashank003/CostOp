@@ -49,7 +49,23 @@ func Connect() {
 		&models.Alert{},
 		&models.Notification{},
 		&models.Order{},
+		&models.PlanSetting{},
 	)
+
+	// Seed default Pro plan setting if absent
+	var count int64
+	db.Model(&models.PlanSetting{}).Where("plan_code = ?", "pro").Count(&count)
+	if count == 0 {
+		db.Create(&models.PlanSetting{
+			PlanCode:              "pro",
+			PlanName:              "CostOp Pro",
+			MonthlyPrice:          999.00,
+			YearlyDiscountPercent: 20.00,
+			Currency:              "INR",
+			MaxMembers:            100,
+			IsActive:              true,
+		})
+	}
 
 	// Allow email/pass users without google_id to coexist without duplicate key error on empty strings
 	db.Exec("DROP INDEX IF EXISTS idx_users_google_id")
