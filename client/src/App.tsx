@@ -22,12 +22,9 @@ const OrgSettings = lazy(() => import("./screens/OrgSettings/OrgSettings"));
 const Terms = lazy(() => import("./screens/Terms/Terms"));
 const Privacy = lazy(() => import("./screens/Privacy/Privacy"));
 const VerifyEmail = lazy(() => import("./screens/VerifyEmail/VerifyEmail"));
+import GenericPageSkeleton from "./components/Skeleton/GenericPageSkeleton";
 
-const SuspenseFallback = () => (
-    <div className="flex items-center justify-center min-h-screen bg-[#f0f0f5]">
-        <span className="w-10 h-10 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></span>
-    </div>
-);
+const SuspenseFallback = () => <GenericPageSkeleton />;
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     const { user, isLoading } = useUser();

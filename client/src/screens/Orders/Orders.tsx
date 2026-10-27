@@ -139,9 +139,26 @@ export default function Orders() {
 
                     {/* Content Section: Loading, Empty, or Table */}
                     {isLoading ? (
-                        <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center shadow-xs">
-                            <span className="w-9 h-9 border-3 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin inline-block mb-3" />
-                            <p className="text-xs font-bold text-slate-500">Loading purchase records & invoices...</p>
+                        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden divide-y divide-slate-100">
+                            {[1, 2, 3, 4, 5].map((idx) => (
+                                <div key={idx} className="p-4 flex items-center justify-between gap-4 animate-pulse">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex-shrink-0" />
+                                        <div className="space-y-1.5">
+                                            <div className="h-4 w-32 bg-slate-200 rounded" />
+                                            <div className="h-3 w-44 bg-slate-100 rounded" />
+                                        </div>
+                                    </div>
+                                    <div className="hidden md:flex items-center gap-8">
+                                        <div className="h-3.5 w-24 bg-slate-100 rounded" />
+                                        <div className="h-3.5 w-24 bg-slate-100 rounded" />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-6 w-16 bg-slate-100 rounded-full" />
+                                        <div className="h-8 w-24 bg-slate-100 rounded-lg" />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : orders.length === 0 ? (
                         <OrdersEmptyState />

@@ -7,6 +7,7 @@ import useProfile from "./useProfile";
 import { useUser } from "@/hooks/useUser";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileToolsList from "./components/ProfileToolsList";
+import ProfileSkeleton from "@/components/Skeleton/ProfileSkeleton";
 import { ArrowLeft } from "lucide-react";
 
 const ProfileComp = () => {
@@ -15,14 +16,7 @@ const ProfileComp = () => {
     const navigate = useNavigate();
 
     if (isAuthLoading || isLoading) {
-        return (
-            <div className="flex min-h-screen bg-[#f0f0f5]">
-                <Sidebar />
-                <main className="flex-1 p-8 flex items-center justify-center">
-                    <span className="w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></span>
-                </main>
-            </div>
-        );
+        return <ProfileSkeleton />;
     }
 
     return (

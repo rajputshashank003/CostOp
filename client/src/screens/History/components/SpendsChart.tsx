@@ -84,8 +84,13 @@ export default function SpendsChart() {
             </div>
 
             {isLoading ? (
-                <div className="h-48 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                <div className="h-48 flex items-end justify-between gap-3 pt-6 px-4 pb-2 animate-pulse">
+                    {[45, 75, 30, 90, 60, 80, 50, 70].map((height, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                            <div className="w-full bg-slate-200/80 rounded-t-lg transition-all" style={{ height: `${height}%` }} />
+                            <div className="h-3 w-8 bg-slate-200 rounded" />
+                        </div>
+                    ))}
                 </div>
             ) : data.length === 0 ? (
                 <div className="h-48 flex items-center justify-center text-slate-500 font-medium">
