@@ -7,6 +7,7 @@ import WorkspaceProfileCard from "./components/WorkspaceProfileCard";
 import SecurityCard from "./components/SecurityCard";
 import BillingCard from "./components/BillingCard";
 import SlackIntegrationCard from "./components/SlackIntegrationCard";
+import SettingsSkeleton from "../../components/Skeleton/SettingsSkeleton";
 
 const SettingsComp = () => {
     const {
@@ -20,14 +21,7 @@ const SettingsComp = () => {
     } = useContext(SettingsContext);
 
     if (isLoading || isFetching) {
-        return (
-            <div className="flex min-h-screen bg-[#f0f0f5]">
-                <Sidebar />
-                <main className="flex-1 p-8 flex items-center justify-center">
-                    <span className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></span>
-                </main>
-            </div>
-        );
+        return <SettingsSkeleton />;
     }
 
     return (

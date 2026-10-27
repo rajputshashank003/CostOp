@@ -46,6 +46,11 @@ func SetupRoutes(r *gin.Engine) {
 		admin.Use(middleware.RequireAuth())
 		{
 			admin.PATCH("/plan-settings", controllers.UpdatePlanSettings)
+			admin.GET("/organizations", controllers.GetAdminOrganizations)
+			admin.PATCH("/organizations/:id/pro", controllers.ToggleOrgProAccess)
+			admin.GET("/organizations/:id/members", controllers.GetAdminOrgMembers)
+			admin.GET("/users", controllers.GetAdminUsers)
+			admin.PATCH("/users/:id/pro", controllers.ToggleUserProAccess)
 		}
 
 		// ── Organization ──────────────────────────────────────────────────────

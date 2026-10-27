@@ -13,22 +13,14 @@ import TrustBadges from "./components/TrustBadges";
 import { ReceiptText, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
+import BillingSkeleton from "../../components/Skeleton/BillingSkeleton";
+
 const BillingContent = () => {
     const { isLoading, isFetching } = useContext(BillingContext);
     const navigate = useNavigate();
 
     if (isLoading || isFetching) {
-        return (
-            <div className="flex min-h-screen bg-[#f0f0f5]">
-                <Sidebar />
-                <main className="flex-1 p-8 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-3">
-                        <span className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
-                        <span className="text-xs font-bold text-slate-500">Loading plan and billing details...</span>
-                    </div>
-                </main>
-            </div>
-        );
+        return <BillingSkeleton />;
     }
 
     return (

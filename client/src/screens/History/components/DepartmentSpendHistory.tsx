@@ -37,8 +37,18 @@ export default function DepartmentSpendHistory() {
             </div>
 
             {isLoading ? (
-                <div className="h-48 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                <div className="space-y-4 py-4 animate-pulse">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="space-y-2">
+                            <div className="flex justify-between">
+                                <div className="h-3.5 w-28 bg-slate-200 rounded" />
+                                <div className="h-3.5 w-16 bg-slate-200 rounded" />
+                            </div>
+                            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-slate-200 rounded-full" style={{ width: `${60 - i * 12}%` }} />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : size(data) === 0 ? (
                 <div className="h-48 flex items-center justify-center text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200 border-dashed">

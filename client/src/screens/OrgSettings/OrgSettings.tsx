@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import MobileNav from "../../components/MobileNav/MobileNav";
 import NotificationBell from "../../components/Notifications/NotificationBell";
@@ -6,8 +7,13 @@ import { paymentApi, PricingInfo } from "../../utils/api_request/payment";
 import { Sliders, ShieldCheck, Check, Sparkles, AlertCircle, RefreshCw, IndianRupee, Percent, Users, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import ManageUsersModal from "./components/ManageUsersModal";
 
 export default function OrgSettings() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [showManageUsers, setShowManageUsers] = useState<boolean>(() => {
+        return searchParams.get("tab") === "users" || searchParams.get("manageUsers") === "true";
+    });
     const [pricing, setPricing] = useState<PricingInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -88,19 +94,21 @@ export default function OrgSettings() {
             <Sidebar />
             <main className="flex-1 flex flex-col h-screen overflow-y-auto">
                 {/* Header */}
-                <header className="min-h-[62px] min-[1200px]:min-h-[76px] bg-white border-b border-slate-200 px-3 sm:px-4 min-[1200px]:px-8 py-3 min-[1200px]:py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs transition-all">
-                    <div className="flex items-center gap-2.5 min-[1200px]:gap-4 flex-shrink-0">
+                <header className="min-h-[62px] min-[1200px]:min-h-[76px] bg-white border-b border-slate-200 px-3 sm:px-4 min-[1200px]:px-8 py-2.5 sm:py-3 min-[1200px]:py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs transition-all gap-2">
+                    <div className="flex items-center gap-2 sm:gap-2.5 min-[1200px]:gap-4 min-w-0">
                         <MobileNav />
                         <div className="w-8 h-8 min-[1200px]:w-10 min-[1200px]:h-10 rounded-xl bg-emerald-50 text-emerald-600 hidden sm:flex items-center justify-center shadow-inner flex-shrink-0">
                             <Sliders size={20} />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-base min-[1200px]:text-[22px] font-extrabold text-slate-900 tracking-tight leading-none">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <h1 className="text-sm sm:text-base min-[1200px]:text-[22px] font-extrabold text-slate-900 tracking-tight leading-none truncate">
                                     Org & Plan Settings
                                 </h1>
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                                    <ShieldCheck size={12} /> Admin Only
+                                <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 flex-shrink-0">
+                                    <ShieldCheck size={11} className="sm:w-3 sm:h-3" />
+                                    <span className="hidden min-[480px]:inline">Admin Only</span>
+                                    <span className="min-[480px]:hidden">Admin</span>
                                 </span>
                             </div>
                             <p className="text-[11px] min-[1200px]:text-[13px] font-semibold text-slate-500 hidden sm:block mt-0.5">
@@ -108,15 +116,25 @@ export default function OrgSettings() {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setShowManageUsers(true)}
+                            className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs shadow-emerald-600/20 transition-all cursor-pointer flex-shrink-0"
+                            title="Manage all users and Pro tier access"
+                        >
+                            <Users size={15} />
+                            <span className="hidden min-[480px]:inline">Manage Users</span>
+                            <span className="min-[480px]:hidden">Users</span>
+                        </button>
                         <button
                             type="button"
                             onClick={loadPricing}
                             disabled={isLoading}
-                            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                             title="Refresh pricing"
                         >
-                            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+                            <RefreshCw size={17} className={isLoading ? "animate-spin" : ""} />
                         </button>
                         <NotificationBell />
                     </div>
@@ -126,7 +144,7 @@ export default function OrgSettings() {
                     {/* Admin Banner */}
                     <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-950 text-white rounded-[2rem] p-6 sm:p-8 mb-8 shadow-xl relative overflow-hidden">
                         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
-                        <div className="relative z-10 max-w-2xl">
+                        <div className="relative z-[1] max-w-2xl">
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-3">
                                 <Sparkles size={13} /> Website Administrator Panel
                             </div>
@@ -136,13 +154,60 @@ export default function OrgSettings() {
                             <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed">
                                 Settings configured here immediately control what customers are charged through Razorpay in production. Any updates will reflect live on the Billing page, Upgrade Modal, and automated receipt emails.
                             </p>
+                            <div className="mt-5 flex flex-wrap items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowManageUsers(true)}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+                                >
+                                    <Users size={16} />
+                                    <span>Manage Users & Pro Access</span>
+                                    <ArrowRight size={14} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     {isLoading ? (
-                        <div className="bg-white rounded-[2rem] border border-slate-200 p-12 flex flex-col items-center justify-center gap-3">
-                            <span className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
-                            <span className="text-xs font-bold text-slate-500">Loading plan configuration...</span>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-pulse">
+                            <div className="lg:col-span-7 bg-white rounded-[2rem] border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+                                    <div className="space-y-1.5">
+                                        <div className="h-5 w-40 bg-slate-200 rounded" />
+                                        <div className="h-3 w-56 bg-slate-100 rounded" />
+                                    </div>
+                                    <div className="h-6 w-24 bg-slate-100 rounded-full" />
+                                </div>
+                                {[1, 2, 3, 4].map((idx) => (
+                                    <div key={idx} className="space-y-2">
+                                        <div className="h-3 w-32 bg-slate-200 rounded" />
+                                        <div className="h-11 w-full bg-slate-100 rounded-xl" />
+                                    </div>
+                                ))}
+                                <div className="pt-4 flex justify-end">
+                                    <div className="h-11 w-36 bg-slate-200 rounded-xl" />
+                                </div>
+                            </div>
+                            <div className="lg:col-span-5 space-y-6">
+                                <div className="bg-white rounded-[2rem] border border-slate-200/90 p-6 shadow-sm space-y-4">
+                                    <div className="h-4 w-40 bg-slate-200 rounded" />
+                                    <div className="space-y-3">
+                                        {[1, 2, 3].map((idx) => (
+                                            <div key={idx} className="flex justify-between py-2 border-b border-slate-100">
+                                                <div className="h-3 w-28 bg-slate-100 rounded" />
+                                                <div className="h-3 w-16 bg-slate-200 rounded" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-[2rem] border border-slate-200/90 p-6 shadow-sm flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-slate-100 flex-shrink-0" />
+                                    <div className="space-y-2 flex-1">
+                                        <div className="h-3.5 w-36 bg-slate-200 rounded" />
+                                        <div className="h-3 w-full bg-slate-100 rounded" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -387,6 +452,19 @@ export default function OrgSettings() {
                         </div>
                     )}
                 </div>
+
+                {/* Manage Users Modal */}
+                <ManageUsersModal
+                    isOpen={showManageUsers}
+                    onClose={() => {
+                        setShowManageUsers(false);
+                        if (searchParams.get("tab") === "users" || searchParams.get("manageUsers") === "true") {
+                            searchParams.delete("tab");
+                            searchParams.delete("manageUsers");
+                            setSearchParams(searchParams, { replace: true });
+                        }
+                    }}
+                />
             </main>
         </div>
     );

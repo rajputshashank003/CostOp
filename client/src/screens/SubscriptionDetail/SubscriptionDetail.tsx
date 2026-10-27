@@ -8,18 +8,13 @@ import AssignedMembers from "./components/AssignedMembers";
 import SubscriptionSidebar from "./components/SubscriptionSidebar";
 import AccessManagement from "./components/AccessManagement";
 
+import SubscriptionDetailSkeleton from "../../components/Skeleton/SubscriptionDetailSkeleton";
+
 const SubscriptionDetailComp = () => {
     const { data, isLoading } = useContext(SubscriptionDetailContext);
 
     if (isLoading || !data) {
-        return (
-            <div className="flex min-h-screen bg-[#f0f0f5]">
-                <Sidebar />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-                </main>
-            </div>
-        );
+        return <SubscriptionDetailSkeleton />;
     }
 
     return (
