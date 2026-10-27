@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, LogOut, Receipt, History as HistoryIcon, Users, Settings, Menu, X, Inbox, CreditCard, ReceiptText, Sliders } from "lucide-react";
 import { useUser } from "../../hooks/useUser";
@@ -35,6 +36,12 @@ export default function MobileNav() {
         };
     }, [isOpen, showLogoutModal]);
 
+    // Close drawer automatically on route navigation
+    useEffect(() => {
+        setIsOpen(false);
+        setShowLogoutModal(false);
+    }, [location.pathname]);
+
     return (
         <div className="md:hidden">
             {/* Hamburger Button */}
@@ -48,30 +55,31 @@ export default function MobileNav() {
                 <Menu size={24} />
             </motion.button>
 
-            {/* Backdrop */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-slate-900/40 z-[100] backdrop-blur-[2px]"
-                        onClick={() => setIsOpen(false)}
-                    />
-                )}
-            </AnimatePresence>
+            {/* Portal overlay and drawer to document.body to avoid stacking context traps */}
+            {typeof document !== "undefined" && createPortal(
+                <AnimatePresence>
+                    {isOpen && (
+                        <>
+                            {/* Backdrop */}
+                            <motion.div
+                                key="mobile-nav-backdrop"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="fixed inset-0 bg-slate-900/50 z-[999] backdrop-blur-[2px]"
+                                onClick={() => setIsOpen(false)}
+                            />
 
-            {/* Drawer */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ x: "-100%" }}
-                        animate={{ x: 0 }}
-                        exit={{ x: "-100%" }}
-                        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                        className="fixed inset-y-0 left-0 w-[280px] bg-white z-[110] shadow-2xl flex flex-col"
-                    >
+                            {/* Drawer */}
+                            <motion.div
+                                key="mobile-nav-drawer"
+                                initial={{ x: "-100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "-100%" }}
+                                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                                className="fixed inset-y-0 left-0 w-[280px] bg-white z-[1000] shadow-2xl flex flex-col"
+                            >
                         <div className="h-[76px] px-6 flex items-center justify-between border-b border-slate-100 flex-shrink-0">
                             <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
@@ -146,56 +154,58 @@ export default function MobileNav() {
                             </motion.button>
                         </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                </>
+            )}
 
             {/* Logout Confirmation Modal - Elevated above drawer */}
-            <AnimatePresence>
-                {showLogoutModal && (
+            {showLogoutModal && (
+                <motion.div
+                    key="mobile-nav-logout-modal"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[1010] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setShowLogoutModal(false);
+                    }}
+                >
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 backdrop-blur-md p-4"
-                        onClick={(e) => {
-                            if (e.target === e.currentTarget) setShowLogoutModal(false);
-                        }}
+                        initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                        transition={{ type: "spring", duration: 0.3 }}
+                        className="bg-white rounded-[2rem] p-8 max-w-[320px] w-full shadow-2xl relative"
                     >
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                            transition={{ type: "spring", duration: 0.3 }}
-                            className="bg-white rounded-[2rem] p-8 max-w-[320px] w-full shadow-2xl relative"
-                        >
-                            <div className="w-16 h-16 rounded-[1.25rem] bg-red-100 flex items-center justify-center text-red-600 mb-6 mx-auto">
-                                <LogOut size={32} />
-                            </div>
-                            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight text-center mb-3">Sign Out?</h2>
-                            <p className="text-slate-500 font-medium text-center text-sm mb-8">
-                                Are you sure you want to log out of your CostOp workspace?
-                            </p>
+                        <div className="w-16 h-16 rounded-[1.25rem] bg-red-100 flex items-center justify-center text-red-600 mb-6 mx-auto">
+                            <LogOut size={32} />
+                        </div>
+                        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight text-center mb-3">Sign Out?</h2>
+                        <p className="text-slate-500 font-medium text-center text-sm mb-8">
+                            Are you sure you want to log out of your CostOp workspace?
+                        </p>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => setShowLogoutModal(false)}
-                                    className="w-full py-3.5 px-2 font-bold rounded-xl text-slate-600 text-sm bg-slate-100 hover:bg-slate-200 transition-colors focus:ring-4 focus:ring-slate-100 outline-none cursor-pointer"
-                                >
-                                    Cancel
-                                </motion.button>
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => { setShowLogoutModal(false); logout(); }}
-                                    className="w-full py-3.5 px-2 font-bold rounded-xl text-white text-sm bg-red-500 hover:bg-red-600 shadow-md shadow-red-500/20 transition-all focus:ring-4 focus:ring-red-100 outline-none cursor-pointer"
-                                >
-                                    Log Out
-                                </motion.button>
-                            </div>
-                        </motion.div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setShowLogoutModal(false)}
+                                className="w-full py-3.5 px-2 font-bold rounded-xl text-slate-600 text-sm bg-slate-100 hover:bg-slate-200 transition-colors focus:ring-4 focus:ring-slate-100 outline-none cursor-pointer"
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => { setShowLogoutModal(false); logout(); }}
+                                className="w-full py-3.5 px-2 font-bold rounded-xl text-white text-sm bg-red-500 hover:bg-red-600 shadow-md shadow-red-500/20 transition-all focus:ring-4 focus:ring-red-100 outline-none cursor-pointer"
+                            >
+                                Log Out
+                            </motion.button>
+                        </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                </motion.div>
+            )}
+        </AnimatePresence>,
+        document.body
+    )}
         </div>
     );
 }
