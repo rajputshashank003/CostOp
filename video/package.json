@@ -1,0 +1,27 @@
+{
+  "name": "costop-video",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render CostOpPromo out/costop-promo-9x16.mp4",
+    "still": "remotion still CostOpPromo out/still.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/google-fonts": "4.0.539",
+    "@remotion/tailwind-v4": "4.0.539",
+    "@remotion/transitions": "4.0.539",
+    "@remotion/motion-blur": "4.0.539",
+    "lucide-react": "^0.577.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "4.0.539",
+    "tailwindcss": "^4.2.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "typescript": "~5.7.3"
+  }
+}
