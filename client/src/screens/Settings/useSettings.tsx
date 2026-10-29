@@ -3,6 +3,8 @@ import { useUser } from "../../hooks/useUser";
 import { teamsApi } from "../../utils/api_request/teams";
 import { organizationApi, OrganizationDetails } from "../../utils/api_request/organization";
 import toast from "react-hot-toast";
+import { CurrencyCode, DEFAULT_CURRENCY } from "../../context/CurrencyContext";
+import { useMoney } from "../../hooks/useMoney";
 
 const useSettings = () => {
     const { user, isLoading } = useUser();
@@ -10,6 +12,8 @@ const useSettings = () => {
     const [teamName, setTeamName] = useState("");
     const [allowInvites, setAllowInvites] = useState(true);
     const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+    const [currency, setCurrency] = useState<CurrencyCode>(DEFAULT_CURRENCY);
+    const { setCurrency: applyWorkspaceCurrency } = useMoney();
     const [orgDetails, setOrgDetails] = useState<OrganizationDetails | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -27,6 +31,7 @@ const useSettings = () => {
             setAllowInvites(team.allow_member_invites ?? true);
             setOrgDetails(org);
             setSlackWebhookUrl(org.slack_webhook_url || "");
+            setCurrency(org.currency === "USD" ? "USD" : "INR");
         } catch (err) {
             console.error("Failed to load settings:", err);
         } finally {
@@ -50,16 +55,22 @@ const useSettings = () => {
                 }),
             ];
 
-            // If Pro, also update Slack Webhook URL
+            // One org update so concurrent saves can't overwrite each other's fields
+            const orgUpdate: { slack_webhook_url?: string; currency?: CurrencyCode } = {};
             if (isPro) {
-                promises.push(
-                    organizationApi.update_settings({
-                        slack_webhook_url: slackWebhookUrl,
-                    })
-                );
+                orgUpdate.slack_webhook_url = slackWebhookUrl;
+            }
+            // Only send the currency when it changed, so members who can't edit org settings can still save
+            const currencyChanged = currency !== (orgDetails?.currency ?? DEFAULT_CURRENCY);
+            if (currencyChanged) {
+                orgUpdate.currency = currency;
+            }
+            if (Object.keys(orgUpdate).length > 0) {
+                promises.push(organizationApi.update_settings(orgUpdate));
             }
 
             await Promise.all(promises);
+            if (currencyChanged) applyWorkspaceCurrency(currency);
             toast.success("Workspace preferences updated!");
             fetchOrgAndTeam();
         } catch (error: any) {
@@ -78,6 +89,8 @@ const useSettings = () => {
         setAllowInvites,
         slackWebhookUrl,
         setSlackWebhookUrl,
+        currency,
+        setCurrency,
         orgDetails,
         isPro,
         isSaving,

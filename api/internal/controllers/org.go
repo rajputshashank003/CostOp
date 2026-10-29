@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"costop/internal/cache"
 	"costop/internal/database"
 	"costop/internal/models"
 	"costop/internal/services"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -133,6 +135,7 @@ func GetOrganization(c *gin.Context) {
 		"owner_id":             org.OwnerID,
 		"plan":                 org.Plan,
 		"slack_webhook_url":    org.SlackWebhookURL,
+		"currency":             services.NormalizeCurrency(org.Currency),
 		"razorpay_customer_id": org.RazorpayCustomerID,
 		"razorpay_sub_id":      org.RazorpaySubID,
 		"razorpay_payment_id":  org.RazorpayPaymentID,
@@ -181,40 +184,66 @@ func UpdateOrganizationSettings(c *gin.Context) {
 		return
 	}
 
+	// Pointers distinguish "field omitted" from "field set to empty"
 	var input struct {
-		Name            string `json:"name"`
-		SlackWebhookURL string `json:"slack_webhook_url"`
+		Name            string  `json:"name"`
+		SlackWebhookURL *string `json:"slack_webhook_url"`
+		Currency        *string `json:"currency"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
+	// Only write the fields this request changes, so parallel saves can't clobber each other
+	updates := map[string]interface{}{}
+
 	if input.Name != "" {
-		org.Name = input.Name
+		updates["name"] = input.Name
 	}
 
-	// If updating slack webhook, verify Pro tier
-	if input.SlackWebhookURL != "" {
-		trimmedURL := strings.TrimSpace(input.SlackWebhookURL)
-		if !strings.HasPrefix(trimmedURL, "https://hooks.slack.com/") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Slack webhook URL. Must start with https://hooks.slack.com/"})
+	if input.Currency != nil {
+		code := strings.ToUpper(strings.TrimSpace(*input.Currency))
+		if !services.SupportedCurrencies[code] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported currency. Use INR or USD."})
 			return
 		}
-		if org.Plan != "pro" {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Slack Webhook Notifications are only available on the Pro plan. Please upgrade to Pro to enable Slack alerts.",
-				"code":  "PRO_REQUIRED",
-			})
-			return
+		if code != services.NormalizeCurrency(org.Currency) {
+			// AI insight text quotes amounts, so regenerate it in the new currency
+			cache.AppCache.Invalidate(fmt.Sprintf("ai_insights:org:%d", org.ID))
 		}
-		org.SlackWebhookURL = trimmedURL
-	} else if c.Request.ContentLength > 0 {
-		// Allow clearing the webhook URL
-		org.SlackWebhookURL = ""
+		updates["currency"] = code
 	}
 
-	if err := database.DB.Save(&org).Error; err != nil {
+	// Only touch the webhook when the field is sent; an empty string clears it
+	if input.SlackWebhookURL != nil {
+		trimmedURL := strings.TrimSpace(*input.SlackWebhookURL)
+		if trimmedURL == "" {
+			updates["slack_webhook_url"] = ""
+		} else {
+			// Updating the webhook requires a valid Slack URL and the Pro tier
+			if !strings.HasPrefix(trimmedURL, "https://hooks.slack.com/") {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Slack webhook URL. Must start with https://hooks.slack.com/"})
+				return
+			}
+			if org.Plan != "pro" {
+				c.JSON(http.StatusForbidden, gin.H{
+					"error": "Slack Webhook Notifications are only available on the Pro plan. Please upgrade to Pro to enable Slack alerts.",
+					"code":  "PRO_REQUIRED",
+				})
+				return
+			}
+			updates["slack_webhook_url"] = trimmedURL
+		}
+	}
+
+	if len(updates) > 0 {
+		if err := database.DB.Model(&org).Updates(updates).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update organization settings"})
+			return
+		}
+	}
+	if err := database.DB.First(&org, org.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update organization settings"})
 		return
 	}

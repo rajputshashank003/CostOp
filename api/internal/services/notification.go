@@ -49,7 +49,7 @@ func processExpiringTomorrow(now time.Time) {
 		}
 
 		title := fmt.Sprintf("%s %s tomorrow", sub.Name, action)
-		msg := fmt.Sprintf("Your subscription to %s %s tomorrow ($%.2f).", sub.Name, action, sub.Cost)
+		msg := fmt.Sprintf("Your subscription to %s %s tomorrow (%s).", sub.Name, action, FormatMoney(sub.Cost, OrgCurrency(sub.OrgID)))
 
 		subID := sub.ID
 		createNotification(owner.ID, owner.OrgID, nil, &subID, title, msg, "expiring_tomorrow")

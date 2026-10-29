@@ -70,7 +70,7 @@ func SendSlackTestMessage(webhookURL string) error {
 }
 
 // SendSlackAlert posts a formatted subscription renewal/expiration alert to Slack.
-func SendSlackAlert(webhookURL string, sub models.Subscription, offset int) error {
+func SendSlackAlert(webhookURL string, sub models.Subscription, offset int, cost string) error {
 	actionWord := "renews"
 	if !sub.IsAutoPay {
 		actionWord = "expires"
@@ -89,7 +89,7 @@ func SendSlackAlert(webhookURL string, sub models.Subscription, offset int) erro
 	}
 
 	payload := map[string]interface{}{
-		"text": fmt.Sprintf("🔔 Renewal Alert: %s %s %s ($%.2f)", sub.Name, actionWord, dueText, sub.Cost),
+		"text": fmt.Sprintf("🔔 Renewal Alert: %s %s %s (%s)", sub.Name, actionWord, dueText, cost),
 		"blocks": []map[string]interface{}{
 			{
 				"type": "header",
@@ -103,8 +103,8 @@ func SendSlackAlert(webhookURL string, sub models.Subscription, offset int) erro
 				"type": "section",
 				"text": map[string]string{
 					"type": "mrkdwn",
-					"text": fmt.Sprintf("*%s* %s %s.\n*Amount:* $%.2f | *Cycle:* %s | *Auto-Pay:* %s",
-						sub.Name, actionWord, dueText, sub.Cost, sub.BillingCycle, autoPayText),
+					"text": fmt.Sprintf("*%s* %s %s.\n*Amount:* %s | *Cycle:* %s | *Auto-Pay:* %s",
+						sub.Name, actionWord, dueText, cost, sub.BillingCycle, autoPayText),
 				},
 			},
 		},

@@ -15,6 +15,7 @@ type Organization struct {
 	OwnerID            uint           `gorm:"not null" json:"owner_id"` // creator/admin user
 	Plan               string         `gorm:"not null;default:'free'" json:"plan"` // "free" | "pro"
 	SlackWebhookURL    string         `gorm:"type:text;default:''" json:"slack_webhook_url"`
+	Currency           string         `gorm:"not null;default:'INR'" json:"currency"` // display currency: "INR" | "USD" (amounts are stored in USD)
 	RazorpayCustomerID string         `gorm:"index" json:"razorpay_customer_id,omitempty"`
 	RazorpaySubID      string         `gorm:"index" json:"razorpay_sub_id,omitempty"`
 	RazorpayPaymentID  string         `json:"razorpay_payment_id,omitempty"`

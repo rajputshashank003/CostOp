@@ -1,3 +1,4 @@
+import type { MoneyFormatter } from "@/context/CurrencyContext";
 import { useState } from "react";
 import head from "lodash/head";
 import toUpper from "lodash/toUpper";
@@ -13,7 +14,7 @@ export interface Subscription {
 
 interface RenewalItemProps {
     r: Subscription;
-    formatter: Intl.NumberFormat;
+    formatter: MoneyFormatter;
 }
 
 export default function RenewalItem({ r, formatter }: RenewalItemProps) {

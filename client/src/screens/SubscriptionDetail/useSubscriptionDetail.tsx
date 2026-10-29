@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { subscriptionsApi } from "../../utils/api_request/subscriptions";
 import toUpper from "lodash/toUpper";
 import head from "lodash/head";
+import { useMoney } from "@/hooks/useMoney";
 
 const useSubscriptionDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -10,7 +11,7 @@ const useSubscriptionDetail = () => {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [imgError, setImgError] = useState(false);
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const { formatter } = useMoney();
 
     const sub = data?.subscription;
     const initial = sub?.name ? toUpper(head(sub.name) as string) : "?";

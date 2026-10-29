@@ -3,6 +3,7 @@ import { X, CalendarClock } from "lucide-react";
 import map from "lodash/map";
 import { motion } from "framer-motion";
 import RenewalItem, { Subscription } from "./RenewalItem";
+import { useMoney } from "@/hooks/useMoney";
 
 interface UpcomingRenewalsModalProps {
     renewals: Subscription[];
@@ -10,10 +11,7 @@ interface UpcomingRenewalsModalProps {
 }
 
 export default function UpcomingRenewalsModal({ renewals, onClose }: UpcomingRenewalsModalProps) {
-    const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    });
+    const { formatter } = useMoney();
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {

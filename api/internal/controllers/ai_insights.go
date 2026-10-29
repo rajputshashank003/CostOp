@@ -14,6 +14,7 @@ import (
 	"costop/internal/config"
 	"costop/internal/database"
 	"costop/internal/models"
+	"costop/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -88,10 +89,11 @@ func GetAIInsights(c *gin.Context) {
 		return
 	}
 
-	insights, err := callGemini(subs, true)
+	currency := services.OrgCurrency(user.OrgID)
+	insights, err := callGemini(subs, currency, true)
 	if err != nil {
 		log.Printf("[AI Insights] Gemini call with grounding failed for org %d: %v — retrying without grounding", user.OrgID, err)
-		insights, err = callGemini(subs, false)
+		insights, err = callGemini(subs, currency, false)
 		if err != nil {
 			log.Printf("[AI Insights] Gemini call without grounding also failed for org %d: %v", user.OrgID, err)
 			if strings.Contains(err.Error(), "rate limit") {
@@ -233,7 +235,7 @@ JSON schema:
 // callGemini sends the subscription context to Gemini 2.0 Flash and parses the
 // structured JSON response. When useGrounding is true, Google Search is enabled
 // so Gemini can verify real-time pricing.
-func callGemini(subs []subContext, useGrounding bool) ([]AIInsight, error) {
+func callGemini(subs []subContext, currency string, useGrounding bool) ([]AIInsight, error) {
 	var totalMonthly float64
 	for _, s := range subs {
 		totalMonthly += s.MonthlyCost
@@ -249,16 +251,24 @@ func callGemini(subs []subContext, useGrounding bool) ([]AIInsight, error) {
 		searchInstruction = "\n\nSearch the web to verify current pricing, annual discounts, and seat-tier pricing for each tool."
 	}
 
+	currencyInstruction := ""
+	if currency != "USD" {
+		currencyInstruction = fmt.Sprintf(
+			"\n\nAll costs above are in USD. In \"title\" and \"description\", write money in %s (1 USD = %.2f %s, e.g. %s), but keep \"estimated_monthly_savings\" as a USD number.",
+			currency, services.ConvertUSD(1, currency), currency, services.FormatMoney(20, currency),
+		)
+	}
+
 	userMsg := fmt.Sprintf(
 		`Analyze this company's SaaS portfolio and return 2-3 cost-saving insights as JSON.
 
-Total monthly spend: $%.2f/month across %d active subscriptions.
+Total monthly spend: $%.2f/month (USD) across %d active subscriptions.
 
-Subscriptions (use the "id" field in subscription_ids):
-%s%s
+Subscriptions (use the "id" field in subscription_ids; monthly_cost is in USD):
+%s%s%s
 
 Return ONLY the JSON object.`,
-		totalMonthly, len(subs), string(subsJSON), searchInstruction,
+		totalMonthly, len(subs), string(subsJSON), searchInstruction, currencyInstruction,
 	)
 
 	genConfig := map[string]interface{}{

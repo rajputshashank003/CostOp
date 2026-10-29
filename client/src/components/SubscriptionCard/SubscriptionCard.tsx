@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getLogoUrl } from "@/services/logoService";
 import { getCategoryIcon } from "@/utils/helpers";
+import { useMoney } from "@/hooks/useMoney";
 
 export interface Subscription {
     id: number;
@@ -48,7 +49,7 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
     const [imgError, setImgError] = useState(false);
     const navigate = useNavigate();
 
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const { formatter } = useMoney();
 
     let nextBilling = "TBD";
     if (sub.is_auto_pay === false) {

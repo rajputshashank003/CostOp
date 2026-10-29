@@ -4,6 +4,7 @@ import SettingsContext from "./context";
 import useSettings from "./useSettings";
 import SettingsHeader from "./components/SettingsHeader";
 import WorkspaceProfileCard from "./components/WorkspaceProfileCard";
+import CurrencyCard from "./components/CurrencyCard";
 import SecurityCard from "./components/SecurityCard";
 import BillingCard from "./components/BillingCard";
 import SlackIntegrationCard from "./components/SlackIntegrationCard";
@@ -15,6 +16,7 @@ const SettingsComp = () => {
         teamName, setTeamName,
         allowInvites, setAllowInvites,
         slackWebhookUrl, setSlackWebhookUrl,
+        currency, setCurrency,
         orgDetails, isPro,
         isSaving, handleSave,
         refreshOrgDetails,
@@ -32,6 +34,7 @@ const SettingsComp = () => {
                 <div className="p-4 sm:p-8 max-w-4xl w-full mx-auto">
                     <BillingCard orgDetails={orgDetails} onUpgradeSuccess={refreshOrgDetails} />
                     <WorkspaceProfileCard teamName={teamName} setTeamName={setTeamName} />
+                    <CurrencyCard currency={currency} setCurrency={setCurrency} />
                     <SlackIntegrationCard isPro={isPro} webhookUrl={slackWebhookUrl} setWebhookUrl={setSlackWebhookUrl} />
                     <SecurityCard allowInvites={allowInvites} setAllowInvites={setAllowInvites} />
                     <div className="flex justify-end pb-8">

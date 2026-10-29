@@ -256,7 +256,7 @@ func SendRenewalAlertEmail(toEmail, userName, subName string, subCost float64, a
 }
 
 // SendAlertEmail sends a user-defined subscription alert email.
-func SendAlertEmail(toEmail, subject, message, subName string, cost float64, daysLeft int, isAutoPay bool) error {
+func SendAlertEmail(toEmail, subject, message, subName, cost string, daysLeft int, isAutoPay bool) error {
 	apiKey := config.ResendAPIKey
 	if apiKey == "" {
 		return fmt.Errorf("RESEND_API_KEY is not set in environment")
@@ -275,9 +275,9 @@ func SendAlertEmail(toEmail, subject, message, subName string, cost float64, day
 
 	var timingLine string
 	if daysLeft == 0 {
-		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s <strong>today</strong> for <strong>$%.2f</strong>.", subName, actionWord, cost)
+		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s <strong>today</strong> for <strong>%s</strong>.", subName, actionWord, cost)
 	} else {
-		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s in <strong>%d day(s)</strong> for <strong>$%.2f</strong>.", subName, actionWord, daysLeft, cost)
+		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s in <strong>%d day(s)</strong> for <strong>%s</strong>.", subName, actionWord, daysLeft, cost)
 	}
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>

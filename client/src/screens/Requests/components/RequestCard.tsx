@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { DollarSign } from "lucide-react";
 import { getCategoryIcon } from "../../../utils/helpers";
+import CurrencyIcon from "@/components/CurrencyIcon/CurrencyIcon";
+import { useMoney } from "@/hooks/useMoney";
 
 interface RequestCardProps {
     req: any;
@@ -21,6 +22,7 @@ const statusDot: Record<string, string> = {
 };
 
 const RequestCard = ({ req, isAdmin, onApprove, onReject }: RequestCardProps) => {
+    const { formatter } = useMoney();
     return (
         <motion.div
             layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
@@ -47,9 +49,9 @@ const RequestCard = ({ req, isAdmin, onApprove, onReject }: RequestCardProps) =>
             <div className={`mt-4 grid gap-3 ${isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-1 flex items-center gap-1">
-                        <DollarSign size={10} /> Cost
+                        <CurrencyIcon size={10} /> Cost
                     </p>
-                    <p className="font-bold text-slate-800 text-sm">${req.cost?.toFixed(2) || "0.00"}</p>
+                    <p className="font-bold text-slate-800 text-sm">{formatter.format(req.cost || 0)}</p>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-1">Seats</p>

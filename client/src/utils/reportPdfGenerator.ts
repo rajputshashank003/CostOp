@@ -2,12 +2,20 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { MonthlyReportData } from './api_request/reports';
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-});
+import type { CurrencyCode, MoneyFormatter } from '../context/CurrencyContext';
 
-export const generateExecutiveReportPdf = (data: MonthlyReportData): void => {
+// jsPDF's built-in fonts have no ₹ glyph, so rupee amounts are written as "Rs."
+const pdfMoneyFormatter = (currency: CurrencyCode, rate: number): MoneyFormatter => {
+    if (currency === 'INR') {
+        const nf = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return { format: (usd: number) => `Rs. ${nf.format((usd || 0) * rate)}` };
+    }
+    const nf = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    return { format: (usd: number) => nf.format((usd || 0) * rate) };
+};
+
+export const generateExecutiveReportPdf = (data: MonthlyReportData, currency: CurrencyCode, rate: number): void => {
+    const currencyFormatter = pdfMoneyFormatter(currency, rate);
     const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'pt',
@@ -92,7 +100,7 @@ export const generateExecutiveReportPdf = (data: MonthlyReportData): void => {
     autoTable(doc, {
         startY: currentY + 8,
         head: [['Category / Department', 'Monthly Spend ($)', '% of Total Spend']],
-        body: categoryRows.length > 0 ? categoryRows : [['No data recorded', '$0.00', '0%']],
+        body: categoryRows.length > 0 ? categoryRows : [['No data recorded', currencyFormatter.format(0), '0%']],
         theme: 'striped',
         margin: { left: 40, right: 40 },
         headStyles: {

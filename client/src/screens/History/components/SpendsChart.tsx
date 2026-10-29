@@ -1,5 +1,4 @@
 import { useContext } from "react";
-import { DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MonthPicker from "../../../components/MonthPicker/MonthPicker";
 import TimeframeDropdown from "../../../components/TimeframeDropdown/TimeframeDropdown";
@@ -8,6 +7,8 @@ import map from "lodash/map";
 import maxBy from "lodash/maxBy";
 import split from "lodash/split";
 import head from "lodash/head";
+import { useMoney } from "@/hooks/useMoney";
+import CurrencyIcon from "@/components/CurrencyIcon/CurrencyIcon";
 
 interface SpendData {
     month: string;
@@ -29,19 +30,14 @@ export default function SpendsChart() {
     const data = (spendData || []) as SpendData[];
 
     const maxSpend = maxBy(data, 'spend')?.spend || 1;
-    const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    });
+    const { wholeFormatter: formatter } = useMoney();
 
     return (
         <div className="bg-white rounded-[1.5rem] border border-slate-200 p-4 sm:p-6 mb-8 mt-2 shadow-sm relative">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-50">
                 <div className="flex items-center gap-3">
                     <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <DollarSign size={20} className="stroke-[2.5]" />
+                        <CurrencyIcon size={20} className="stroke-[2.5]" />
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-slate-900 leading-tight">Historical Spends</h2>
@@ -107,7 +103,7 @@ export default function SpendsChart() {
                             <span className="-translate-y-4 bg-white pr-2">{formatter.format(maxSpend / 2)}</span>
                         </div>
                         <div className="flex items-end w-full border-b border-slate-200 pb-1 h-0">
-                            <span className="-translate-y-4 bg-white pr-2">$0.00</span>
+                            <span className="-translate-y-4 bg-white pr-2">{formatter.format(0)}</span>
                         </div>
                     </div>
 

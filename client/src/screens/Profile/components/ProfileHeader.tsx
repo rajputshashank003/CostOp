@@ -1,14 +1,16 @@
-import { DollarSign, Layers, Shield, Users, MapPin } from "lucide-react";
+import type { MoneyFormatter } from "@/context/CurrencyContext";
+import { Layers, Shield, Users, MapPin } from "lucide-react";
 import MoveTeamDropdown from "@/components/MoveTeamDropdown/MoveTeamDropdown";
 import size from "lodash/size";
 import map from "lodash/map";
+import CurrencyIcon from "@/components/CurrencyIcon/CurrencyIcon";
 
 interface ProfileHeaderProps {
     user: any;
     teams?: any[];
     totalCost: number;
     subscriptionCount: number;
-    formatter: Intl.NumberFormat;
+    formatter: MoneyFormatter;
     isOwnProfile?: boolean;
     viewerIsAdmin?: boolean;
     allTeams?: any[];
@@ -67,7 +69,7 @@ const ProfileHeader = ({ user, teams = [], totalCost, subscriptionCount, formatt
                 <div className="flex flex-wrap justify-center md:justify-start gap-4">
                     <div className="bg-emerald-50 rounded-2xl px-5 py-4 border border-emerald-100 flex items-center gap-4 min-w-[200px]">
                         <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                            <DollarSign size={20} />
+                            <CurrencyIcon size={20} />
                         </div>
                         <div>
                             <p className="text-xs font-bold text-emerald-600/80 uppercase tracking-wider mb-0.5">Assigned Cost (Per Seat)</p>
