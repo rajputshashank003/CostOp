@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import get from "lodash/get";
 import map from "lodash/map";
 import LinkedDescription from "./LinkedDescription";
-import { AI_TYPE_CONFIG, AI_DEFAULT_CONFIG, AI_FORMATTER } from "@/screens/Home/components/aiInsightsConfig";
+import { AI_TYPE_CONFIG, AI_DEFAULT_CONFIG } from "@/screens/Home/components/aiInsightsConfig";
+import { useMoney } from "@/hooks/useMoney";
 
 interface AIInsight {
     type: string;
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function AIInsightsModal({ insights, totalSavings, onClose, onRefresh, isRefreshing }: Props) {
+    const { formatter } = useMoney();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -128,7 +130,7 @@ export default function AIInsightsModal({ insights, totalSavings, onClose, onRef
                                                 <div className="flex items-center justify-between mb-1">
                                                     <h3 className="text-[15px] font-bold text-slate-800">{insight.title}</h3>
                                                     <span className="text-[15px] font-bold text-emerald-600 flex-shrink-0 ml-2">
-                                                        {AI_FORMATTER.format(insight.estimated_monthly_savings)}<span className="text-slate-400 font-medium text-xs">/mo</span>
+                                                        {formatter.format(insight.estimated_monthly_savings)}<span className="text-slate-400 font-medium text-xs">/mo</span>
                                                     </span>
                                                 </div>
                                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded inline-block mb-2 ${confidenceClass}`}>
@@ -150,7 +152,7 @@ export default function AIInsightsModal({ insights, totalSavings, onClose, onRef
                 {totalSavings > 0 && !isRefreshing && (
                     <div className="px-6 py-4 border-t border-slate-100 bg-gradient-to-r from-emerald-50 to-white flex items-center justify-between">
                         <span className="text-sm font-semibold text-slate-600">Total Potential Savings</span>
-                        <span className="text-lg font-extrabold text-emerald-600">{AI_FORMATTER.format(totalSavings)}<span className="text-sm font-medium text-slate-400">/mo</span></span>
+                        <span className="text-lg font-extrabold text-emerald-600">{formatter.format(totalSavings)}<span className="text-sm font-medium text-slate-400">/mo</span></span>
                     </div>
                 )}
             </motion.div>

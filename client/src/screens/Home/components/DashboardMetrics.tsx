@@ -9,10 +9,10 @@ import SmallRenewalItem from "./SmallRenewalItem";
 import DepartmentSpend from "./DepartmentSpend";
 import { useContext, useRef, useState } from "react";
 import HomeContext from "../context";
-
-const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+import { useMoney } from "@/hooks/useMoney";
 
 export default function DashboardMetrics() {
+    const { formatter } = useMoney();
     const {
         metrics, 
         isLoadingMetrics,

@@ -1,3 +1,4 @@
+import type { MoneyFormatter } from "@/context/CurrencyContext";
 import { motion } from "framer-motion";
 import { PieChart } from "lucide-react";
 import map from "lodash/map";
@@ -7,7 +8,7 @@ import { useContext } from "react";
 import HomeContext from "../context";
 
 interface Props {
-    formatter: Intl.NumberFormat;
+    formatter: MoneyFormatter;
 }
 
 export default function DepartmentSpend({ formatter }: Props) {

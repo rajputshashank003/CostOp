@@ -10,6 +10,7 @@ import (
 
 	"costop/internal/database"
 	"costop/internal/models"
+	"costop/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -173,33 +174,38 @@ func GetMonthlyReport(c *gin.Context) {
 		writer := csv.NewWriter(c.Writer)
 		defer writer.Flush()
 
+		// Amounts are stored in USD; export them in the workspace currency
+		currency := services.NormalizeCurrency(org.Currency)
+		money := func(usd float64) string { return fmt.Sprintf("%.2f", services.ConvertUSD(usd, currency)) }
+
 		// Report Header
 		writer.Write([]string{"COSTOP EXECUTIVE MONTHLY SPEND REPORT"})
 		writer.Write([]string{"Organization", org.Name})
 		writer.Write([]string{"Report Period", reportPeriod})
+		writer.Write([]string{"Currency", currency})
 		writer.Write([]string{"Generated On", now.Format("2006-01-02 15:04:05")})
 		writer.Write([]string{""})
 
 		// Executive KPIs
 		writer.Write([]string{"EXECUTIVE SUMMARY METRICS"})
 		writer.Write([]string{"Metric", "Value"})
-		writer.Write([]string{"Total Monthly Spend ($)", fmt.Sprintf("%.2f", totalMonthlySpend)})
-		writer.Write([]string{"Projected Annual Run-Rate ($)", fmt.Sprintf("%.2f", annualRunRate)})
+		writer.Write([]string{"Total Monthly Spend (" + currency + ")", money(totalMonthlySpend)})
+		writer.Write([]string{"Projected Annual Run-Rate (" + currency + ")", money(annualRunRate)})
 		writer.Write([]string{"Active Subscriptions Count", fmt.Sprintf("%d", len(subs))})
 		writer.Write([]string{"Active Team Members Count", fmt.Sprintf("%d", activeMembersCount)})
 		writer.Write([]string{""})
 
 		// Category Breakdown
 		writer.Write([]string{"DEPARTMENT / CATEGORY SPEND BREAKDOWN"})
-		writer.Write([]string{"Category", "Monthly Spend ($)", "% of Spend"})
+		writer.Write([]string{"Category", "Monthly Spend (" + currency + ")", "% of Spend"})
 		for _, cb := range catBreakdown {
-			writer.Write([]string{cb.Category, fmt.Sprintf("%.2f", cb.Spend), fmt.Sprintf("%.1f%%", cb.Percentage)})
+			writer.Write([]string{cb.Category, money(cb.Spend), fmt.Sprintf("%.1f%%", cb.Percentage)})
 		}
 		writer.Write([]string{""})
 
 		// Subscriptions Table
 		writer.Write([]string{"ACTIVE SUBSCRIPTIONS INVENTORY"})
-		writer.Write([]string{"Subscription Name", "Category", "Billing Cycle", "Plan Cost ($)", "Monthly Equivalent ($)", "Seat Count", "Next Billing Date", "Auto-Pay"})
+		writer.Write([]string{"Subscription Name", "Category", "Billing Cycle", "Plan Cost (" + currency + ")", "Monthly Equivalent (" + currency + ")", "Seat Count", "Next Billing Date", "Auto-Pay"})
 		for _, s := range subReports {
 			autoPayStr := "Manual"
 			if s.IsAutoPay {
@@ -210,8 +216,8 @@ func GetMonthlyReport(c *gin.Context) {
 				s.Name,
 				s.Category,
 				s.BillingCycle,
-				fmt.Sprintf("%.2f", s.Cost),
-				fmt.Sprintf("%.2f", s.MonthlyCost),
+				money(s.Cost),
+				money(s.MonthlyCost),
 				fmt.Sprintf("%d", s.SeatCount),
 				dateStr,
 				autoPayStr,
@@ -221,7 +227,7 @@ func GetMonthlyReport(c *gin.Context) {
 
 		// Upcoming Renewals
 		writer.Write([]string{"UPCOMING RENEWALS WATCHLIST (NEXT 30 DAYS)"})
-		writer.Write([]string{"Subscription Name", "Renewal Date", "Days Until Renewal", "Amount Due ($)", "Payment Mode"})
+		writer.Write([]string{"Subscription Name", "Renewal Date", "Days Until Renewal", "Amount Due (" + currency + ")", "Payment Mode"})
 		for _, u := range upcoming {
 			mode := "Manual"
 			if u.IsAutoPay {
@@ -231,7 +237,7 @@ func GetMonthlyReport(c *gin.Context) {
 				u.Name,
 				u.NextBillingDate.Format("2006-01-02"),
 				fmt.Sprintf("%d", u.DaysUntil),
-				fmt.Sprintf("%.2f", u.Cost),
+				money(u.Cost),
 				mode,
 			})
 		}

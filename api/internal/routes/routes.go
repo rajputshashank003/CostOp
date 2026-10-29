@@ -16,6 +16,9 @@ func SetupRoutes(r *gin.Engine) {
 			c.JSON(200, gin.H{"status": "ok"})
 		})
 
+		// Exchange rates for display currency (public: also used by the landing page)
+		api.GET("/fx/rates", controllers.GetFXRates)
+
 		// ── Authentication ────────────────────────────────────────────────────
 		auth := api.Group("/auth")
 		{

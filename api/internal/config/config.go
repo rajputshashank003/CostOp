@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -35,6 +36,9 @@ var (
 	RazorpayKeyID         string
 	RazorpayKeySecret     string
 	RazorpayWebhookSecret string
+
+	// Currency: USD→INR rate used when the live FX source is unreachable
+	FXUSDINRFallback float64
 )
 
 // Load initializes all environment variables natively into the Go process.
@@ -58,6 +62,11 @@ func Load() {
 	RazorpayKeyID = os.Getenv("RAZORPAY_KEY_ID")
 	RazorpayKeySecret = os.Getenv("RAZORPAY_KEY_SECRET")
 	RazorpayWebhookSecret = os.Getenv("RAZORPAY_WEBHOOK_SECRET")
+
+	FXUSDINRFallback = 95.0
+	if v, err := strconv.ParseFloat(os.Getenv("FX_USD_INR_FALLBACK"), 64); err == nil && v > 0 {
+		FXUSDINRFallback = v
+	}
 
 	if RazorpayKeyID == "" || RazorpayKeySecret == "" {
 		log.Println("[CONFIG WARNING] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not configured in environment.")

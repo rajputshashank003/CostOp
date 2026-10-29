@@ -3,10 +3,12 @@ import { PieChart, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useContext } from "react";
 import LandingContext from "../context";
+import { useMoney } from "@/hooks/useMoney";
 import map from "lodash/map";
 
 export default function HeroSection() {
     const { isAuthenticated } = useContext(LandingContext);
+    const { formatter } = useMoney();
 
     return (
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 mb-32">
@@ -59,7 +61,7 @@ export default function HeroSection() {
                     <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
                         <div>
                             <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Total Spend</div>
-                            <div className="text-4xl font-extrabold text-slate-900">$2,459.00<span className="text-lg text-slate-400">/mo</span></div>
+                            <div className="text-4xl font-extrabold text-slate-900">{formatter.format(2459)}<span className="text-lg text-slate-400">/mo</span></div>
                         </div>
                         <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                             <PieChart size={28} />
@@ -67,9 +69,9 @@ export default function HeroSection() {
                     </div>
                     <div className="space-y-4">
                         {map([
-                            { n: "Figma Team", c: "$145.00", d: "Renews in 3 days", color: "bg-purple-100 text-purple-600" },
-                            { n: "Slack Pro", c: "$89.50", d: "Renews in 12 days", color: "bg-amber-100 text-amber-600" },
-                            { n: "Github Copilot", c: "$19.00", d: "Renews in 21 days", color: "bg-slate-100 text-slate-600" },
+                            { n: "Figma Team", c: formatter.format(145), d: "Renews in 3 days", color: "bg-purple-100 text-purple-600" },
+                            { n: "Slack Pro", c: formatter.format(89.5), d: "Renews in 12 days", color: "bg-amber-100 text-amber-600" },
+                            { n: "Github Copilot", c: formatter.format(19), d: "Renews in 21 days", color: "bg-slate-100 text-slate-600" },
                         ], (item, i) => (
                             <motion.div
                                 key={i}

@@ -5,6 +5,7 @@ import { reportsApi } from '../../utils/api_request/reports';
 import { generateExecutiveReportPdf } from '../../utils/reportPdfGenerator';
 import toast from 'react-hot-toast';
 import UpgradeModal from '../UpgradeModal/UpgradeModal';
+import { useMoney } from '@/hooks/useMoney';
 
 interface Props {
     isPro?: boolean;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ExportReportButton({ isPro = false, className = '' }: Props) {
+    const { currency, rate } = useMoney();
     const [isOpen, setIsOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -73,7 +75,7 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
             } else {
                 toast.loading('Generating Executive PDF...', { id: 'report-export' });
                 const reportData = await reportsApi.get_monthly_data();
-                generateExecutiveReportPdf(reportData);
+                generateExecutiveReportPdf(reportData, currency, rate);
                 toast.success('PDF Report downloaded!', { id: 'report-export' });
             }
         } catch (err: any) {

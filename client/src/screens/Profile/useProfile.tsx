@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import reduce from "lodash/reduce";
 import size from "lodash/size";
 import map from "lodash/map";
+import { useMoney } from "@/hooks/useMoney";
 
 const useProfile = () => {
     const { id } = useParams<{ id: string }>();
@@ -29,10 +30,7 @@ const useProfile = () => {
         return sum + unitCost;
     }, 0), [subscriptions]);
 
-    const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    });
+    const { formatter } = useMoney();
 
     useEffect(() => {
         if (isAuthLoading) return;

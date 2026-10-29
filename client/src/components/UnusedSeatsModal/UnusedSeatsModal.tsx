@@ -3,6 +3,7 @@ import { X, UserMinus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getLogoUrl } from "../../services/logoService";
+import { useMoney } from "@/hooks/useMoney";
 
 interface UnusedSeat {
     subscription_id: number;
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export default function UnusedSeatsModal({ entries, onClose }: Props) {
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const { formatter } = useMoney();
     const navigate = useNavigate();
     const totalWaste = entries.reduce((acc, e) => acc + e.wasted_cost, 0);
     const totalUnused = entries.reduce((acc, e) => acc + e.unused_count, 0);

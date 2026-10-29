@@ -16,17 +16,20 @@ func fireSubscriptionAlert(alert models.Alert, sub models.Subscription, offset i
 		actionWord = "expires"
 	}
 
+	currency := OrgCurrency(sub.OrgID)
+	cost := FormatMoney(sub.Cost, currency)
+
 	var title, message string
 	if offset == 0 {
 		title = fmt.Sprintf("%s %s today", sub.Name, actionWord)
-		message = fmt.Sprintf("Your subscription to %s %s today ($%.2f).", sub.Name, actionWord, sub.Cost)
+		message = fmt.Sprintf("Your subscription to %s %s today (%s).", sub.Name, actionWord, cost)
 	} else {
 		title = fmt.Sprintf("%s %s in %d day(s)", sub.Name, actionWord, offset)
-		message = fmt.Sprintf("Your subscription to %s %s in %d day(s) for $%.2f.", sub.Name, actionWord, offset, sub.Cost)
+		message = fmt.Sprintf("Your subscription to %s %s in %d day(s) for %s.", sub.Name, actionWord, offset, cost)
 	}
 
 	for _, email := range alert.Recipients {
-		if err := SendAlertEmail(email, title, message, sub.Name, sub.Cost, offset, sub.IsAutoPay); err != nil {
+		if err := SendAlertEmail(email, title, message, sub.Name, cost, offset, sub.IsAutoPay); err != nil {
 			log.Printf("[CRON ERROR] Failed to send alert email to %s (alert %d): %v\n", email, alert.ID, err)
 		} else {
 			log.Printf("[CRON] Alert email sent to %s for subscription %s (offset=%d)\n", email, sub.Name, offset)
@@ -44,7 +47,7 @@ func fireSubscriptionAlert(alert models.Alert, sub models.Subscription, offset i
 							log.Printf("[SLACK PANIC RECOVERED] %v\n", r)
 						}
 					}()
-					if err := SendSlackAlert(webhook, s, off); err != nil {
+					if err := SendSlackAlert(webhook, s, off, cost); err != nil {
 						log.Printf("[SLACK ALERT ERROR] Failed to send alert to Slack: %v\n", err)
 					} else {
 						log.Printf("[SLACK ALERT] Alert successfully sent to Slack for %s\n", s.Name)

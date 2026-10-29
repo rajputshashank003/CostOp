@@ -3,6 +3,7 @@ import { X, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getLogoUrl } from "../../services/logoService";
+import { useMoney } from "@/hooks/useMoney";
 
 interface DuplicateGroup {
     name: string;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export default function DuplicateToolsModal({ duplicates, onClose }: Props) {
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const { formatter } = useMoney();
     const navigate = useNavigate();
     const totalSavings = duplicates.reduce((acc, d) => {
         // Savings = cost of all but one instance (keep the cheapest, dedup the rest)

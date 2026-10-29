@@ -6,6 +6,7 @@ import DuplicateToolsModal from "@/components/DuplicateToolsModal/DuplicateTools
 import UnusedSeatsModal from "@/components/UnusedSeatsModal/UnusedSeatsModal";
 import AIInsightsCard from "./AIInsightsCard";
 import { getLogoUrl } from "@/services/logoService";
+import { useMoney } from "@/hooks/useMoney";
 
 export default function CostInsights() {
     const [duplicates, setDuplicates] = useState<any[]>([]);
@@ -16,7 +17,7 @@ export default function CostInsights() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [activeIdx, setActiveIdx] = useState(0);
 
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const { formatter } = useMoney();
 
     useEffect(() => {
         const fetchInsights = async () => {

@@ -1,3 +1,4 @@
+import type { MoneyFormatter } from "@/context/CurrencyContext";
 import { useState } from "react";
 import head from "lodash/head";
 import toUpper from "lodash/toUpper";
@@ -6,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 interface SmallRenewalItemProps {
     r: any;
-    formatter: Intl.NumberFormat;
+    formatter: MoneyFormatter;
 }
 
 export default function SmallRenewalItem({ r, formatter }: SmallRenewalItemProps) {

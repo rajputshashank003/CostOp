@@ -15,8 +15,11 @@ import { categoriesApi } from "../../utils/api_request/categories";
 import { teamsApi } from "../../utils/api_request/teams";
 import { membersApi } from "../../utils/api_request/members";
 import React from "react";
+import { useMoney } from "@/hooks/useMoney";
 
 const useAddSubscriptions = () => {
+    // Costs are typed in the workspace currency and stored in USD
+    const { toUSD, fromUSD } = useMoney();
     const navigate = useNavigate();
     const location = useLocation();
     const originRequest = location.state?.request || null;
@@ -131,7 +134,7 @@ const useAddSubscriptions = () => {
                     category: formData.category,
                     plan_type: formData.plan_type,
                     billing_cycle: formData.billing_cycle,
-                    cost: parseFloat(formData.cost) || 0,
+                    cost: toUSD(parseFloat(formData.cost) || 0),
                     seat_count: formData.seat_count,
                     scope: formData.plan_type === "Organization" ? "organization" : formData.plan_type === "Team" ? "team" : "individual",
                     justification: "",
@@ -151,7 +154,7 @@ const useAddSubscriptions = () => {
 
                 const payload: any = {
                     name: formData.name, category: formData.category, plan_type: formData.plan_type,
-                    billing_cycle: formData.billing_cycle, cost: parseFloat(formData.cost),
+                    billing_cycle: formData.billing_cycle, cost: toUSD(parseFloat(formData.cost)),
                     start_date: startDate.toISOString(),
                     ...(nextBillingDate ? { next_billing_date: nextBillingDate.toISOString() } : {}),
                     is_auto_pay: isOneTime ? false : formData.is_auto_pay,
@@ -204,7 +207,7 @@ const useAddSubscriptions = () => {
                 category: originRequest.category || "",
                 plan_type: originRequest.plan_type || p.plan_type,
                 billing_cycle: originRequest.billing_cycle || p.billing_cycle,
-                cost: originRequest.cost ? String(originRequest.cost) : "",
+                cost: originRequest.cost ? String(Math.round(fromUSD(originRequest.cost) * 100) / 100) : "",
                 seat_count: originRequest.seat_count || 1,
                 team_id: originRequest.team_id || p.team_id,
             }));

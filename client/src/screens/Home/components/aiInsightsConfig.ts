@@ -27,5 +27,3 @@ export const AI_DEFAULT_CONFIG: AITypeConfig = {
     gradient: "from-emerald-500 to-teal-600",
     badge: "Tip",
 };
-
-export const AI_FORMATTER = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });

@@ -7,6 +7,7 @@ export interface OrganizationDetails {
     owner_id: number;
     plan: 'free' | 'pro';
     slack_webhook_url: string;
+    currency: 'INR' | 'USD';
     razorpay_customer_id?: string;
     razorpay_sub_id?: string;
     razorpay_payment_id?: string;
@@ -25,7 +26,7 @@ export const organizationApi = {
         });
     },
 
-    update_settings: (data: { name?: string; slack_webhook_url?: string }): Promise<any> => {
+    update_settings: (data: { name?: string; slack_webhook_url?: string; currency?: 'INR' | 'USD' }): Promise<any> => {
         return utils.request({
             url: '/organization/settings',
             method: METHODS.PATCH,

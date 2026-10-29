@@ -8,9 +8,11 @@ import reduce from "lodash/reduce";
 import map from "lodash/map";
 import HomeContext from "../context";
 import AIInsightsModal from "./AIInsightsModal";
-import { AI_TYPE_CONFIG, AI_DEFAULT_CONFIG, AI_FORMATTER } from "@/screens/Home/components/aiInsightsConfig";
+import { AI_TYPE_CONFIG, AI_DEFAULT_CONFIG } from "@/screens/Home/components/aiInsightsConfig";
+import { useMoney } from "@/hooks/useMoney";
 
 export default function AIInsightsCard() {
+    const { formatter } = useMoney();
     const { aiInsights, isLoadingAI, isRefreshingAI, aiError, fetchAIInsights } = useContext(HomeContext);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -74,7 +76,7 @@ export default function AIInsightsCard() {
                                             <p className="text-[13px] font-bold text-slate-700 truncate">{insight.title}</p>
                                         </div>
                                         <span className="text-[12px] font-bold text-emerald-600 flex-shrink-0 ml-2">
-                                            {AI_FORMATTER.format(insight.estimated_monthly_savings)}/mo
+                                            {formatter.format(insight.estimated_monthly_savings)}/mo
                                         </span>
                                     </div>
                                 );
@@ -85,7 +87,7 @@ export default function AIInsightsCard() {
                                 View All <ChevronRight size={13} />
                             </span>
                             <span className="text-xs font-bold text-emerald-600">
-                                Save up to {AI_FORMATTER.format(totalSavings)}/mo
+                                Save up to {formatter.format(totalSavings)}/mo
                             </span>
                         </div>
                     </>

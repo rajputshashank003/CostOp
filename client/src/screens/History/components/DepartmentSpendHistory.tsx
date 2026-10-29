@@ -5,6 +5,7 @@ import HistoryContext from "../context";
 import map from "lodash/map";
 import sumBy from "lodash/sumBy";
 import size from "lodash/size";
+import { useMoney } from "@/hooks/useMoney";
 
 interface DeptSpendData {
     department: string;
@@ -15,12 +16,7 @@ export default function DepartmentSpendHistory() {
     const { deptSpendData: data, isLoadingDeptSpends: isLoading } = React.useContext(HistoryContext);
 
     const totalSpend = sumBy(data, 'spend') || 1;
-    const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    });
+    const { wholeFormatter: formatter } = useMoney();
 
     return (
         <div className="bg-white rounded-[1.5rem] border border-slate-200 p-4 sm:p-6 mb-8 mt-2 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors">

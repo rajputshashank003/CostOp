@@ -3,6 +3,7 @@ import { X, PieChart } from "lucide-react";
 import { motion } from "framer-motion";
 import map from "lodash/map";
 import sumBy from "lodash/sumBy";
+import { useMoney } from "@/hooks/useMoney";
 
 interface DepartmentSpend {
     department: string;
@@ -15,7 +16,7 @@ interface DepartmentSpendModalProps {
 }
 
 export default function DepartmentSpendModal({ departments, onClose }: DepartmentSpendModalProps) {
-    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const { formatter } = useMoney();
     const totalSpend = sumBy(departments, "spend") || 1;
 
     useEffect(() => {
