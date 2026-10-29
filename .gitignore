@@ -70,3 +70,13 @@ client/.env.*.local
 
 /docs_costOp
 .agents/
+# --------------------
+# Remotion (video/)
+# --------------------
+video/node_modules/
+video/out/
+# Generated audio (ElevenLabs output + rendered score); regenerate locally, see video/README.md
+video/public/*.wav
+video/public/voiceover.mp3
+video/public/sfx/
+__pycache__/
