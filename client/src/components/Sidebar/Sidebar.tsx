@@ -33,62 +33,50 @@ export default function Sidebar() {
             </div>
 
             <nav className="flex-1 px-4 flex flex-col gap-2 mt-4">
-                <MotionLink whileTap={{ scale: 0.98 }} to="/home" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/home' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><LayoutDashboard size={20} /></motion.div>
-                    Dashboard
-                </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="/history" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/history' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><HistoryIcon size={20} /></motion.div>
-                    History
-                </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="/members" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/members' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><Users size={20} /></motion.div>
-                    Members
-                </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="/requests" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/requests' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><Inbox size={20} /></motion.div>
-                    Requests
-                </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="/profile" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/profile' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><Users size={20} /></motion.div>
-                    Profile
-                </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="/billing" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/billing' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><CreditCard size={20} /></motion.div>
-                    Billing
-                </MotionLink>
-                <MotionLink whileTap={{ scale: 0.98 }} to="/orders" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/orders' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <motion.div className="group-hover:scale-110 transition-transform"><ReceiptText size={20} /></motion.div>
-                    Orders
-                </MotionLink>
-
-                {user?.is_admin && (
-                    <MotionLink whileTap={{ scale: 0.98 }} to="/settings" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${location.pathname === '/settings' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                        <motion.div className={location.pathname === '/settings' ? '' : 'group-hover:rotate-45 transition-transform'}><Settings size={20} /></motion.div>
-                        Settings
-                    </MotionLink>
-                )}
-
-                {isWebsiteAdmin(user?.email) && (
-                    <MotionLink
-                        whileTap={{ scale: 0.98 }}
-                        to="/org-settings"
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group ${
-                            location.pathname === '/org-settings' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                    >
-                        <motion.div className="group-hover:scale-110 transition-transform">
-                            <Sliders size={20} />
-                        </motion.div>
-                        Org Settings
-                    </MotionLink>
-                )}
+                {[
+                    { to: "/home", label: "Dashboard", icon: LayoutDashboard, isSpecial: false },
+                    { to: "/history", label: "History", icon: HistoryIcon, isSpecial: false },
+                    { to: "/members", label: "Members", icon: Users, isSpecial: false },
+                    { to: "/requests", label: "Requests", icon: Inbox, isSpecial: true },
+                    { to: "/profile", label: "Profile", icon: Users, isSpecial: false },
+                    { to: "/billing", label: "Billing", icon: CreditCard, isSpecial: false },
+                    { to: "/orders", label: "Orders", icon: ReceiptText, isSpecial: false },
+                    ...(user?.is_admin ? [{ to: "/settings", label: "Settings", icon: Settings, isSpecial: false }] : []),
+                    ...(isWebsiteAdmin(user?.email) ? [{ to: "/org-settings", label: "Org Settings", icon: Sliders, isSpecial: false }] : [])
+                ].map((item) => {
+                    const isActive = location.pathname === item.to;
+                    const Icon = item.icon;
+                    return (
+                        <MotionLink
+                            key={item.to}
+                            whileTap={{ scale: 0.98 }}
+                            to={item.to}
+                            className={`relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors group z-0 ${
+                                isActive
+                                    ? item.isSpecial ? 'text-indigo-700' : 'text-emerald-700'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                            }`}
+                        >
+                            {isActive && (
+                                <motion.div
+                                    layoutId="sidebarActiveIndicator"
+                                    className={`absolute inset-0 rounded-xl ${item.isSpecial ? 'bg-indigo-50' : 'bg-emerald-50'} -z-10`}
+                                    transition={{ type: "spring", stiffness: 380, damping: 30, bounce: 0 }}
+                                />
+                            )}
+                            <motion.div className={item.to === '/settings' && isActive ? '' : item.to === '/settings' ? 'group-hover:rotate-45 transition-transform' : 'group-hover:scale-110 transition-transform'}>
+                                <Icon size={20} />
+                            </motion.div>
+                            {item.label}
+                        </MotionLink>
+                    );
+                })}
             </nav>
 
             <div className="p-4 mt-auto border-t border-slate-100">
                 <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.96 }}
+                    whileHover={{ x: 3 }}
                     onClick={() => setShowLogoutModal(true)}
                     className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 font-medium transition-colors group cursor-pointer"
                 >
@@ -104,16 +92,17 @@ export default function Sidebar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                         className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-md p-4"
                         onClick={(e) => {
                             if (e.target === e.currentTarget) setShowLogoutModal(false);
                         }}
                     >
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            initial={{ scale: 0.96, opacity: 0, y: 8 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                            transition={{ type: "spring", duration: 0.3 }}
+                            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+                            transition={{ type: "spring", damping: 28, stiffness: 350, bounce: 0 }}
                             className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl relative"
                         >
                             <div className="w-16 h-16 rounded-[1.25rem] bg-red-100 flex items-center justify-center text-red-600 mb-6 mx-auto">
@@ -126,14 +115,14 @@ export default function Sidebar() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <motion.button
-                                    whileTap={{ scale: 0.95 }}
+                                    whileTap={{ scale: 0.96 }}
                                     onClick={() => setShowLogoutModal(false)}
                                     className="w-full py-3.5 px-4 font-bold rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors focus:ring-4 focus:ring-slate-100 outline-none cursor-pointer"
                                 >
                                     Cancel
                                 </motion.button>
                                 <motion.button
-                                    whileTap={{ scale: 0.95 }}
+                                    whileTap={{ scale: 0.96 }}
                                     onClick={logout}
                                     className="w-full py-3.5 px-4 font-bold rounded-xl text-white bg-red-500 hover:bg-red-600 shadow-md shadow-red-500/20 transition-all focus:ring-4 focus:ring-red-100 outline-none cursor-pointer"
                                 >

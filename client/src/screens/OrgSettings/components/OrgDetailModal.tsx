@@ -88,6 +88,7 @@ export default function OrgDetailModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     className="fixed inset-0"
                     onClick={onClose}
                 />
@@ -97,7 +98,7 @@ export default function OrgDetailModal({
                     initial={{ y: '100%', opacity: 0.5 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: '100%', opacity: 0 }}
-                    transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 320, bounce: 0 }}
                     className="relative z-10 w-full max-w-xl bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden h-[86vh] min-h-[75vh] max-h-[92vh] sm:h-[84vh] sm:min-h-[70vh] sm:max-h-[88vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -354,7 +355,8 @@ export default function OrgDetailModal({
 
                     {/* Footer Actions */}
                     <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/70 flex items-center gap-3 flex-shrink-0">
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
                             type="button"
                             onClick={handleActionClick}
                             disabled={isToggling}
@@ -380,15 +382,16 @@ export default function OrgDetailModal({
                                     <span>Give Pro Access to Org</span>
                                 </>
                             )}
-                        </button>
+                        </motion.button>
 
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
                             type="button"
                             onClick={onClose}
                             className="px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-colors cursor-pointer"
                         >
                             Done
-                        </button>
+                        </motion.button>
                     </div>
                 </motion.div>
                 </div>

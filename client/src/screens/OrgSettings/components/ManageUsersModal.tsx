@@ -163,7 +163,7 @@ export default function ManageUsersModal({ isOpen, onClose }: ManageUsersModalPr
                         initial={{ y: '100%', opacity: 0.6 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: '100%', opacity: 0.4 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 280, bounce: 0 }}
                         className="relative z-10 w-full max-w-6xl h-[88vh] min-h-[85vh] max-h-[92vh] sm:h-[86vh] sm:min-h-[80vh] sm:max-h-[90vh] bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -198,7 +198,8 @@ export default function ManageUsersModal({ isOpen, onClose }: ManageUsersModalPr
                         </div>
 
                         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                            <button
+                            <motion.button
+                                whileTap={{ scale: 0.92 }}
                                 type="button"
                                 onClick={() => fetchOrganizations(page, search, planFilter)}
                                 disabled={isLoading}
@@ -206,15 +207,16 @@ export default function ManageUsersModal({ isOpen, onClose }: ManageUsersModalPr
                                 title="Refresh list"
                             >
                                 <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
+                                whileTap={{ scale: 0.92 }}
                                 type="button"
                                 onClick={onClose}
                                 className="p-2 sm:p-2.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                                 title="Close modal"
                             >
                                 <X size={18} />
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
                 </div>
@@ -244,51 +246,44 @@ export default function ManageUsersModal({ isOpen, onClose }: ManageUsersModalPr
                         )}
                     </div>
 
-                    {/* Filter Pills */}
-                    <div className="flex items-center gap-1 p-1 bg-slate-100/80 rounded-xl self-stretch sm:self-auto justify-between sm:justify-start">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setPlanFilter('all');
-                                setPage(1);
-                            }}
-                            className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                                planFilter === 'all'
-                                    ? 'bg-white text-slate-900 shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            All Workspaces
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setPlanFilter('pro');
-                                setPage(1);
-                            }}
-                            className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                                planFilter === 'pro'
-                                    ? 'bg-emerald-600 text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-emerald-700'
-                            }`}
-                        >
-                            <Crown size={12} />
-                            <span>Pro Only</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setPlanFilter('free');
-                                setPage(1);
-                            }}
-                            className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                                planFilter === 'free'
-                                    ? 'bg-white text-slate-900 shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            Free Tier
-                        </button>
+                    {/* Filter Pills - Apple Segmented Control */}
+                    <div className="flex items-center gap-1 p-1 bg-slate-100/80 rounded-xl self-stretch sm:self-auto justify-between sm:justify-start relative">
+                        {[
+                            { id: 'all' as const, label: 'All Workspaces', icon: null },
+                            { id: 'pro' as const, label: 'Pro Only', icon: Crown },
+                            { id: 'free' as const, label: 'Free Tier', icon: null },
+                        ].map((tab) => {
+                            const isSelected = planFilter === tab.id;
+                            const Icon = tab.icon;
+                            return (
+                                <motion.button
+                                    key={tab.id}
+                                    whileTap={{ scale: 0.96 }}
+                                    type="button"
+                                    onClick={() => {
+                                        setPlanFilter(tab.id);
+                                        setPage(1);
+                                    }}
+                                    className={`relative z-10 flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap ${
+                                        isSelected
+                                            ? tab.id === 'pro' ? 'text-white' : 'text-slate-900'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    {isSelected && (
+                                        <motion.div
+                                            layoutId="activeOrgFilterPill"
+                                            className={`absolute inset-0 rounded-lg shadow-xs -z-10 ${
+                                                tab.id === 'pro' ? 'bg-emerald-600' : 'bg-white'
+                                            }`}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 30, bounce: 0 }}
+                                        />
+                                    )}
+                                    {Icon && <Icon size={12} className={isSelected ? 'text-white' : 'text-emerald-600'} />}
+                                    <span>{tab.label}</span>
+                                </motion.button>
+                            );
+                        })}
                     </div>
                 </div>
 

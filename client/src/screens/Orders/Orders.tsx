@@ -85,32 +85,35 @@ export default function Orders() {
 
                     {/* Filter, Search & Refresh Toolbar */}
                     <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                        {/* Status Tabs */}
-                        <div className="flex bg-slate-100 p-1 rounded-xl flex-shrink-0">
-                            <button
-                                onClick={() => setStatusFilter('all')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                                    statusFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                                All Orders ({orders.length})
-                            </button>
-                            <button
-                                onClick={() => setStatusFilter('paid')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                                    statusFilter === 'paid' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                                Completed ({orders.filter(o => o.status === 'paid').length})
-                            </button>
-                            <button
-                                onClick={() => setStatusFilter('other')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                                    statusFilter === 'other' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                                Pending/Other ({orders.filter(o => o.status !== 'paid').length})
-                            </button>
+                        {/* Status Tabs - Apple Segmented Control */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl flex-shrink-0 relative">
+                            {[
+                                { id: 'all' as const, label: `All Orders (${orders.length})` },
+                                { id: 'paid' as const, label: `Completed (${orders.filter(o => o.status === 'paid').length})` },
+                                { id: 'other' as const, label: `Pending/Other (${orders.filter(o => o.status !== 'paid').length})` },
+                            ].map((tab) => {
+                                const isSelected = statusFilter === tab.id;
+                                return (
+                                    <motion.button
+                                        key={tab.id}
+                                        whileTap={{ scale: 0.96 }}
+                                        type="button"
+                                        onClick={() => setStatusFilter(tab.id)}
+                                        className={`relative z-10 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                                            isSelected ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'
+                                        }`}
+                                    >
+                                        {isSelected && (
+                                            <motion.div
+                                                layoutId="activeOrdersFilterPill"
+                                                className="absolute inset-0 bg-white rounded-lg shadow-2xs -z-10"
+                                                transition={{ type: 'spring', stiffness: 400, damping: 30, bounce: 0 }}
+                                            />
+                                        )}
+                                        {tab.label}
+                                    </motion.button>
+                                );
+                            })}
                         </div>
 
                         {/* Search & Refresh Actions */}
@@ -126,14 +129,15 @@ export default function Orders() {
                                 />
                             </div>
 
-                            <button
+                            <motion.button
+                                whileTap={{ scale: 0.92 }}
                                 onClick={loadOrdersData}
                                 disabled={isLoading}
                                 className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex-shrink-0"
                                 title="Refresh order history"
                             >
                                 <RotateCw size={16} className={isLoading ? 'animate-spin text-emerald-600' : ''} />
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
 

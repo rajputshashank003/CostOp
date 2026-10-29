@@ -15,7 +15,30 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
     const [isOpen, setIsOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [menuPlacement, setMenuPlacement] = useState<'left' | 'right'>('right');
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const updatePlacement = () => {
+        if (dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            // If anchoring to the right (extending to the left) would clip off the left viewport edge:
+            if (rect.right < 240) {
+                setMenuPlacement('left');
+            } else if (window.innerWidth - rect.left < 240) {
+                setMenuPlacement('right');
+            } else {
+                // On mobile default to left, on desktop default to right
+                setMenuPlacement(window.innerWidth < 640 ? 'left' : 'right');
+            }
+        }
+    };
+
+    const handleToggle = () => {
+        if (!isOpen) {
+            updatePlacement();
+        }
+        setIsOpen(!isOpen);
+    };
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -26,6 +49,13 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleResize = () => updatePlacement();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isOpen]);
 
     const handleAction = async (type: 'csv' | 'pdf') => {
         setIsOpen(false);
@@ -56,9 +86,10 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
 
     return (
         <div className={`relative inline-block ${className}`} ref={dropdownRef}>
-            <button
+            <motion.button
+                whileTap={{ scale: 0.96 }}
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggle}
                 disabled={isDownloading}
                 className="inline-flex items-center gap-1.5 min-[1200px]:gap-2 px-2.5 sm:px-3 min-[1200px]:px-4 py-1.5 min-[1200px]:py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs min-[1200px]:text-sm font-semibold shadow-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 flex-shrink-0"
             >
@@ -77,23 +108,26 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
                     </span>
                 )}
                 <ChevronDown size={13} className={`text-slate-400 min-[1200px]:w-3.5 min-[1200px]:h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+            </motion.button>
 
             {/* Dropdown Menu */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        initial={{ opacity: 0, scale: 0.94, y: -4 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl py-2 z-50 overflow-hidden"
+                        exit={{ opacity: 0, scale: 0.94, y: -4 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 350, bounce: 0 }}
+                        className={`absolute ${
+                            menuPlacement === 'left' ? 'left-0 origin-top-left' : 'right-0 origin-top-right'
+                        } mt-2 w-56 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl py-2 z-50 overflow-hidden max-w-[calc(100vw-24px)]`}
                     >
                         <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Executive Reports</p>
                         </div>
 
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.98 }}
                             type="button"
                             onClick={() => handleAction('pdf')}
                             className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors"
@@ -105,9 +139,10 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
                             {!isPro && (
                                 <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">PRO</span>
                             )}
-                        </button>
+                        </motion.button>
 
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.98 }}
                             type="button"
                             onClick={() => handleAction('csv')}
                             className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors"
@@ -119,7 +154,7 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
                             {!isPro && (
                                 <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">PRO</span>
                             )}
-                        </button>
+                        </motion.button>
                     </motion.div>
                 )}
             </AnimatePresence>
