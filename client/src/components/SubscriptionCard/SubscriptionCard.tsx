@@ -70,6 +70,9 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
         <motion.div
             layout
             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+            whileTap={clickable ? { scale: 0.985 } : undefined}
+            whileHover={clickable ? { y: -3 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 28, bounce: 0 }}
             onClick={handleCardClick}
             className={`bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300 group flex flex-col h-full ${clickable ? "cursor-pointer" : ""}`}
         >

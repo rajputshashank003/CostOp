@@ -94,8 +94,8 @@ export default function OrgSettings() {
             <Sidebar />
             <main className="flex-1 flex flex-col h-screen overflow-y-auto">
                 {/* Header */}
-                <header className="min-h-[62px] min-[1200px]:min-h-[76px] bg-white border-b border-slate-200 px-3 sm:px-4 min-[1200px]:px-8 py-2.5 sm:py-3 min-[1200px]:py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs transition-all gap-2">
-                    <div className="flex items-center gap-2 sm:gap-2.5 min-[1200px]:gap-4 min-w-0">
+                <header className="min-h-[62px] min-[1200px]:min-h-[76px] bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-4 min-[1200px]:px-8 py-2.5 sm:py-3 min-[1200px]:py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs transition-all gap-2">
+                    <div className="flex items-center gap-2.5 min-[1200px]:gap-4 min-w-0">
                         <MobileNav />
                         <div className="w-8 h-8 min-[1200px]:w-10 min-[1200px]:h-10 rounded-xl bg-emerald-50 text-emerald-600 hidden sm:flex items-center justify-center shadow-inner flex-shrink-0">
                             <Sliders size={20} />
@@ -117,7 +117,8 @@ export default function OrgSettings() {
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
                             type="button"
                             onClick={() => setShowManageUsers(true)}
                             className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs shadow-emerald-600/20 transition-all cursor-pointer flex-shrink-0"
@@ -126,8 +127,9 @@ export default function OrgSettings() {
                             <Users size={15} />
                             <span className="hidden min-[480px]:inline">Manage Users</span>
                             <span className="min-[480px]:hidden">Users</span>
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                            whileTap={{ scale: 0.92 }}
                             type="button"
                             onClick={loadPricing}
                             disabled={isLoading}
@@ -135,7 +137,7 @@ export default function OrgSettings() {
                             title="Refresh pricing"
                         >
                             <RefreshCw size={17} className={isLoading ? "animate-spin" : ""} />
-                        </button>
+                        </motion.button>
                         <NotificationBell />
                     </div>
                 </header>

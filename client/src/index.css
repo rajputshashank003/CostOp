@@ -8,6 +8,14 @@
   --color-surface-3: var(--surface-3);
 }
 
+/* Apple typography & interaction foundations */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
@@ -15,4 +23,13 @@
 }
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
