@@ -74,7 +74,9 @@ client/.env.*.local
 # Remotion (video/)
 # --------------------
 video/node_modules/
-video/out/
+video/out/*
+# the intro video is shown in the main README
+!video/out/costop-launch-16x9.mp4
 # Generated audio (ElevenLabs output + rendered score); regenerate locally, see video/README.md
 video/public/*.wav
 video/public/voiceover.mp3

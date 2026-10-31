@@ -3,6 +3,12 @@
 
 ![CostOp Banner](./client/src/assets/images/landingPage.png)
 
+## 🎬 Intro Video
+
+[![Watch the CostOp intro video](./client/src/assets/images/intro-video-thumb.jpg)](./video/out/costop-launch-16x9.mp4)
+
+*45 seconds: how CostOp finds unused seats, duplicate tools and surprise renewals, and what to cut.*
+
 ## 🌟 About The Product
 
 Organizations today waste thousands of dollars every year on ghost subscriptions, unused licenses, and duplicate tools. **CostOp** is a modern SaaS management dashboard built specifically to stop that bleed. 
