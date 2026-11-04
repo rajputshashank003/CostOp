@@ -33,6 +33,7 @@ func GetProfileSubscriptions(c *gin.Context) {
 // GetUserProfile returns a public profile for any user in the same organization.
 // GET /api/users/:id/profile
 func GetUserProfile(c *gin.Context) {
+	caller := c.MustGet("user").(models.User)
 	targetID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
@@ -40,7 +41,7 @@ func GetUserProfile(c *gin.Context) {
 	}
 
 	var targetUser models.User
-	if err := database.DB.First(&targetUser, uint(targetID)).Error; err != nil {
+	if caller.OrgID == 0 || database.DB.Where("id = ? AND org_id = ?", uint(targetID), caller.OrgID).First(&targetUser).Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}

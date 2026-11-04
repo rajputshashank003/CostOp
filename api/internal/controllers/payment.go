@@ -76,15 +76,11 @@ func CreateRazorpayOrder(c *gin.Context) {
 		setting = models.PlanSetting{MonthlyPrice: 999.00, YearlyDiscountPercent: 20.00}
 	}
 
-	var amountPaise int64
-	interval := "monthly"
-	if orderInput.Interval == "yearly" || orderInput.Interval == "annual" {
-		discountMultiplier := 1.0 - (setting.YearlyDiscountPercent / 100.0)
-		yearlyTotal := setting.MonthlyPrice * 12.0 * discountMultiplier
-		amountPaise = int64(math.Round(yearlyTotal * 100.0))
-		interval = "yearly"
-	} else {
-		amountPaise = int64(math.Round(setting.MonthlyPrice * 100.0))
+	amountPaise, interval, err := services.OrderAmountPaise(setting, orderInput.Interval)
+	if err != nil {
+		log.Printf("[RAZORPAY ERROR] Invalid plan pricing: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Plan pricing is misconfigured"})
+		return
 	}
 
 	currency := "INR"
@@ -151,8 +147,11 @@ func CreateRazorpayOrder(c *gin.Context) {
 		Status:          "created",
 		Receipt:         receipt,
 	}
+	// Without this record the payment can never be matched to the workspace, so don't start checkout
 	if err := database.DB.Create(&orderRecord).Error; err != nil {
 		log.Printf("[ORDER ERROR] Failed to record created order: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start checkout, please try again"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -205,41 +204,33 @@ func VerifyRazorpayPayment(c *gin.Context) {
 		return
 	}
 
-	// Upgrade workspace to Pro
-	org.Plan = "pro"
-	org.RazorpayPaymentID = input.RazorpayPaymentID
-	if err := database.DB.Save(&org).Error; err != nil {
+	// The order must have been created by this organization. A signed (order, payment) pair proves
+	// a payment happened, not who paid, so without this check one payment could upgrade any workspace.
+	var owned models.Order
+	if err := database.DB.Where("razorpay_order_id = ? AND org_id = ?", input.RazorpayOrderID, org.ID).First(&owned).Error; err != nil {
+		log.Printf("[RAZORPAY TAMPER] Org %d tried to verify order %s it did not create\n", org.ID, input.RazorpayOrderID)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Payment does not belong to this workspace"})
+		return
+	}
+	if owned.Status == "paid" && owned.RazorpayPaymentID != input.RazorpayPaymentID {
+		c.JSON(http.StatusConflict, gin.H{"error": "This order has already been paid"})
+		return
+	}
+
+	// Mark the order paid and extend Pro by one period, exactly once (the webhook may race us)
+	applied, _, err := services.ApplyPaidOrder(owned.ID, input.RazorpayPaymentID)
+	if err != nil {
+		log.Printf("[RAZORPAY ERROR] Failed to apply order %s: %v\n", input.RazorpayOrderID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update organization plan"})
 		return
 	}
 
-	// Mark order as paid
-	database.DB.Model(&models.Order{}).
-		Where("razorpay_order_id = ?", input.RazorpayOrderID).
-		Updates(map[string]interface{}{
-			"status":              "paid",
-			"razorpay_payment_id": input.RazorpayPaymentID,
-		})
-
-	// Fetch order details for exact amount and interval
-	var order models.Order
-	paidAmount := 999.00
-	paidInterval := "monthly"
-	if err := database.DB.Where("razorpay_order_id = ?", input.RazorpayOrderID).First(&order).Error; err == nil {
-		if order.Amount > 0 {
-			paidAmount = order.Amount
-		}
-		if order.Interval != "" {
-			paidInterval = order.Interval
-		}
-	}
-
-	// Dispatch rich payment confirmation email asynchronously
+	// Dispatch rich payment confirmation email asynchronously (once per order)
 	var payingUser models.User
-	if err := database.DB.First(&payingUser, userID).Error; err == nil && payingUser.Email != "" {
+	if applied && database.DB.First(&payingUser, userID).Error == nil && payingUser.Email != "" {
 		go func(u models.User, payID string, cycle string, amt float64) {
 			_ = services.SendPaymentSuccessEmail(u.Email, u.Name, "Pro", cycle, amt, payID)
-		}(payingUser, input.RazorpayPaymentID, paidInterval, paidAmount)
+		}(payingUser, input.RazorpayPaymentID, owned.Interval, owned.Amount)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -351,63 +342,57 @@ func HandleRazorpayWebhook(c *gin.Context) {
 		}
 	}
 
+	// Our own order record (created at checkout) is the source of truth for which workspace paid
+	// and how much; payload notes alone are never enough to upgrade anyone.
+	paymentOrderID := event.Payload.Payment.Entity.OrderID
+	if paymentOrderID == "" {
+		paymentOrderID = event.Payload.Order.Entity.ID
+	}
+	var localOrder models.Order
+	hasLocalOrder := paymentOrderID != "" &&
+		database.DB.Where("razorpay_order_id = ?", paymentOrderID).First(&localOrder).Error == nil
+
 	switch event.Event {
 	case "payment.captured", "order.paid":
-		if targetOrgID > 0 {
-			database.DB.Model(&models.Organization{}).Where("id = ?", targetOrgID).Updates(map[string]interface{}{
-				"plan":                "pro",
-				"razorpay_payment_id": event.Payload.Payment.Entity.ID,
-			})
-			log.Printf("[RAZORPAY WEBHOOK] Upgraded organization %d to pro via %s\n", targetOrgID, event.Event)
-
-			// Check if the order was already marked as paid (e.g. by VerifyRazorpayPayment from frontend)
-			var existingOrder models.Order
-			alreadyPaid := false
-			orderLookup := database.DB.Where("razorpay_order_id = ? OR razorpay_payment_id = ?",
-				event.Payload.Payment.Entity.OrderID, event.Payload.Payment.Entity.ID).First(&existingOrder)
-			if orderLookup.Error == nil && existingOrder.Status == "paid" {
-				alreadyPaid = true
-			}
-
-			// Mark order as paid
-			database.DB.Model(&models.Order{}).
-				Where("razorpay_order_id = ? OR razorpay_payment_id = ? OR (org_id = ? AND status = 'created')",
-					event.Payload.Payment.Entity.OrderID, event.Payload.Payment.Entity.ID, targetOrgID).
-				Updates(map[string]interface{}{
-					"status":              "paid",
-					"razorpay_payment_id": event.Payload.Payment.Entity.ID,
-				})
-
-			// Only send confirmation email if order was not already marked paid by frontend checkout handler
-			if !alreadyPaid {
-				userEmail := event.Payload.Payment.Entity.Email
-				userName := "Valued Member"
-				var org models.Organization
-				if err := database.DB.First(&org, targetOrgID).Error; err == nil {
-					var owner models.User
-					if err := database.DB.First(&owner, org.OwnerID).Error; err == nil {
-						if userEmail == "" {
-							userEmail = owner.Email
-						}
-						if owner.Name != "" {
-							userName = owner.Name
-						}
-					}
+		if !hasLocalOrder {
+			log.Printf("[RAZORPAY WEBHOOK] %s for unknown order %q ignored\n", event.Event, paymentOrderID)
+			break
+		}
+		expectedPaise := int64(math.Round(localOrder.Amount * 100))
+		if paid := event.Payload.Payment.Entity.Amount; paid != expectedPaise {
+			log.Printf("[RAZORPAY WEBHOOK] Amount mismatch for order %s: paid %d, expected %d paise; not upgrading\n", paymentOrderID, paid, expectedPaise)
+			break
+		}
+		targetOrgID = localOrder.OrgID
+		applied, _, err := services.ApplyPaidOrder(localOrder.ID, event.Payload.Payment.Entity.ID)
+		if err != nil {
+			log.Printf("[RAZORPAY WEBHOOK] Failed to apply order %s: %v\n", paymentOrderID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to apply payment"})
+			return
+		}
+		// Only email when this event is what applied the order (not on replays or after the verify call)
+		if !applied {
+			break
+		}
+		log.Printf("[RAZORPAY WEBHOOK] Order %s applied: organization %d upgraded via %s\n", paymentOrderID, targetOrgID, event.Event)
+		userEmail := event.Payload.Payment.Entity.Email
+		userName := "Valued Member"
+		var org models.Organization
+		if err := database.DB.First(&org, targetOrgID).Error; err == nil {
+			var owner models.User
+			if err := database.DB.First(&owner, org.OwnerID).Error; err == nil {
+				if userEmail == "" {
+					userEmail = owner.Email
 				}
-				amount := float64(event.Payload.Payment.Entity.Amount) / 100.0
-				if amount <= 0 {
-					amount = 999.00
-				}
-				interval := event.Payload.Payment.Entity.Notes["interval"]
-				if interval == "" {
-					interval = "monthly"
-				}
-				if userEmail != "" {
-					go func(to, name, cycle string, amt float64, pid string) {
-						_ = services.SendPaymentSuccessEmail(to, name, "Pro", cycle, amt, pid)
-					}(userEmail, userName, interval, amount, event.Payload.Payment.Entity.ID)
+				if owner.Name != "" {
+					userName = owner.Name
 				}
 			}
+		}
+		if userEmail != "" {
+			go func(to, name, cycle string, amt float64, pid string) {
+				_ = services.SendPaymentSuccessEmail(to, name, "Pro", cycle, amt, pid)
+			}(userEmail, userName, localOrder.Interval, localOrder.Amount, event.Payload.Payment.Entity.ID)
 		}
 
 	case "subscription.activated", "subscription.charged":
@@ -428,10 +413,11 @@ func HandleRazorpayWebhook(c *gin.Context) {
 	case "payment.failed":
 		log.Printf("[RAZORPAY WEBHOOK] Payment failed for org %d (PaymentID: %s)\n", targetOrgID, event.Payload.Payment.Entity.ID)
 
-		if targetOrgID > 0 {
+		// Only the order this payment belongs to, and never one that has already been paid
+		if hasLocalOrder {
+			targetOrgID = localOrder.OrgID
 			database.DB.Model(&models.Order{}).
-				Where("razorpay_order_id = ? OR (org_id = ? AND status = 'created')",
-					event.Payload.Payment.Entity.OrderID, targetOrgID).
+				Where("id = ? AND status = 'created'", localOrder.ID).
 				Updates(map[string]interface{}{
 					"status":         "failed",
 					"failure_reason": event.Payload.Payment.Entity.ErrorDescription,
@@ -493,7 +479,9 @@ func GetUserOrders(c *gin.Context) {
 
 	// Backfill initial order if org has existing RazorpayPaymentID but no row in orders table
 	var org models.Organization
-	if err := database.DB.First(&org, orgID).Error; err == nil && len(orders) == 0 && org.RazorpayPaymentID != "" {
+	// Legacy backfill for real payments only: never fabricate a paid invoice for an admin-granted or manual upgrade
+	if err := database.DB.First(&org, orgID).Error; err == nil && len(orders) == 0 && org.RazorpayPaymentID != "" &&
+		!(org.RazorpayPaymentID == "pay_admin_granted" || org.RazorpayPaymentID == "pay_test_direct_upgrade") {
 		backfill := models.Order{
 			OrgID:             org.ID,
 			UserID:            userID,

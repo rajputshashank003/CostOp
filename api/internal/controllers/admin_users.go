@@ -314,9 +314,11 @@ func ToggleOrgProAccess(c *gin.Context) {
 
 	if newIsPro {
 		org.Plan = "pro"
+		org.PlanExpiresAt = nil // manual grants and revokes have no paid period
 		org.RazorpayPaymentID = "pay_admin_granted"
 	} else {
 		org.Plan = "free"
+		org.PlanExpiresAt = nil // manual grants and revokes have no paid period
 		org.RazorpayPaymentID = ""
 		org.RazorpaySubID = ""
 	}
@@ -578,9 +580,11 @@ func ToggleUserProAccess(c *gin.Context) {
 
 	if newIsPro {
 		org.Plan = "pro"
+		org.PlanExpiresAt = nil // manual grants and revokes have no paid period
 		org.RazorpayPaymentID = "pay_admin_granted"
 	} else {
 		org.Plan = "free"
+		org.PlanExpiresAt = nil // manual grants and revokes have no paid period
 		org.RazorpayPaymentID = ""
 		org.RazorpaySubID = ""
 	}

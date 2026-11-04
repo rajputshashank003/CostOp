@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"costop/internal/config"
@@ -26,6 +27,12 @@ func main() {
 
 	r := gin.Default()
 
+	// Cap request bodies (the API only takes small JSON payloads)
+	r.Use(func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
+		c.Next()
+	})
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "https://costop1.vercel.app", "https://costop-s.vercel.app", "https://www.costop.in", "https://costop.in"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -36,6 +43,9 @@ func main() {
 	}))
 
 	routes.SetupRoutes(r)
+
+	// Paid Pro periods end: move lapsed workspaces back to the free plan
+	services.StartPlanExpirySweeper(10 * time.Minute)
 
 	// Start Cron Schedulers
 	// services.StartCronJobs()

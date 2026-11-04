@@ -89,15 +89,11 @@ func GetSubscriptions(c *gin.Context) {
 		return
 	}
 
-	// Default to user's team; allow override via ?team_id=
-	var teamFilter uint = user.DefaultTeamID
-	isAllTeams := false
-	if tid := c.Query("team_id"); tid != "" {
-		if tid == "all" {
-			isAllTeams = true
-		} else if parsed, err := strconv.Atoi(tid); err == nil {
-			teamFilter = uint(parsed)
-		}
+	// Default to user's team; allow override via ?team_id= (only teams in the caller's org)
+	teamFilter, isAllTeams, err := teamFilterFromQuery(c.Query("team_id"), user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
 	}
 
 	// Build query based on team filter
@@ -107,11 +103,7 @@ func GetSubscriptions(c *gin.Context) {
 		query = orgSubscriptionQuery(user.OrgID, status)
 	} else {
 		// Single-team view: subscriptions granted to this team + org-scoped subs
-		query = database.DB.Where(
-			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR (scope = 'organization' AND org_id = ?)) AND status = ?`,
-			teamFilter, user.OrgID, status,
-		)
+		query = teamSubscriptionQuery(teamFilter, user.OrgID).Where("status = ?", status)
 	}
 
 	if search := c.Query("search"); search != "" {
@@ -190,9 +182,13 @@ func AddSubscription(c *gin.Context) {
 	}
 	user := result.User
 
-	// Set server-controlled fields
+	// Set server-controlled fields (never trust these from the request body)
+	input.ID = 0
 	input.UserID = userID
 	input.OrgID = user.OrgID
+	input.Status = "active"
+	input.ArchivedBy = nil
+	input.LastAlertedAt = nil
 	if input.OwnerID == 0 {
 		input.OwnerID = userID
 	}
@@ -219,6 +215,20 @@ func AddSubscription(c *gin.Context) {
 				"seat_count":        input.SeatCount,
 				"team_member_count": totalMembers,
 			})
+			return
+		}
+	}
+
+	// Everything the new subscription points at must belong to the caller's organization
+	if !allTeamsInOrg(req.TeamIDs, user.OrgID) || !allUsersInOrg(append(req.AssignedUserIDs, input.OwnerID), user.OrgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Teams and members must belong to your organization"})
+		return
+	}
+	if req.OriginRequestID != nil {
+		var n int64
+		database.DB.Model(&models.SubscriptionRequest{}).Where("id = ? AND org_id = ?", *req.OriginRequestID, user.OrgID).Count(&n)
+		if n == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Request not found"})
 			return
 		}
 	}
@@ -461,7 +471,6 @@ func GetSubscriptionByID(c *gin.Context) {
 	// Seat assignments grouped by source
 	var assignments []models.SubscriptionAssignment
 	database.DB.Where("subscription_id = ?", sub.ID).Find(&assignments)
-	fmt.Printf("[DEBUG] GetSubscriptionByID: sub.ID=%d, found %d assignments\n", sub.ID, len(assignments))
 
 	type AssignedUser struct {
 		AssignmentID uint      `json:"assignment_id"`
@@ -612,9 +621,13 @@ func AssignSeat(c *gin.Context) {
 		return
 	}
 
-	var sub models.Subscription
-	if err := database.DB.First(&sub, uint(subID)).Error; err != nil {
+	sub, err := subscriptionInOrg(uint(subID), caller.OrgID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
+		return
+	}
+	if !allUsersInOrg([]uint{input.UserID}, caller.OrgID) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -670,6 +683,11 @@ func UnassignSeat(c *gin.Context) {
 		return
 	}
 
+	if _, err := subscriptionInOrg(uint(subID), caller.OrgID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
+		return
+	}
+
 	var assignment models.SubscriptionAssignment
 	if err := database.DB.Where("subscription_id = ? AND user_id = ?", uint(subID), uint(targetUID)).First(&assignment).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Assignment not found"})
@@ -692,8 +710,8 @@ func GetSeats(c *gin.Context) {
 		return
 	}
 
-	var sub models.Subscription
-	if err := database.DB.First(&sub, uint(subID)).Error; err != nil {
+	sub, err := subscriptionInOrg(uint(subID), caller.OrgID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
 	}
@@ -774,9 +792,13 @@ func GrantTeamAccess(c *gin.Context) {
 		return
 	}
 
-	var sub models.Subscription
-	if err := database.DB.First(&sub, uint(subID)).Error; err != nil {
+	sub, err := subscriptionInOrg(uint(subID), caller.OrgID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
+		return
+	}
+	if _, err := teamInOrg(input.TeamID, caller.OrgID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
 		return
 	}
 
@@ -857,6 +879,11 @@ func RevokeTeamAccess(c *gin.Context) {
 	var member models.TeamMember
 	if err := database.DB.Where("team_id = ? AND user_id = ?", caller.DefaultTeamID, callerID).First(&member).Error; err != nil || member.Role != "owner" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can revoke team access"})
+		return
+	}
+
+	if _, err := subscriptionInOrg(uint(subID), caller.OrgID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
 		return
 	}
 

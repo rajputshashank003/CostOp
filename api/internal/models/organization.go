@@ -19,6 +19,7 @@ type Organization struct {
 	RazorpayCustomerID string         `gorm:"index" json:"razorpay_customer_id,omitempty"`
 	RazorpaySubID      string         `gorm:"index" json:"razorpay_sub_id,omitempty"`
 	RazorpayPaymentID  string         `json:"razorpay_payment_id,omitempty"`
+	PlanExpiresAt      *time.Time     `json:"plan_expires_at"` // end of the paid Pro period; nil = no expiry (admin-granted or legacy)
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`

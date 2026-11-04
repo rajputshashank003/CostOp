@@ -42,20 +42,28 @@ func VerifyGoogleToken(c *gin.Context) {
 		return
 	}
 
-	// Extract user details
-	email := payload.Claims["email"].(string)
-	name := payload.Claims["name"].(string)
-	googleID := payload.Claims["sub"].(string)
+	// Extract user details; only a Google-verified email may sign in or link to an account
+	email, _ := payload.Claims["email"].(string)
+	googleID, _ := payload.Claims["sub"].(string)
+	emailVerified, _ := payload.Claims["email_verified"].(bool)
+	if email == "" || googleID == "" || !emailVerified {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Your Google account email must be verified"})
+		return
+	}
+	name, _ := payload.Claims["name"].(string)
+	if name == "" {
+		name = strings.Split(email, "@")[0]
+	}
 	avatarURL := ""
 	if pict, ok := payload.Claims["picture"].(string); ok {
 		avatarURL = pict
 	}
 
-	// Check for a valid Invite
+	// Check for a valid Invite (an invite only works for the address it was sent to)
 	var invite models.TeamInvite
 	var hasInvite bool = false
 	if req.InviteToken != "" {
-		if err := database.DB.Where("token = ? AND status = ?", req.InviteToken, "pending").First(&invite).Error; err == nil {
+		if err := database.DB.Where("token = ? AND status = ? AND LOWER(email) = ?", req.InviteToken, "pending", strings.ToLower(email)).First(&invite).Error; err == nil {
 			// Verify target organization has capacity
 			var inviteTeam models.Team
 			if err := database.DB.First(&inviteTeam, invite.TeamID).Error; err == nil {
@@ -138,12 +146,25 @@ func VerifyGoogleToken(c *gin.Context) {
 			isAdmin = true
 		}
 	} else {
-		if hasInvite && user.DefaultTeamID != invite.TeamID {
-			// Accepted invite to a different team
-			user.DefaultTeamID = invite.TeamID
-			// Inherit org_id from the invited team
-			var inviteTeam models.Team
+		// Google has proven ownership of this email. If someone pre-registered it with a password
+		// and never verified it, that password belongs to them, not the owner: drop it.
+		if !user.IsEmailVerified && user.PasswordHash != "" {
+			user.PasswordHash = ""
+			user.EmailVerifyToken = ""
+			user.EmailVerifyExpiresAt = nil
+		}
+
+		var inviteTeam models.Team
+		if hasInvite {
 			database.DB.First(&inviteTeam, invite.TeamID)
+			if user.OrgID != 0 && inviteTeam.OrgID != user.OrgID {
+				c.JSON(http.StatusConflict, gin.H{"error": "This account already belongs to another workspace"})
+				return
+			}
+		}
+		if hasInvite && user.DefaultTeamID != invite.TeamID {
+			// Accepted invite to a different team in the same organization
+			user.DefaultTeamID = invite.TeamID
 			if user.OrgID == 0 {
 				user.OrgID = inviteTeam.OrgID
 			}
@@ -256,7 +277,7 @@ func EmailPasswordLogin(c *gin.Context) {
 		return
 	}
 
-	if !user.IsEmailVerified && strings.ToLower(user.Email) != "demo@costop.in" {
+	if !user.IsEmailVerified {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":                 "Please verify your email address to log in. We sent a verification link to your email.",
 			"requires_verification": true,
@@ -303,8 +324,8 @@ func EmailPasswordSignup(c *gin.Context) {
 		return
 	}
 
-	if len(req.Password) < 6 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 6 characters long"})
+	if len(req.Password) < 8 || len(req.Password) > 72 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be between 8 and 72 characters long"})
 		return
 	}
 
@@ -324,7 +345,7 @@ func EmailPasswordSignup(c *gin.Context) {
 	var invite models.TeamInvite
 	var hasInvite bool = false
 	if req.InviteToken != "" {
-		if err := database.DB.Where("token = ? AND status = ?", req.InviteToken, "pending").First(&invite).Error; err == nil {
+		if err := database.DB.Where("token = ? AND status = ? AND LOWER(email) = ?", req.InviteToken, "pending", cleanEmail).First(&invite).Error; err == nil {
 			var inviteTeam models.Team
 			if err := database.DB.First(&inviteTeam, invite.TeamID).Error; err == nil {
 				var org models.Organization
@@ -535,7 +556,13 @@ func ResendVerificationEmail(c *gin.Context) {
 // EnsureDemoUser creates or synchronizes the demo account required for verification
 func EnsureDemoUser() {
 	demoEmail := "demo@costop.in"
-	demoPass := "demo@123"
+	demoPass := config.DemoUserPassword
+	if len(demoPass) < 12 {
+		log.Println("[DEMO_USER] DEMO_USER_PASSWORD not set (min 12 chars): demo account disabled")
+		// Lock any existing demo account whose password was published in source
+		database.DB.Model(&models.User{}).Where("LOWER(email) = ?", demoEmail).Update("password_hash", "")
+		return
+	}
 
 	var user models.User
 	err := database.DB.Where("LOWER(email) = ?", demoEmail).First(&user).Error

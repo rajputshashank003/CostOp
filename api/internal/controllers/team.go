@@ -192,25 +192,34 @@ func UpdateMemberTeam(c *gin.Context) {
 		return
 	}
 
-	// Caller must be an admin (owner of any team in the workspace) or the owner of the source team
-	var callerMembership models.TeamMember
-	isAdmin := false
-	if err := database.DB.Where("user_id = ? AND role = 'owner'", callerID).First(&models.TeamMember{}).Error; err == nil {
-		isAdmin = true
+	var caller models.User
+	if err := database.DB.First(&caller, callerID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
 	}
 
-	if !isAdmin {
-		if err := database.DB.Where("team_id = ? AND user_id = ?", teamIDParam, callerID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
+	// Source team, target team and the member must all be in the caller's organization
+	sourceTeam, err := teamInOrg(parseUint(teamIDParam), caller.OrgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
+	}
+	if _, err := teamInOrg(input.NewTeamID, caller.OrgID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Target team not found"})
+		return
+	}
+	if !allUsersInOrg([]uint{parseUint(targetUID)}, caller.OrgID) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		return
+	}
+
+	// Caller must be a workspace admin or the owner of the source team
+	var callerMembership models.TeamMember
+	if !isWorkspaceAdmin(caller) {
+		if err := database.DB.Where("team_id = ? AND user_id = ?", sourceTeam.ID, callerID).First(&callerMembership).Error; err != nil || callerMembership.Role != "owner" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Only admins or team owners can reassign members"})
 			return
 		}
-	}
-
-	// Verify the target team exists
-	var targetTeam models.Team
-	if err := database.DB.First(&targetTeam, input.NewTeamID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Target team not found"})
-		return
 	}
 
 	// Find the membership to move
@@ -507,9 +516,16 @@ func CreateTeam(c *gin.Context) {
 		return
 	}
 
-	// Set org_id from the caller's org
+	// Set org_id from the caller's org; only workspace admins can create teams
 	var user models.User
-	database.DB.First(&user, userID)
+	if err := database.DB.First(&user, userID).Error; err != nil || user.OrgID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+	if !isWorkspaceAdmin(user) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can create teams"})
+		return
+	}
 
 	team := models.Team{
 		Name:    input.Name,
@@ -529,7 +545,7 @@ func CreateTeam(c *gin.Context) {
 	}
 	database.DB.Create(&membership)
 
-	InvalidateTeamCache()
+	InvalidateTeamCache(user.OrgID)
 	c.JSON(http.StatusCreated, gin.H{"id": team.ID, "name": team.Name})
 }
 

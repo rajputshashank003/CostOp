@@ -106,6 +106,17 @@ func CreateAlert(c *gin.Context) {
 		return
 	}
 
+	if input.SubscriptionID != nil {
+		if _, err := subscriptionInOrg(*input.SubscriptionID, user.OrgID); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Subscription not found"})
+			return
+		}
+	}
+	if len(input.CustomTitle) > 120 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "custom_title must be 120 characters or fewer"})
+		return
+	}
+
 	// Validate recipients (max 5)
 	if len(input.Recipients) > 5 {
 		input.Recipients = input.Recipients[:5]
@@ -115,6 +126,12 @@ func CreateAlert(c *gin.Context) {
 	if len(input.Recipients) == 0 {
 		input.Recipients = []string{user.Email}
 	}
+	recipients, ok := validRecipients(input.Recipients, user.OrgID)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipients must be members of your organization"})
+		return
+	}
+	input.Recipients = recipients
 
 	// Default trigger offsets for non-custom alerts
 	if input.AlertType != "custom" && len(input.TriggerOffsets) == 0 {
@@ -194,6 +211,23 @@ func UpdateAlert(c *gin.Context) {
 
 	if len(input.Recipients) > 5 {
 		input.Recipients = input.Recipients[:5]
+	}
+	if len(input.CustomTitle) > 120 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "custom_title must be 120 characters or fewer"})
+		return
+	}
+	if input.Status != "" && input.Status != "active" && input.Status != "dismissed" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status must be active or dismissed"})
+		return
+	}
+	if input.Recipients != nil {
+		user := c.MustGet("user").(models.User)
+		recipients, ok := validRecipients(input.Recipients, user.OrgID)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Recipients must be members of your organization"})
+			return
+		}
+		input.Recipients = recipients
 	}
 
 	updates := map[string]interface{}{}

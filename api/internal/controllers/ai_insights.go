@@ -99,7 +99,7 @@ func GetAIInsights(c *gin.Context) {
 			if strings.Contains(err.Error(), "rate limit") {
 				c.JSON(http.StatusTooManyRequests, gin.H{"error": "AI rate limit reached — please try again in a minute"})
 			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "AI analysis failed: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "AI analysis failed, please try again later"})
 			}
 			return
 		}
@@ -303,15 +303,19 @@ Return ONLY the JSON object.`,
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf(
-		"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
-		geminiModel, config.GeminiAPIKey,
-	)
+	// The key goes in a header, never the URL: Go puts the full URL into network error messages
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent", geminiModel)
 
 	log.Printf("[AI Insights] Calling Gemini (grounding=%v, subs=%d, spend=$%.2f)", useGrounding, len(subs), totalMonthly)
 
 	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Post(url, "application/json", bytes.NewReader(bodyBytes))
+	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-goog-api-key", config.GeminiAPIKey)
+	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("gemini request: %w", err)
 	}

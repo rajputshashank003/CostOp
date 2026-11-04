@@ -252,7 +252,7 @@ export default function LoginBox() {
                                 </label>
                                 {!isLogin && (
                                     <span className="text-[11px] text-slate-400 font-medium">
-                                        Min. 6 characters
+                                        Min. 8 characters
                                     </span>
                                 )}
                             </div>

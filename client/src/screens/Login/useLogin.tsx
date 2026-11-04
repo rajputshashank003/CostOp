@@ -57,8 +57,8 @@ const useLogin = () => {
             return;
         }
 
-        if (authMode === 'signup' && cleanPassword.length < 6) {
-            setErrorMessage("Password must be at least 6 characters.");
+        if (authMode === 'signup' && cleanPassword.length < 8) {
+            setErrorMessage("Password must be at least 8 characters.");
             return;
         }
 
