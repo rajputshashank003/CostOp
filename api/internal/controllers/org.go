@@ -26,10 +26,10 @@ func resolveOrgID(userID uint) (uint, error) {
 
 // orgSubscriptionQuery returns a base GORM query for all subscriptions
 // belonging to a given organization, filtered by status.
-// Falls back to unscoped query for un-migrated data (orgID=0).
+// A user without an organization sees nothing (never every tenant's data).
 func orgSubscriptionQuery(orgID uint, status string) *gorm.DB {
 	if orgID == 0 {
-		return database.DB.Where("status = ?", status)
+		return database.DB.Where("1 = 0")
 	}
 	return database.DB.Where("org_id = ? AND status = ?", orgID, status)
 }
@@ -129,12 +129,19 @@ func GetOrganization(c *gin.Context) {
 		memberLimit = 100
 	}
 
+	// Anyone holding the webhook URL can post into the company's Slack: show it to owners only
+	slackURL := ""
+	if caller, ok := c.Get("user"); ok && (org.OwnerID == userID || isWorkspaceAdmin(caller.(models.User))) {
+		slackURL = org.SlackWebhookURL
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":                   org.ID,
 		"name":                 org.Name,
 		"owner_id":             org.OwnerID,
 		"plan":                 org.Plan,
-		"slack_webhook_url":    org.SlackWebhookURL,
+		"slack_webhook_url":    slackURL,
+		"plan_expires_at":      org.PlanExpiresAt,
 		"currency":             services.NormalizeCurrency(org.Currency),
 		"razorpay_customer_id": org.RazorpayCustomerID,
 		"razorpay_sub_id":      org.RazorpaySubID,
@@ -222,7 +229,7 @@ func UpdateOrganizationSettings(c *gin.Context) {
 			updates["slack_webhook_url"] = ""
 		} else {
 			// Updating the webhook requires a valid Slack URL and the Pro tier
-			if !strings.HasPrefix(trimmedURL, "https://hooks.slack.com/") {
+			if !services.IsSlackWebhookURL(trimmedURL) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Slack webhook URL. Must start with https://hooks.slack.com/"})
 				return
 			}
@@ -283,6 +290,7 @@ func UpgradeOrganization(c *gin.Context) {
 	}
 
 	org.Plan = "pro"
+	org.PlanExpiresAt = nil // manual grants and revokes have no paid period
 	org.RazorpayPaymentID = "pay_test_direct_upgrade"
 	if err := database.DB.Save(&org).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade organization"})
@@ -341,7 +349,7 @@ func TestSlackWebhook(c *gin.Context) {
 		targetURL = org.SlackWebhookURL
 	}
 
-	if targetURL == "" || !strings.HasPrefix(targetURL, "https://hooks.slack.com/") {
+	if !services.IsSlackWebhookURL(targetURL) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Slack webhook URL. Must start with https://hooks.slack.com/"})
 		return
 	}

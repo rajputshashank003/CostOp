@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"html"
 	"strings"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 
 	"github.com/resend/resend-go/v2"
 )
-
 
 // SendTeamInviteEmail securely constructs and fires an invitation link via Resend.
 func SendTeamInviteEmail(toEmail, inviterName, teamName, inviteToken string) error {
@@ -111,7 +111,7 @@ func SendTeamInviteEmail(toEmail, inviterName, teamName, inviteToken string) err
 </td></tr>
 </table>
 </body>
-</html>`, teamName, teamName, inviterName, inviteLink)
+</html>`, h(teamName), h(teamName), h(inviterName), inviteLink)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Team <help@costop.in>",
@@ -237,7 +237,7 @@ func SendRenewalAlertEmail(toEmail, userName, subName string, subCost float64, a
 </td></tr>
 </table>
 </body>
-</html>`, subName, userName, subName, billingType, subCost, frontendURL)
+</html>`, h(subName), h(userName), h(subName), billingType, subCost, frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Tracker <help@costop.in>",
@@ -275,9 +275,9 @@ func SendAlertEmail(toEmail, subject, message, subName, cost string, daysLeft in
 
 	var timingLine string
 	if daysLeft == 0 {
-		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s <strong>today</strong> for <strong>%s</strong>.", subName, actionWord, cost)
+		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s <strong>today</strong> for <strong>%s</strong>.", h(subName), actionWord, h(cost))
 	} else {
-		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s in <strong>%d day(s)</strong> for <strong>%s</strong>.", subName, actionWord, daysLeft, cost)
+		timingLine = fmt.Sprintf("Your subscription to <strong>%s</strong> %s in <strong>%d day(s)</strong> for <strong>%s</strong>.", h(subName), actionWord, daysLeft, h(cost))
 	}
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
@@ -355,7 +355,7 @@ func SendAlertEmail(toEmail, subject, message, subName, cost string, daysLeft in
 </td></tr>
 </table>
 </body>
-</html>`, subject, subName, timingLine, frontendURL)
+</html>`, h(subject), h(subName), timingLine, frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Alerts <help@costop.in>",
@@ -456,7 +456,7 @@ func SendCustomAlertEmail(toEmail, subject, message string) error {
 </td></tr>
 </table>
 </body>
-</html>`, subject, subject, message, frontendURL)
+</html>`, h(subject), h(subject), h(message), frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp Alerts <support@costop.in>",
@@ -494,9 +494,9 @@ func SendWelcomeEmail(toEmail, userName, avatarURL string) error {
 	}
 	avatarSection := ""
 	if avatarURL != "" {
-		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:72px;height:72px;border-radius:50%%;border:3px solid #10b981;display:block;margin:0 auto;" />`, avatarURL, userName)
+		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:72px;height:72px;border-radius:50%%;border:3px solid #10b981;display:block;margin:0 auto;" />`, h(avatarURL), h(userName))
 	} else {
-		avatarSection = fmt.Sprintf(`<div style="width:72px;height:72px;border-radius:50%%;background:linear-gradient(135deg,#059669,#047857);line-height:72px;text-align:center;font-size:28px;font-weight:900;color:#ffffff;margin:0 auto;">%s</div>`, initial)
+		avatarSection = fmt.Sprintf(`<div style="width:72px;height:72px;border-radius:50%%;background:linear-gradient(135deg,#059669,#047857);line-height:72px;text-align:center;font-size:28px;font-weight:900;color:#ffffff;margin:0 auto;">%s</div>`, h(initial))
 	}
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
@@ -603,7 +603,7 @@ func SendWelcomeEmail(toEmail, userName, avatarURL string) error {
 </td></tr>
 </table>
 </body>
-</html>`, avatarSection, userName, userName, frontendURL, frontendURL)
+</html>`, avatarSection, h(userName), h(userName), frontendURL, frontendURL)
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp <help@costop.in>",
@@ -649,9 +649,9 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 	}
 	avatarSection := ""
 	if avatarURL != "" {
-		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:52px;height:52px;border-radius:50%%;border:2px solid %s;display:block;" />`, avatarURL, userName, badgeColor)
+		avatarSection = fmt.Sprintf(`<img src="%s" alt="%s" style="width:52px;height:52px;border-radius:50%%;border:2px solid %s;display:block;" />`, h(avatarURL), h(userName), badgeColor)
 	} else {
-		avatarSection = fmt.Sprintf(`<div style="width:52px;height:52px;border-radius:50%%;background:linear-gradient(135deg,%s,#059669);line-height:52px;text-align:center;font-size:22px;font-weight:700;color:#fff;">%s</div>`, badgeColor, initial)
+		avatarSection = fmt.Sprintf(`<div style="width:52px;height:52px;border-radius:50%%;background:linear-gradient(135deg,%s,#059669);line-height:52px;text-align:center;font-size:22px;font-weight:700;color:#fff;">%s</div>`, badgeColor, h(initial))
 	}
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
@@ -751,9 +751,9 @@ func SendAdminSignupNotification(userName, userEmail, avatarURL, accountType str
 </html>`,
 		badgeBg, badgeColor, badgeBorder, badgeLabel,
 		avatarSection,
-		userName, userEmail, userEmail,
-		userName,
-		userEmail,
+		h(userName), h(userEmail), h(userEmail),
+		h(userName),
+		h(userEmail),
 		badgeBg, badgeColor, badgeBorder, accountType,
 		now,
 		frontendURL,
@@ -974,7 +974,7 @@ func SendPaymentSuccessEmail(toEmail, userName, planName, billingInterval string
 </table>
 </body>
 </html>`,
-		userName,
+		h(userName),
 		billingCycleLabel,
 		amountPaid,
 		paymentID,
@@ -1141,9 +1141,9 @@ func SendPaymentFailedEmail(toEmail, userName, planName string, amountAttempted 
 </table>
 </body>
 </html>`,
-		userName,
+		h(userName),
 		amountAttempted,
-		failureReason,
+		h(failureReason),
 		dateStr,
 		frontendURL,
 	)
@@ -1251,7 +1251,7 @@ func SendVerificationEmail(toEmail, userName, verifyURL string) error {
 </td></tr>
 </table>
 </body>
-</html>`, displayName, verifyURL, verifyURL, verifyURL, time.Now().Year())
+</html>`, h(displayName), verifyURL, verifyURL, verifyURL, time.Now().Year())
 
 	params := &resend.SendEmailRequest{
 		From:    "CostOp <help@costop.in>",
@@ -1268,5 +1268,6 @@ func SendVerificationEmail(toEmail, userName, verifyURL string) error {
 	return nil
 }
 
-
-
+// h escapes user-supplied text before it is placed in an email's HTML, so names, team names
+// and alert titles can't inject links or markup into CostOp-branded mail.
+func h(s string) string { return html.EscapeString(s) }

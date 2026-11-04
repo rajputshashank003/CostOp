@@ -17,16 +17,16 @@ import (
 
 // MonthlyReportResponse represents the structured JSON executive summary.
 type MonthlyReportResponse struct {
-	OrganizationName     string                 `json:"organization_name"`
-	GeneratedAt          time.Time              `json:"generated_at"`
-	ReportPeriod         string                 `json:"report_period"`
-	TotalMonthlySpend    float64                `json:"total_monthly_spend"`
-	AnnualRunRate        float64                `json:"annual_run_rate"`
-	ActiveSubscriptions  int                    `json:"active_subscriptions"`
-	TotalActiveMembers   int64                  `json:"total_active_members"`
-	CategoryBreakdown    []CategorySpendReport  `json:"category_breakdown"`
-	Subscriptions        []SubscriptionReport   `json:"subscriptions"`
-	UpcomingRenewals     []RenewalWatchlist     `json:"upcoming_renewals"`
+	OrganizationName    string                `json:"organization_name"`
+	GeneratedAt         time.Time             `json:"generated_at"`
+	ReportPeriod        string                `json:"report_period"`
+	TotalMonthlySpend   float64               `json:"total_monthly_spend"`
+	AnnualRunRate       float64               `json:"annual_run_rate"`
+	ActiveSubscriptions int                   `json:"active_subscriptions"`
+	TotalActiveMembers  int64                 `json:"total_active_members"`
+	CategoryBreakdown   []CategorySpendReport `json:"category_breakdown"`
+	Subscriptions       []SubscriptionReport  `json:"subscriptions"`
+	UpcomingRenewals    []RenewalWatchlist    `json:"upcoming_renewals"`
 }
 
 type CategorySpendReport struct {
@@ -180,7 +180,7 @@ func GetMonthlyReport(c *gin.Context) {
 
 		// Report Header
 		writer.Write([]string{"COSTOP EXECUTIVE MONTHLY SPEND REPORT"})
-		writer.Write([]string{"Organization", org.Name})
+		writer.Write([]string{"Organization", csvSafe(org.Name)})
 		writer.Write([]string{"Report Period", reportPeriod})
 		writer.Write([]string{"Currency", currency})
 		writer.Write([]string{"Generated On", now.Format("2006-01-02 15:04:05")})
@@ -199,7 +199,7 @@ func GetMonthlyReport(c *gin.Context) {
 		writer.Write([]string{"DEPARTMENT / CATEGORY SPEND BREAKDOWN"})
 		writer.Write([]string{"Category", "Monthly Spend (" + currency + ")", "% of Spend"})
 		for _, cb := range catBreakdown {
-			writer.Write([]string{cb.Category, money(cb.Spend), fmt.Sprintf("%.1f%%", cb.Percentage)})
+			writer.Write([]string{csvSafe(cb.Category), money(cb.Spend), fmt.Sprintf("%.1f%%", cb.Percentage)})
 		}
 		writer.Write([]string{""})
 
@@ -213,8 +213,8 @@ func GetMonthlyReport(c *gin.Context) {
 			}
 			dateStr := s.NextBillingDate.Format("2006-01-02")
 			writer.Write([]string{
-				s.Name,
-				s.Category,
+				csvSafe(s.Name),
+				csvSafe(s.Category),
 				s.BillingCycle,
 				money(s.Cost),
 				money(s.MonthlyCost),
@@ -234,7 +234,7 @@ func GetMonthlyReport(c *gin.Context) {
 				mode = "Auto-Pay"
 			}
 			writer.Write([]string{
-				u.Name,
+				csvSafe(u.Name),
 				u.NextBillingDate.Format("2006-01-02"),
 				fmt.Sprintf("%d", u.DaysUntil),
 				money(u.Cost),
@@ -258,4 +258,13 @@ func GetMonthlyReport(c *gin.Context) {
 		Subscriptions:       subReports,
 		UpcomingRenewals:    upcoming,
 	})
+}
+
+// csvSafe stops a cell from being run as a spreadsheet formula when the export is opened
+// in Excel or Sheets (names and categories are user-controlled).
+func csvSafe(v string) string {
+	if v != "" && strings.ContainsRune("=+-@\t\r", rune(v[0])) {
+		return "'" + v
+	}
+	return v
 }

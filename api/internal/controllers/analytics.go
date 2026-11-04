@@ -30,14 +30,10 @@ func GetHistoricalSpends(c *gin.Context) {
 		return
 	}
 
-	var teamFilter uint = user.DefaultTeamID
-	isAllTeams := false
-	if tid := c.Query("team_id"); tid != "" {
-		if tid == "all" {
-			isAllTeams = true
-		} else if parsed, err := strconv.Atoi(tid); err == nil {
-			teamFilter = uint(parsed)
-		}
+	teamFilter, isAllTeams, teamErr := teamFilterFromQuery(c.Query("team_id"), user)
+	if teamErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
 	}
 
 	statusFilter := c.Query("status")
@@ -54,11 +50,7 @@ func GetHistoricalSpends(c *gin.Context) {
 		query = database.DB.Where("org_id = ? AND "+statusCondition, user.OrgID, statusArgs)
 	} else {
 		// Single-team view
-		query = database.DB.Where(
-			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR (scope = 'organization' AND org_id = ?)) AND `+statusCondition,
-			teamFilter, user.OrgID, statusArgs,
-		)
+		query = teamSubscriptionQuery(teamFilter, user.OrgID).Where(statusCondition, statusArgs)
 	}
 
 	var subscriptions []models.Subscription
@@ -184,14 +176,10 @@ func GetDepartmentSpendHistory(c *gin.Context) {
 		return
 	}
 
-	var teamFilter uint = user.DefaultTeamID
-	isAllTeams := false
-	if tid := c.Query("team_id"); tid != "" {
-		if tid == "all" {
-			isAllTeams = true
-		} else if parsed, err := strconv.Atoi(tid); err == nil {
-			teamFilter = uint(parsed)
-		}
+	teamFilter, isAllTeams, teamErr := teamFilterFromQuery(c.Query("team_id"), user)
+	if teamErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
 	}
 
 	statusFilter := c.Query("status")
@@ -208,11 +196,7 @@ func GetDepartmentSpendHistory(c *gin.Context) {
 		query = database.DB.Where("org_id = ? AND "+statusCondition, user.OrgID, statusArgs)
 	} else {
 		// Single-team view
-		query = database.DB.Where(
-			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR (scope = 'organization' AND org_id = ?)) AND `+statusCondition,
-			teamFilter, user.OrgID, statusArgs,
-		)
+		query = teamSubscriptionQuery(teamFilter, user.OrgID).Where(statusCondition, statusArgs)
 	}
 
 	var subscriptions []models.Subscription

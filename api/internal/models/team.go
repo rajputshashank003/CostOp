@@ -36,7 +36,7 @@ type TeamInvite struct {
 	TeamID      uint      `gorm:"index;not null" json:"team_id"`
 	Email       string    `gorm:"not null" json:"email"`
 	Designation string    `json:"designation"`
-	Token       string    `gorm:"uniqueIndex;not null" json:"token"`
+	Token       string    `gorm:"uniqueIndex;not null" json:"-"`
 	Status      string    `gorm:"default:'pending'" json:"status"` // 'pending', 'accepted'
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

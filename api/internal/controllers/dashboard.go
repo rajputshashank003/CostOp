@@ -4,10 +4,10 @@ import (
 	"costop/internal/cache"
 	"costop/internal/database"
 	"costop/internal/models"
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,14 +47,10 @@ func GetDashboard(c *gin.Context) {
 	startDate := c.Query("start")
 	endDate := c.Query("end")
 
-	var teamFilter uint = user.DefaultTeamID
-	isAllTeams := false
-	if tid := c.Query("team_id"); tid != "" {
-		if tid == "all" {
-			isAllTeams = true
-		} else if parsed, err := strconv.Atoi(tid); err == nil {
-			teamFilter = uint(parsed)
-		}
+	teamFilter, isAllTeams, teamErr := teamFilterFromQuery(c.Query("team_id"), user)
+	if teamErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
 	}
 
 	// ── Build base subscription query ─────────────────────────────────────
@@ -62,11 +58,7 @@ func GetDashboard(c *gin.Context) {
 	if isAllTeams {
 		baseQuery = orgSubscriptionQuery(user.OrgID, "active")
 	} else {
-		baseQuery = database.DB.Where(
-			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR (scope = 'organization' AND org_id = ?)) AND status = ?`,
-			teamFilter, user.OrgID, "active",
-		)
+		baseQuery = teamSubscriptionQuery(teamFilter, user.OrgID).Where("status = ?", "active")
 	}
 
 	if search != "" {
@@ -153,10 +145,10 @@ func GetDashboard(c *gin.Context) {
 	})
 
 	// ── Categories (cached, 0 queries on cache hit) ──────────────────────
-	categories := getCachedCategories()
+	categories := getCachedCategories(user.OrgID)
 
 	// ── Teams (cached, 0 queries on cache hit) ───────────────────────────
-	teams := getCachedTeams()
+	teams := getCachedTeams(user.OrgID)
 
 	// ── Enrich subscriptions (2 bulk queries) ────────────────────────────
 	enriched := enrichSubscriptions(subscriptions)
@@ -172,26 +164,26 @@ func GetDashboard(c *gin.Context) {
 	})
 }
 
-// getCachedCategories returns categories from cache or DB (cached for 60s).
-func getCachedCategories() []models.Category {
-	const cacheKey = "categories_all"
+// getCachedCategories returns the shared categories plus the org's own (cached for 60s).
+func getCachedCategories(orgID uint) []models.Category {
+	cacheKey := fmt.Sprintf("categories:org:%d", orgID)
 	if cached, ok := cache.AppCache.Get(cacheKey); ok {
 		return cached.([]models.Category)
 	}
 	var categories []models.Category
-	database.DB.Order("name asc").Find(&categories)
+	database.DB.Where("org_id IN ?", []uint{0, orgID}).Order("name asc").Find(&categories)
 	cache.AppCache.Set(cacheKey, categories, 60*time.Second)
 	return categories
 }
 
-// getCachedTeams returns teams from cache or DB (cached for 60s).
-func getCachedTeams() []TeamBasic {
-	const cacheKey = "teams_all"
+// getCachedTeams returns the org's teams from cache or DB (cached for 60s).
+func getCachedTeams(orgID uint) []TeamBasic {
+	cacheKey := fmt.Sprintf("teams:org:%d", orgID)
 	if cached, ok := cache.AppCache.Get(cacheKey); ok {
 		return cached.([]TeamBasic)
 	}
 	var teams []models.Team
-	database.DB.Find(&teams)
+	database.DB.Where("org_id = ?", orgID).Find(&teams)
 	result := make([]TeamBasic, 0, len(teams))
 	for _, t := range teams {
 		result = append(result, TeamBasic{ID: t.ID, Name: t.Name})
@@ -200,12 +192,12 @@ func getCachedTeams() []TeamBasic {
 	return result
 }
 
-// InvalidateCategoryCache clears the categories cache (call after adding a category).
-func InvalidateCategoryCache() {
-	cache.AppCache.Invalidate("categories_all")
+// InvalidateCategoryCache clears an org's categories cache (call after adding a category).
+func InvalidateCategoryCache(orgID uint) {
+	cache.AppCache.Invalidate(fmt.Sprintf("categories:org:%d", orgID))
 }
 
-// InvalidateTeamCache clears the teams cache (call after creating a team).
-func InvalidateTeamCache() {
-	cache.AppCache.Invalidate("teams_all")
+// InvalidateTeamCache clears an org's teams cache (call after creating a team).
+func InvalidateTeamCache(orgID uint) {
+	cache.AppCache.Invalidate(fmt.Sprintf("teams:org:%d", orgID))
 }

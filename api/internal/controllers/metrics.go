@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,14 +38,10 @@ func GetMetrics(c *gin.Context) {
 	category := c.Query("category")
 	cycle := c.Query("cycle")
 
-	var teamFilter uint = user.DefaultTeamID
-	isAllTeams := false
-	if tid := c.Query("team_id"); tid != "" {
-		if tid == "all" {
-			isAllTeams = true
-		} else if parsed, err := strconv.Atoi(tid); err == nil {
-			teamFilter = uint(parsed)
-		}
+	teamFilter, isAllTeams, teamErr := teamFilterFromQuery(c.Query("team_id"), user)
+	if teamErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
+		return
 	}
 
 	var subsQuery *gorm.DB
@@ -55,11 +50,7 @@ func GetMetrics(c *gin.Context) {
 		subsQuery = orgSubscriptionQuery(user.OrgID, "active")
 	} else {
 		// Single-team view
-		subsQuery = database.DB.Where(
-			`(id IN (SELECT subscription_id FROM subscription_teams WHERE team_id = ?)
-			OR (scope = 'organization' AND org_id = ?)) AND status = ?`,
-			teamFilter, user.OrgID, "active",
-		)
+		subsQuery = teamSubscriptionQuery(teamFilter, user.OrgID).Where("status = ?", "active")
 	}
 
 	if search != "" {

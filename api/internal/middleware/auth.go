@@ -39,7 +39,7 @@ func RequireAuth() gin.HandlerFunc {
 				return nil, fmt.Errorf("unexpected signing method")
 			}
 			return []byte(secret), nil
-		})
+		}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
 
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})

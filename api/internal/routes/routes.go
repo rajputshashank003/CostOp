@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"time"
+
 	"costop/internal/controllers"
 	"costop/internal/middleware"
 
@@ -22,24 +24,31 @@ func SetupRoutes(r *gin.Engine) {
 		// ── Authentication ────────────────────────────────────────────────────
 		auth := api.Group("/auth")
 		{
-			auth.POST("/google", controllers.VerifyGoogleToken)
-			auth.POST("/login", controllers.EmailPasswordLogin)
-			auth.POST("/signup", controllers.EmailPasswordSignup)
-			auth.POST("/verify-email", controllers.VerifyEmail)
-			auth.POST("/resend-verification", controllers.ResendVerificationEmail)
+			ip := middleware.KeyByIP
+			auth.POST("/google", middleware.RateLimit("google", 30, time.Minute, ip), controllers.VerifyGoogleToken)
+			auth.POST("/login",
+				middleware.RateLimit("login-ip", 30, time.Minute, ip),
+				middleware.RateLimit("login-email", 10, 15*time.Minute, middleware.KeyByEmail),
+				controllers.EmailPasswordLogin)
+			auth.POST("/signup", middleware.RateLimit("signup", 20, time.Hour, ip), controllers.EmailPasswordSignup)
+			auth.POST("/verify-email", middleware.RateLimit("verify", 30, time.Minute, ip), controllers.VerifyEmail)
+			auth.POST("/resend-verification",
+				middleware.RateLimit("resend-ip", 10, time.Hour, ip),
+				middleware.RateLimit("resend-email", 3, 15*time.Minute, middleware.KeyByEmail),
+				controllers.ResendVerificationEmail)
 		}
 
 		// ── Payment (Razorpay) ────────────────────────────────────────────────
 		payment := api.Group("/payment")
 		{
-			payment.GET("/pricing", controllers.GetPublicPricing)       // Public endpoint for active plan pricing
-			payment.POST("/webhook", controllers.HandleRazorpayWebhook) // Public endpoint for Razorpay webhooks
+			payment.GET("/pricing", controllers.GetPublicPricing)                                                                              // Public endpoint for active plan pricing
+			payment.POST("/webhook", middleware.RateLimit("webhook", 120, time.Minute, middleware.KeyByIP), controllers.HandleRazorpayWebhook) // Public endpoint for Razorpay webhooks
 
 			paymentProtected := payment.Group("")
 			paymentProtected.Use(middleware.RequireAuth())
 			{
-				paymentProtected.POST("/create-order", controllers.CreateRazorpayOrder)
-				paymentProtected.POST("/verify", controllers.VerifyRazorpayPayment)
+				paymentProtected.POST("/create-order", middleware.RateLimit("create-order", 10, time.Hour, middleware.KeyByUser), controllers.CreateRazorpayOrder)
+				paymentProtected.POST("/verify", middleware.RateLimit("verify-payment", 20, time.Hour, middleware.KeyByUser), controllers.VerifyRazorpayPayment)
 				paymentProtected.GET("/orders", controllers.GetUserOrders)
 			}
 		}
@@ -54,6 +63,7 @@ func SetupRoutes(r *gin.Engine) {
 			admin.GET("/organizations/:id/members", controllers.GetAdminOrgMembers)
 			admin.GET("/users", controllers.GetAdminUsers)
 			admin.PATCH("/users/:id/pro", controllers.ToggleUserProAccess)
+			admin.GET("/ip-check", controllers.IPCheck)
 		}
 
 		// ── Organization ──────────────────────────────────────────────────────
@@ -63,7 +73,7 @@ func SetupRoutes(r *gin.Engine) {
 			org.GET("", controllers.GetOrganization)
 			org.PATCH("/settings", controllers.UpdateOrganizationSettings)
 			org.POST("/upgrade", controllers.UpgradeOrganization)
-			org.POST("/test-slack", controllers.TestSlackWebhook)
+			org.POST("/test-slack", middleware.RateLimit("test-slack", 10, time.Minute, middleware.KeyByUser), controllers.TestSlackWebhook)
 		}
 
 		// ── Teams ─────────────────────────────────────────────────────────────
@@ -84,7 +94,7 @@ func SetupRoutes(r *gin.Engine) {
 		members.Use(middleware.RequireAuth())
 		{
 			members.GET("", controllers.GetTeamMembers)
-			members.POST("/invite", controllers.InviteMember)
+			members.POST("/invite", middleware.RateLimit("invite", 30, time.Hour, middleware.KeyByUser), controllers.InviteMember)
 			members.DELETE("/invite/:id", controllers.RevokeInvite)
 		}
 
@@ -162,8 +172,8 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			insights.GET("/duplicates", controllers.GetDuplicateTools)
 			insights.GET("/unused-seats", controllers.GetUnusedSeats)
-			insights.GET("/ai", controllers.GetAIInsights)
-			insights.POST("/ai/refresh", controllers.RefreshAIInsights)
+			insights.GET("/ai", middleware.RateLimit("ai", 30, 10*time.Minute, middleware.KeyByUser), controllers.GetAIInsights)
+			insights.POST("/ai/refresh", middleware.RateLimit("ai-refresh", 5, 10*time.Minute, middleware.KeyByUser), controllers.RefreshAIInsights)
 		}
 
 		// ── Reports (Pro Feature) ─────────────────────────────────────────────
@@ -177,10 +187,10 @@ func SetupRoutes(r *gin.Engine) {
 		alerts := api.Group("/alerts")
 		alerts.Use(middleware.RequireAuth())
 		{
-			alerts.GET("", controllers.GetAlerts)          // GET /api/alerts?subscription_id=X
-			alerts.POST("", controllers.CreateAlert)       // POST /api/alerts
-			alerts.PATCH("/:id", controllers.UpdateAlert)  // PATCH /api/alerts/:id
-			alerts.DELETE("/:id", controllers.DeleteAlert) // DELETE /api/alerts/:id
+			alerts.GET("", controllers.GetAlerts)                                                                               // GET /api/alerts?subscription_id=X
+			alerts.POST("", middleware.RateLimit("alert-create", 60, time.Hour, middleware.KeyByUser), controllers.CreateAlert) // POST /api/alerts
+			alerts.PATCH("/:id", controllers.UpdateAlert)                                                                       // PATCH /api/alerts/:id
+			alerts.DELETE("/:id", controllers.DeleteAlert)                                                                      // DELETE /api/alerts/:id
 		}
 
 		// ── Notifications ─────────────────────────────────────────────────────

@@ -72,5 +72,14 @@ func Connect() {
 	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id_nonempty ON users(google_id) WHERE google_id IS NOT NULL AND google_id != ''")
 	db.Exec("UPDATE users SET is_email_verified = true WHERE is_email_verified IS NULL OR email = 'demo@costop.in'")
 
+	// Categories are per organization now: the old global unique name index would block
+	// two organizations from using the same category name.
+	db.Exec("DROP INDEX IF EXISTS idx_categories_name")
+
+	// Queries are strictly scoped by org_id, so give legacy rows the org of their team
+	// instead of letting them fall outside every organization.
+	db.Exec("UPDATE subscriptions s SET org_id = t.org_id FROM teams t WHERE s.org_id = 0 AND s.team_id = t.id AND t.org_id > 0")
+	db.Exec("UPDATE users u SET org_id = t.org_id FROM teams t WHERE u.org_id = 0 AND u.default_team_id = t.id AND t.org_id > 0")
+
 	DB = db
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"costop/internal/models"
@@ -12,12 +14,20 @@ import (
 
 var slackHTTPClient = &http.Client{
 	Timeout: 5 * time.Second,
+	// Never follow redirects: the request must only ever reach Slack itself
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
+
+// IsSlackWebhookURL accepts only https URLs on Slack's webhook host.
+func IsSlackWebhookURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	return err == nil && u.Scheme == "https" && u.Host == "hooks.slack.com" && u.User == nil && strings.HasPrefix(u.Path, "/")
 }
 
 // SendSlackWebhook sends an arbitrary JSON payload to a Slack incoming webhook.
 func SendSlackWebhook(webhookURL string, payload interface{}) error {
-	if webhookURL == "" {
-		return fmt.Errorf("empty slack webhook url")
+	if !IsSlackWebhookURL(webhookURL) {
+		return fmt.Errorf("not a Slack webhook url")
 	}
 
 	body, err := json.Marshal(payload)
