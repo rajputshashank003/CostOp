@@ -93,23 +93,23 @@ export default function ExportReportButton({ isPro = false, className = '' }: Pr
                 type="button"
                 onClick={handleToggle}
                 disabled={isDownloading}
-                className="inline-flex items-center gap-1.5 desk:gap-2 px-2.5 sm:px-3 desk:px-4 py-1.5 desk:py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs desk:text-sm font-semibold shadow-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 flex-shrink-0"
+                className="inline-flex items-center gap-1.5 min-[1200px]:gap-2 px-2.5 sm:px-3 min-[1200px]:px-4 py-1.5 min-[1200px]:py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs min-[1200px]:text-sm font-semibold shadow-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 flex-shrink-0"
             >
                 {isDownloading ? (
-                    <span className="w-3.5 h-3.5 desk:w-4 desk:h-4 border-2 border-slate-300 border-t-emerald-600 rounded-full animate-spin" />
+                    <span className="w-3.5 h-3.5 min-[1200px]:w-4 min-[1200px]:h-4 border-2 border-slate-300 border-t-emerald-600 rounded-full animate-spin" />
                 ) : (
-                    <Download className="w-3.5 h-3.5 desk:w-4 desk:h-4 text-slate-500" />
+                    <Download className="w-3.5 h-3.5 min-[1200px]:w-4 min-[1200px]:h-4 text-slate-500" />
                 )}
-                <span className="hidden desk:inline">Export Report</span>
-                <span className="hidden sm:inline desk:hidden">Export</span>
+                <span className="hidden min-[1200px]:inline">Export Report</span>
+                <span className="hidden sm:inline min-[1200px]:hidden">Export</span>
                 <span className="sm:hidden">Report</span>
 
                 {!isPro && (
-                    <span className="inline-flex items-center gap-1 px-1 desk:px-1.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] desk:text-[10px] font-black uppercase tracking-wider shadow-xs">
-                        <Sparkles size={9} className="desk:w-2.5 desk:h-2.5" /> PRO
+                    <span className="inline-flex items-center gap-1 px-1 min-[1200px]:px-1.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] min-[1200px]:text-[10px] font-black uppercase tracking-wider shadow-xs">
+                        <Sparkles size={9} className="min-[1200px]:w-2.5 min-[1200px]:h-2.5" /> PRO
                     </span>
                 )}
-                <ChevronDown size={13} className={`text-slate-400 desk:w-3.5 desk:h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={13} className={`text-slate-400 min-[1200px]:w-3.5 min-[1200px]:h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </motion.button>
 
             {/* Dropdown Menu */}

@@ -67,9 +67,7 @@ export default function MoveTeamDropdown({ userId, currentTeamId, allTeams, onMo
             {/* Trigger button */}
             <button
                 onClick={() => setIsOpen((o) => !o)}
-                aria-label="Move to another team"
-                aria-expanded={isOpen}
-                className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-emerald-600 px-2.5 py-2 rounded-lg hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200 cursor-pointer"
+                className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-200 cursor-pointer"
             >
                 <ArrowRightLeft size={13} />
                 <span className="hidden sm:inline">Move</span>
@@ -85,7 +83,6 @@ export default function MoveTeamDropdown({ userId, currentTeamId, allTeams, onMo
                             <input
                                 ref={searchRef}
                                 type="text"
-                                aria-label="Search teams"
                                 placeholder="Search teams..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
@@ -132,7 +129,6 @@ export default function MoveTeamDropdown({ userId, currentTeamId, allTeams, onMo
                                 <input
                                     autoFocus
                                     type="text"
-                                    aria-label="Team name"
                                     placeholder="Team name..."
                                     value={newTeamName}
                                     onChange={(e) => setNewTeamName(e.target.value)}

@@ -9,7 +9,6 @@ import SmallRenewalItem from "./SmallRenewalItem";
 import DepartmentSpend from "./DepartmentSpend";
 import { useContext, useRef, useState } from "react";
 import HomeContext from "../context";
-import { amountSizeClass } from "@/utils/helpers";
 import { useMoney } from "@/hooks/useMoney";
 
 export default function DashboardMetrics() {
@@ -38,26 +37,24 @@ export default function DashboardMetrics() {
         setActiveIdx(Math.round(scrollLeft / cardWidth));
     };
 
-    const spendLabel = spendTimeframe === "current"
-        ? (isLoadingMetrics ? "..." : formatter.format(metrics?.total_monthly_spend || 0))
-        : (isLoadingHistorical ? "..." : formatter.format(historicalSpendTotal));
-
     const SpendWidget = (
         <div className="bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm flex flex-col justify-between relative group hover:border-emerald-200 transition-colors h-full min-h-[180px]">
             <div className="absolute inset-0 rounded-[1.5rem] overflow-hidden pointer-events-none z-0">
                 <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
-            <div className="relative z-20 flex justify-between items-start gap-3">
-                <div className="min-w-0">
+            <div className="relative z-20 flex justify-between items-start">
+                <div>
                     <p className="text-[14px] font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
                         <TrendingDown size={16} className="text-emerald-500" />
                         {spendTimeframe === "current" ? "Current Monthly" : spendTimeframe === "custom" ? "Custom Range" : `Spend (Last ${spendTimeframe} M)`}
                     </p>
-                    <h2 className={`${amountSizeClass(spendLabel, ["text-4xl", "text-3xl", "text-2xl desk:text-3xl"])} font-extrabold text-slate-900 tracking-tight tabular-nums whitespace-nowrap`}>
-                        {spendLabel}
+                    <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                        {spendTimeframe === "current"
+                            ? (isLoadingMetrics ? "..." : formatter.format(metrics?.total_monthly_spend || 0))
+                            : (isLoadingHistorical ? "..." : formatter.format(historicalSpendTotal))}
                     </h2>
                 </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner flex-shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner flex-shrink-0">
                     <CreditCardIcon size={24} />
                 </div>
             </div>
@@ -145,7 +142,7 @@ export default function DashboardMetrics() {
                 <div
                     ref={scrollRef}
                     onScroll={handleScroll}
-                    className="flex items-start gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4"
+                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     <div className="snap-center flex-shrink-0 w-[85vw]">{SpendWidget}</div>

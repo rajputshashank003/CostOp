@@ -82,12 +82,11 @@ export default function SlackIntegrationCard({ isPro, webhookUrl, setWebhookUrl 
             ) : (
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="slack-webhook-url" className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                             Incoming Webhook URL
                         </label>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <input
-                                id="slack-webhook-url"
                                 type="url"
                                 placeholder="https://hooks.slack.com/services/T.../B.../..."
                                 value={webhookUrl}
