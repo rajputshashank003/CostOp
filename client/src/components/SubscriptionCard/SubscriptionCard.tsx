@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { amountSizeClass } from "@/utils/helpers";
 import { Calendar, CreditCard, Users, Briefcase, User, Archive, Trash2, RotateCcw } from "lucide-react";
 import toUpper from "lodash/toUpper";
 import head from "lodash/head";
@@ -53,7 +52,7 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
     const { formatter } = useMoney();
 
     let nextBilling = "TBD";
-    if (sub.billing_cycle === "One Time") {
+    if (sub.is_auto_pay === false) {
         nextBilling = "One Time";
     } else if (sub.next_billing_date) {
         nextBilling = new Date(sub.next_billing_date).toLocaleDateString("en-US", {
@@ -62,7 +61,6 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
     }
 
     const initial = sub.name ? toUpper(head(sub.name) as string) : "?";
-    const costLabel = formatter.format(sub.cost);
     const logoUrl = !imgError ? getLogoUrl(sub.name) : null;
 
     const handleCardClick = () => {
@@ -79,17 +77,17 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
             onClick={handleCardClick}
             className={`bg-white rounded-[1.5rem] border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300 group flex flex-col h-full ${clickable ? "cursor-pointer" : ""}`}
         >
-            <div className="flex justify-between items-start gap-2 mb-6">
-                <div className="flex items-start gap-4 min-w-0">
-                    <div className="w-14 h-14 flex-shrink-0 rounded-[1rem] bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100/50 flex items-center justify-center text-emerald-600 font-extrabold text-xl shadow-sm group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+            <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-[1rem] bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100/50 flex items-center justify-center text-emerald-600 font-extrabold text-xl shadow-sm group-hover:scale-105 transition-transform duration-300 overflow-hidden">
                         {logoUrl ? (
                             <img src={logoUrl} alt={sub.name} onError={() => setImgError(true)} className="w-8 h-8 object-contain" />
                         ) : (
                             initial
                         )}
                     </div>
-                    <div className="min-w-0 pt-0.5">
-                        <h3 title={sub.name} className="text-[18px] font-bold text-slate-900 tracking-tight leading-snug mb-2 line-clamp-2 [overflow-wrap:anywhere]">{sub.name}</h3>
+                    <div>
+                        <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-none mb-2">{sub.name}</h3>
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md tracking-wide uppercase">
                             {getCategoryIcon(sub.category, 10)}
                             {sub.category}
@@ -97,7 +95,7 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     {/* Archive button — shown on active cards unless profile view */}
                     {onArchiveClick && !isProfileView && (
                         <motion.button
@@ -135,17 +133,17 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-auto">
-                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 min-w-0">
+                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100">
                     <div className="text-[12px] font-semibold text-slate-500 mb-1 flex items-center gap-1.5">
                         <CreditCard size={12} />
                         {sub.billing_cycle}
                     </div>
-                    <div className={`${amountSizeClass(costLabel, ["text-xl", "text-lg", "text-base"])} font-extrabold text-slate-900 tracking-tight tabular-nums [overflow-wrap:anywhere]`}>
-                        {costLabel}
+                    <div className="text-xl font-extrabold text-slate-900 tracking-tight">
+                        {formatter.format(sub.cost)}
                     </div>
                 </div>
 
-                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 min-w-0">
+                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100">
                     <div className="text-[12px] font-semibold text-slate-500 mb-1 flex items-center gap-1.5">
                         <Calendar size={12} />
                         Next Bill
@@ -163,9 +161,9 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
                         <span>Org Plan</span>
                     </div>
                     {sub.archived_by_name ? (
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right truncate min-w-0" title={`Archived by ${sub.archived_by_name}`}>Archived by {sub.archived_by_name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Archived by {sub.archived_by_name}</div>
                     ) : sub.added_by_name ? (
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right truncate min-w-0" title={`Added by ${sub.added_by_name}`}>Added by {sub.added_by_name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Added by {sub.added_by_name}</div>
                     ) : null}
                 </div>
             ) : sub.plan_type === "Team" ? (
@@ -175,9 +173,9 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
                         <span>Team Plan ({sub.seat_count || 0} seats)</span>
                     </div>
                     {sub.archived_by_name ? (
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right truncate min-w-0" title={`Archived by ${sub.archived_by_name}`}>Archived by {sub.archived_by_name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Archived by {sub.archived_by_name}</div>
                     ) : sub.added_by_name ? (
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right truncate min-w-0" title={`Added by ${sub.added_by_name}`}>Added by {sub.added_by_name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Added by {sub.added_by_name}</div>
                     ) : null}
                 </div>
             ) : (
@@ -187,9 +185,9 @@ export default function SubscriptionCard({ sub, onArchiveClick, onDeleteClick, o
                         <span>Individual Plan</span>
                     </div>
                     {sub.archived_by_name ? (
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right truncate min-w-0" title={`Archived by ${sub.archived_by_name}`}>Archived by {sub.archived_by_name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Archived by {sub.archived_by_name}</div>
                     ) : sub.added_by_name ? (
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right truncate min-w-0" title={`Added by ${sub.added_by_name}`}>Added by {sub.added_by_name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Added by {sub.added_by_name}</div>
                     ) : null}
                 </div>
             )}

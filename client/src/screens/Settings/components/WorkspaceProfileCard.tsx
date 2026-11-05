@@ -19,11 +19,10 @@ const WorkspaceProfileCard = ({ teamName, setTeamName }: WorkspaceProfileCardPro
                 </div>
             </div>
             <div className="p-6">
-                <label htmlFor="org-name" className="text-[13px] font-bold text-slate-700 uppercase tracking-widest pl-1 mb-2 block">
+                <label className="text-[13px] font-bold text-slate-700 uppercase tracking-widest pl-1 mb-2 block">
                     Organization Name
                 </label>
                 <input
-                    id="org-name"
                     type="text"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}

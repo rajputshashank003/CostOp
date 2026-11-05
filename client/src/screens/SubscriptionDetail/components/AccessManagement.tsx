@@ -160,7 +160,6 @@ const AccessManagement = () => {
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
-                                aria-label="Search teams"
                                 placeholder="Search teams..."
                                 value={teamSearch}
                                 onChange={(e) => setTeamSearch(e.target.value)}
@@ -194,7 +193,6 @@ const AccessManagement = () => {
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
-                                aria-label="Search members"
                                 placeholder="Search members..."
                                 value={userSearch}
                                 onChange={(e) => setUserSearch(e.target.value)}

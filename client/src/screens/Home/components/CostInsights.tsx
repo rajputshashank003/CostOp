@@ -187,7 +187,7 @@ export default function CostInsights() {
                     <div
                         ref={scrollRef}
                         onScroll={handleScroll}
-                        className="flex items-start gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4"
+                        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         <div className="snap-center flex-shrink-0 w-[85vw]">{DuplicateCard}</div>
