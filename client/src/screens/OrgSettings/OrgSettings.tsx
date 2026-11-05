@@ -94,24 +94,24 @@ export default function OrgSettings() {
             <Sidebar />
             <main className="flex-1 flex flex-col h-screen overflow-y-auto">
                 {/* Header */}
-                <header className="min-h-[62px] min-[1200px]:min-h-[76px] bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-4 min-[1200px]:px-8 py-2.5 sm:py-3 min-[1200px]:py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs transition-all gap-2">
-                    <div className="flex items-center gap-2.5 min-[1200px]:gap-4 min-w-0">
+                <header className="min-h-[62px] desk:min-h-[76px] bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-4 desk:px-8 py-2.5 sm:py-3 desk:py-5 flex items-center justify-between sticky top-0 z-10 shadow-xs transition-all gap-2">
+                    <div className="flex items-center gap-2.5 desk:gap-4 min-w-0">
                         <MobileNav />
-                        <div className="w-8 h-8 min-[1200px]:w-10 min-[1200px]:h-10 rounded-xl bg-emerald-50 text-emerald-600 hidden sm:flex items-center justify-center shadow-inner flex-shrink-0">
+                        <div className="w-8 h-8 desk:w-10 desk:h-10 rounded-xl bg-emerald-50 text-emerald-600 hidden sm:flex items-center justify-center shadow-inner flex-shrink-0">
                             <Sliders size={20} />
                         </div>
                         <div className="min-w-0">
                             <div className="flex items-center gap-1.5 sm:gap-2">
-                                <h1 className="text-sm sm:text-base min-[1200px]:text-[22px] font-extrabold text-slate-900 tracking-tight leading-none truncate">
+                                <h1 className="text-sm sm:text-base desk:text-[22px] font-extrabold text-slate-900 tracking-tight leading-none truncate">
                                     Org & Plan Settings
                                 </h1>
                                 <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 flex-shrink-0">
                                     <ShieldCheck size={11} className="sm:w-3 sm:h-3" />
-                                    <span className="hidden min-[480px]:inline">Admin Only</span>
-                                    <span className="min-[480px]:hidden">Admin</span>
+                                    <span className="hidden xs:inline">Admin Only</span>
+                                    <span className="xs:hidden">Admin</span>
                                 </span>
                             </div>
-                            <p className="text-[11px] min-[1200px]:text-[13px] font-semibold text-slate-500 hidden sm:block mt-0.5">
+                            <p className="text-[11px] desk:text-[13px] font-semibold text-slate-500 hidden sm:block mt-0.5">
                                 Configure production subscription plans and yearly discount rates
                             </p>
                         </div>
@@ -125,8 +125,8 @@ export default function OrgSettings() {
                             title="Manage all users and Pro tier access"
                         >
                             <Users size={15} />
-                            <span className="hidden min-[480px]:inline">Manage Users</span>
-                            <span className="min-[480px]:hidden">Users</span>
+                            <span className="hidden xs:inline">Manage Users</span>
+                            <span className="xs:hidden">Users</span>
                         </motion.button>
                         <motion.button
                             whileTap={{ scale: 0.92 }}

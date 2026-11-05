@@ -232,6 +232,7 @@ export default function ManageUsersModal({ isOpen, onClose }: ManageUsersModalPr
                             type="text"
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
+                            aria-label="Search by workspace, owner, or email"
                             placeholder="Search by workspace, owner, or email..."
                             className="w-full pl-9 pr-8 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold text-xs sm:text-sm placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                         />

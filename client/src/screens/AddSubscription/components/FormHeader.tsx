@@ -12,7 +12,7 @@ const FormHeader = ({}: FormHeaderProps) => {
     return (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-start gap-4">
-                <button onClick={() => navigate(-1)} className="p-2 mt-1.5 bg-white text-slate-500 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all border border-slate-200">
+                <button onClick={() => navigate(-1)} aria-label="Go back" className="p-2 mt-1.5 bg-white text-slate-500 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all border border-slate-200">
                     <ArrowLeft size={20} />
                 </button>
                 <div>

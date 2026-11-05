@@ -30,14 +30,14 @@ const ToolDetailsCard = ({} : ToolDetailsCardProps) => {
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Briefcase size={18} className="text-emerald-500" /> Tool Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Tool Name *</label>
-                    <input name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Figma, GitHub" required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-medium" />
+                    <label htmlFor="sub-name" className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Tool Name *</label>
+                    <input id="sub-name" name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Figma, GitHub" required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-medium" />
                 </div>
                 <div>
-                    <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Cost ({currency}) *</label>
+                    <label htmlFor="sub-cost" className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Cost ({currency}) *</label>
                     <div className="relative">
                         <CurrencyIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input name="cost" type="number" step="0.01" min="0" value={formData.cost} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-medium" />
+                        <input id="sub-cost" name="cost" type="number" step="0.01" min="0" value={formData.cost} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-medium" />
                     </div>
                 </div>
                 <div>

@@ -34,6 +34,7 @@ const SubscriptionDetailHeader = () => {
                 <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => navigate(-1)}
+                    aria-label="Go back"
                     className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                 >
                     <ArrowLeft size={20} />

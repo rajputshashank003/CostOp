@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @theme {
+  /* Breakpoints the app relies on, as theme breakpoints so Tailwind orders them correctly
+     relative to sm/md/lg (arbitrary min-[1200px] variants were emitted before sm:, so sm: won) */
+  --breakpoint-xs: 30rem;   /* 480px */
+  --breakpoint-desk: 75rem; /* 1200px */
   --color-primary: var(--accent-indigo);
   --color-primary-hover: #3d1ec2;
   --color-surface-1: var(--surface-1);

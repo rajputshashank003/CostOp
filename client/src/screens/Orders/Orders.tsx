@@ -84,13 +84,13 @@ export default function Orders() {
                     <OrdersMetrics orders={orders} currentPlan={currentPlan} />
 
                     {/* Filter, Search & Refresh Toolbar */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs mb-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
                         {/* Status Tabs - Apple Segmented Control */}
-                        <div className="flex bg-slate-100 p-1 rounded-xl flex-shrink-0 relative">
+                        <div className="flex bg-slate-100 p-1 rounded-xl flex-shrink-0 relative w-full lg:w-auto">
                             {[
-                                { id: 'all' as const, label: `All Orders (${orders.length})` },
-                                { id: 'paid' as const, label: `Completed (${orders.filter(o => o.status === 'paid').length})` },
-                                { id: 'other' as const, label: `Pending/Other (${orders.filter(o => o.status !== 'paid').length})` },
+                                { id: 'all' as const, label: 'All Orders', short: 'All', count: orders.length },
+                                { id: 'paid' as const, label: 'Completed', short: 'Paid', count: orders.filter(o => o.status === 'paid').length },
+                                { id: 'other' as const, label: 'Pending/Other', short: 'Other', count: orders.filter(o => o.status !== 'paid').length },
                             ].map((tab) => {
                                 const isSelected = statusFilter === tab.id;
                                 return (
@@ -99,7 +99,7 @@ export default function Orders() {
                                         whileTap={{ scale: 0.96 }}
                                         type="button"
                                         onClick={() => setStatusFilter(tab.id)}
-                                        className={`relative z-10 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                                        className={`relative z-10 flex-1 lg:flex-none px-2 sm:px-3 py-2 lg:py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
                                             isSelected ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'
                                         }`}
                                     >
@@ -110,7 +110,8 @@ export default function Orders() {
                                                 transition={{ type: 'spring', stiffness: 400, damping: 30, bounce: 0 }}
                                             />
                                         )}
-                                        {tab.label}
+                                        <span className="hidden xs:inline">{tab.label}</span>
+                                        <span className="xs:hidden">{tab.short}</span> ({tab.count})
                                     </motion.button>
                                 );
                             })}
@@ -124,6 +125,7 @@ export default function Orders() {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    aria-label="Search order or payment ID"
                                     placeholder="Search order or payment ID..."
                                     className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 />

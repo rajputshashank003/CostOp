@@ -44,7 +44,7 @@ export default function AIInsightsCard() {
                     ) : aiError ? (
                         <button
                             onClick={(e) => { e.stopPropagation(); fetchAIInsights(); }}
-                            className="text-[11px] font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-colors cursor-pointer"
+                            className="text-xs font-bold text-slate-400 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-colors cursor-pointer"
                         >
                             Retry
                         </button>

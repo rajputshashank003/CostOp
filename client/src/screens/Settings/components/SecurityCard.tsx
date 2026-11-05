@@ -33,6 +33,9 @@ const SecurityCard = ({ allowInvites, setAllowInvites }: SecurityCardProps) => {
 
                 <button
                     onClick={() => setAllowInvites(!allowInvites)}
+                    role="switch"
+                    aria-checked={allowInvites}
+                    aria-label="Allow member invitations"
                     className={`w-14 h-8 rounded-full transition-colors relative flex-shrink-0 cursor-pointer shadow-inner ${allowInvites ? 'bg-emerald-500' : 'bg-slate-300'}`}
                 >
                     <div className={`absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-md transition-transform duration-300 ${allowInvites ? 'translate-x-6' : 'translate-x-0'}`} />

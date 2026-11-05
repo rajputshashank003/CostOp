@@ -66,8 +66,8 @@ const ScopeAndPlanCard = ({}: ScopeAndPlanCardProps) => {
 
                 {formData.pricing_model === "per_seat" && formData.plan_type !== "Individual" && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total Seats Included</label>
-                        <input name="seat_count" type="number" min="1" value={formData.seat_count} onChange={(e) => setFormData((p: any) => ({ ...p, seat_count: parseInt(e.target.value, 10) }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-bold text-lg" />
+                        <label htmlFor="sub-seat-count" className="block text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total Seats Included</label>
+                        <input id="sub-seat-count" name="seat_count" type="number" min="1" value={formData.seat_count} onChange={(e) => setFormData((p: any) => ({ ...p, seat_count: parseInt(e.target.value, 10) }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 font-bold text-lg" />
                     </motion.div>
                 )}
             </div>

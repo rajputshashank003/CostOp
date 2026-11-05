@@ -15,3 +15,8 @@ export const getCategoryIcon = (category: string, size: number = 14) => {
 
     return <Briefcase size={size} />;
 };
+
+// Amounts are never truncated, so long ones (₹ crores, many digits) step down a font size instead
+// of overflowing their box. Pass the classes for normal, long and very long amounts.
+export const amountSizeClass = (text: string, sizes: [string, string, string]) =>
+    text.length > 14 ? sizes[2] : text.length > 10 ? sizes[1] : sizes[0];

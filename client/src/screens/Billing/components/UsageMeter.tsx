@@ -12,17 +12,17 @@ export default function UsageMeter() {
     return (
         <section aria-label="Current Plan & Usage" className="bg-white rounded-[1.5rem] border border-slate-200 shadow-xs p-5 sm:p-6 mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                     <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
                         <Users size={22} />
                     </div>
-                    <div>
-                        <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
                                 Current Workspace Plan
                             </h2>
                             <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black whitespace-nowrap uppercase tracking-wider ${
                                     isPro
                                         ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs"
                                         : "bg-slate-100 text-slate-700 border border-slate-200"

@@ -92,6 +92,7 @@ export default function InviteCard() {
                     </div>
                     <input
                         type="email"
+                        aria-label="Colleague's email"
                         placeholder="colleague@company.com"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
@@ -105,6 +106,7 @@ export default function InviteCard() {
                     </div>
                     <input
                         type="text"
+                        aria-label="Role"
                         placeholder="Role (e.g. Frontend)"
                         value={inviteDesignation}
                         onChange={(e) => setInviteDesignation(e.target.value)}

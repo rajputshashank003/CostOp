@@ -56,14 +56,14 @@ export default function HeroSection() {
             >
                 {/* Decorative Background for Hero Image abstract logic */}
                 <div className="absolute inset-0 bg-emerald-200 rounded-[3rem] rotate-3 scale-105 opacity-50 blur-xl"></div>
-                <div className="relative bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-2xl z-10">
+                <div className="relative bg-white border border-slate-100 p-5 xs:p-8 rounded-[2rem] xs:rounded-[2.5rem] shadow-2xl z-10">
                     {/* Abstract Mockup inside the hero image */}
-                    <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
-                        <div>
+                    <div className="flex items-center justify-between gap-3 mb-8 pb-6 border-b border-slate-100">
+                        <div className="min-w-0">
                             <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Total Spend</div>
-                            <div className="text-4xl font-extrabold text-slate-900">{formatter.format(2459)}<span className="text-lg text-slate-400">/mo</span></div>
+                            <div className="text-3xl xs:text-4xl font-extrabold text-slate-900 tabular-nums whitespace-nowrap">{formatter.format(2459)}<span className="text-lg text-slate-400">/mo</span></div>
                         </div>
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                        <div className="w-12 h-12 xs:w-14 xs:h-14 flex-shrink-0 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                             <PieChart size={28} />
                         </div>
                     </div>
